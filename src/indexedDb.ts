@@ -1,16 +1,24 @@
-// TODO: initialize db
-interface IStorage {
+const version = 1;
+
+export interface IStorage {
     url: string;
     name: string;
     savedAt: number;
+    faviconUrl: string;
 };
 
 // FIXME: is this an acceptable pattern? Specifically, opening the db in 2 different
 // functions seems a bit strange
 export class WebsiteStore {
+    factory: IDBFactory;
+
+    constructor(factory: IDBFactory) {
+        this.factory = factory;
+    }
+
     private async getDb(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
-            let request = window.indexedDB.open('rabbithole', 1);
+            let request = this.factory.open('rabbithole', version);
             request.onsuccess = () => {
                 const db = request.result;
                 db.onerror = (event) => {
@@ -28,13 +36,15 @@ export class WebsiteStore {
         });
     }
 
-    static async init(): Promise<void> {
+    // Creates db schema
+    static async init(factory: IDBFactory): Promise<void> {
         await new Promise((resolve, reject) => {
-            if (!('indexedDB' in window)) {
+            if (factory === undefined) {
+                // FIXME: this won't work on service worker
                 alert("This browser doesn't support Rabbithole! You should uninstall it :(");
                 reject(new Error("indexedDB not supported"));
             } else {
-                let request = window.indexedDB.open('rabbithole', 1);
+                let request = factory.open('rabbithole', version);
                 request.onerror = () => {
                     alert("Please allow Rabbithole to use storage!");
                     reject(new Error("Insufficient permissions"));
@@ -56,13 +66,7 @@ export class WebsiteStore {
         });
     }
 
-    async store(): Promise<IStorage> {
-        let queryOptions = { active: true, lastFocusedWindow: true };
-        console.log(chrome)
-        // `tab` will either be a `tabs.Tab` instance or `undefined`.
-        let [tab] = await chrome.tabs.query(queryOptions);
-        console.log(tab)
-
+    async store(item: IStorage): Promise<IStorage> {
         return new Promise(async (resolve, reject) => {
             const db = await this.getDb();
             const request = db.transaction(["savedWebsites"], "readwrite")
@@ -71,11 +75,14 @@ export class WebsiteStore {
 
             request.onsuccess = (event) => {
                 console.log(`store item success: ${event.target}`);
+                db.close();
                 resolve(item);
             };
 
             request.onerror = (event) => {
-                console.error(`store item error: ${event.target}`);
+                console.error(`store item error`);
+                console.error(event.target);
+                db.close();
                 reject(new Error("Failed to store item"));
             };
         });
@@ -85,17 +92,19 @@ export class WebsiteStore {
     async getAll(): Promise<IStorage[]> {
         return new Promise(async (resolve, reject) => {
             const db = await this.getDb();
-            const request = db.transaction(["savedWebsites"], "readonly")
+            const request = db.transaction(["savedWebsites"])
                 .objectStore("savedWebsites")
                 .getAll();
 
             request.onsuccess = (event) => {
                 console.log("getAll success");
+                db.close();
                 resolve(request.result);
             };
 
             request.onerror = (event) => {
                 console.error(`getAll error: ${event.target}`);
+                db.close();
                 reject(new Error("Failed to retrieve items"));
             };
         });

@@ -2,6 +2,7 @@
   import heart from "../assets/icons/heart.png";
   import forbidden from "../assets/icons/forbidden.png";
   import { storage } from "../storage";
+  import { MessageRequest } from "../utils"
 
   export let count: number;
   let successMessage: string = null;
@@ -14,14 +15,9 @@
     count -= 1;
   }
 
-  function save() {
-    storage.set({ count }).then(() => {
-      successMessage = "Options saved!";
-
-      setTimeout(() => {
-        successMessage = null;
-      }, 1500);
-    });
+  async function save() {
+    const savedTab = await chrome.runtime.sendMessage({type: MessageRequest.SAVE_TAB});
+    console.log(savedTab);
   }
 </script>
 

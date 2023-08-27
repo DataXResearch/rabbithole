@@ -1,3 +1,4 @@
 export enum MessageRequest {
-  GET_TAB
+    SAVE_TAB,
+    GET_ALL_ITEMS
 }
