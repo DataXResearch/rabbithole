@@ -17,39 +17,24 @@
 
   async function save() {
     const savedTab = await chrome.runtime.sendMessage({type: MessageRequest.SAVE_TAB});
-    console.log(savedTab);
+    successMessage = "Website saved!";
+    setTimeout(() => {
+      successMessage = null;
+    }, 1500);
   }
 </script>
 
 <div class="container">
-  <p>Current count: <b>{count}</b></p>
   <div>
-    <button on:click={increment}>
-      <img {heart} alt="background image" />
-    </button>
-    <button on:click={decrement}>
-      <img {forbidden} alt="background image" />
-    </button>
-    <!-- <div style="width: 50px; height: 50px;"> -->
-    <!--   <Fab on:click={increment} style="width: 50px; height: 50px;"> -->
-    <!--     <Icon class="material-icons">favorite</Icon> -->
-    <!--   </Fab> -->
-    <!-- </div> -->
-    <!-- <div style="width: 50px; height: 50px;"> -->
-    <!--   <Fab on:click={decrement} style="width: 50px; height: 50px;"> -->
-    <!--     <Icon class="material-icons">notinterested</Icon> -->
-    <!--   </Fab> -->
-    <!-- </div> -->
-  </div>
-  <div>
-    <button on:click={save}>Save</button>
+    <button on:click={save}>Save Website</button>
     {#if successMessage}<span class="success">{successMessage}</span>{/if}
   </div>
 </div>
 
 <style>
   .container {
-    min-width: 250px;
+    width: 240px;
+    height: 190px;
   }
 
   button {
