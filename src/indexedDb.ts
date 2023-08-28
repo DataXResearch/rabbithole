@@ -5,6 +5,8 @@ export interface IStorage {
     name: string;
     savedAt: number;
     faviconUrl: string;
+    openGraphImageUrl?: string;
+    description?: string;
 };
 
 // FIXME: is this an acceptable pattern? Specifically, opening the db in 2 different
@@ -96,7 +98,7 @@ export class WebsiteStore {
                 .objectStore("savedWebsites")
                 .getAll();
 
-            request.onsuccess = (event) => {
+            request.onsuccess = (_) => {
                 console.log("getAll success");
                 db.close();
                 resolve(request.result);
