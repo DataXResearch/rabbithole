@@ -24,6 +24,6 @@
         "vite": "3.2.0"
     },
     "dependencies": {
-        "flowbite": "^1.8.1"
+        "@svelteuidev/core": "^0.15.3"
     }
 }

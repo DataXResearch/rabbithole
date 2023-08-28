@@ -1,20 +1,28 @@
 <script>
-  import { Card, Button, Toggle } from 'flowbite-svelte';
-  import { Icon } from 'flowbite-svelte-icons';
+  import { Badge, Button, Card, Group, Image, Text } from '@svelteuidev/core';
 
-  export let title = "Title";
-  export let description = "Loading..."
-  export let href = "";
-
-  let hCard = false;
+  export let website;
 </script>
 
-<div>
-  <Card img="/images/gov.jpeg" href="/" horizontal reverse={hCard}  class="mb-4">
-    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{title}</h5>
-    <p class="mb-3 font-normal text-gray-700 dark:text-gray-400 leading-tight">{description}</p>
-    <Button {href} target="_blank">
-      Read more <Icon name="arrow-right-outline" class="w-3.5 h-3.5 ml-2 text-white" />
-    </Button>
-  </Card>
-</div>
+<Card shadow='sm' padding='lg' width="500px">
+  <Card.Section first padding='lg'>
+    <Image
+      src={website.openGraphImageUrl}
+      height={160}
+      alt={website.title}
+      />
+  </Card.Section>
+
+  <Group position='apart'>
+    <Text weight={500}>{website.name}</Text>
+    <Badge color='pink' variant='light'>
+      On Sale
+    </Badge>
+  </Group>
+
+  <Text size='sm'>{website.description}</Text>
+
+  <Button variant='light' color='blue' href={website.url} target="_blank" fullSize>
+    Open
+  </Button>
+</Card>

@@ -1,12 +1,9 @@
-import Options from "src/lib/Options.svelte";
-import { storage } from "src/storage";
+import Timeline from "src/lib/Timeline.svelte";
 
 const target = document.getElementById("app");
 
 function render() {
-  storage.get().then(({ count }) => {
-    new Options({ target, props: { count } });
-  });
+  new Timeline({ target });
 }
 
 document.addEventListener("DOMContentLoaded", render);
