@@ -1,35 +1,53 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Options from "./Options.svelte";
-  import { Button, Group } from '@svelteuidev/core';
+  import { Button, Group, Tooltip } from '@svelteuidev/core';
 
+  let show = true;
+  let isHovering = false;
   let count = 0;
   let alignment = "right"
 
-  function onClick(event) {
+  function changeAlignment(event) {
     if (alignment === "left") {
       alignment = "right";
     } else {
       alignment = "left";
     }
   }
+
+  function hideOverlay(event) {
+    show = false;
+  }
 </script>
 
-<div id="overlay-container" class="overlay {alignment}">
-  <div class="buttons">
-  <Group position="center" spacing="md">
-    <Button on:click={onClick} id="move" variant='light' color='blue'>
-      Move
-    </Button>
-    <Button on:click={onClick} id="move" variant='light' color='blue'>
-      Hide
-    </Button>
-  </Group>
+{#if show}
+  <div id="overlay-container" class="overlay {alignment}">
+    <div class="buttons">
+      <Group position="center" spacing="md">
+        <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
+          Move
+        </Button>
+
+        <Tooltip {isHovering} label="You can unhide from the newtab page">
+          <Button
+            on:click={hideOverlay}
+            on:mouseenter={()=>{isHovering=true}}
+            on:mouseleave={()=>{isHovering=false}}
+            id="move"
+            variant='light'
+            color='blue'
+            >
+            Hide
+          </Button>
+        </Tooltip>
+      </Group>
+    </div>
+    <div>
+      <Options {count} />
+    </div>
   </div>
-  <div>
-    <Options {count} />
-  </div>
-</div>
+{/if}
 
 <style>
   .buttons {
