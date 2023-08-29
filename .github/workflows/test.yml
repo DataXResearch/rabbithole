@@ -31,6 +31,7 @@ jobs:
               with:
                 token: ${{ github.token }}
                 majorList: release
+                noVersionBumpBehavior: silent
             - name: Create Release
               uses: ncipollo/release-action@v1
               with:
