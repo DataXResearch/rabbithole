@@ -1,6 +1,11 @@
-# Svelte Typescript Chrome Extension Boilerplate
+<h1 align="center">
+<img src="https://raw.githubusercontent.com/DataXResearch/rabbithole/main/src/assets/icons/logo.png" alt="Rabbithole logo" title="Rabbithole logo" width="200">
+<br>
+rabbithole
+</h1>
+<p align="center" style="font-size: 1.2rem;">An extension to track your internet rabbitholes</p>
 
-> Boilerplate for Chrome Extension Svelte Typescript project
+<hr />
 
 ## Features
 
