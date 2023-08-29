@@ -39,14 +39,22 @@ chrome.runtime.onMessage.addListener(
                   openGraphImageUrl: (result.error === "") ? result.image : null,
                   description: (result.error === "") ? result.description : null,
                 })
-                  .then((res) => sendResponse(res));
+                  .then(res => sendResponse(res))
+                  .catch(err => {
+                    console.log(err)
+                    sendResponse(err)
+                  });
               })
               .catch(error => console.log('error', error));
           });
         break;
       case MessageRequest.GET_ALL_ITEMS:
         db.getAll()
-          .then((res) => sendResponse(res));
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
         break;
       default:
     }
