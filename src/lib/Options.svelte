@@ -32,6 +32,7 @@
 <style>
   .container {
     margin-top: 10px;
+    max-width: 210px;
   }
   .success {
     color: #2ecc71;
