@@ -37,6 +37,7 @@
   }
 
   .overlay {
+    z-index: 1000000000;
     width: 250px;
     height: 140px;
     position: fixed;
