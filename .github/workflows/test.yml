@@ -19,8 +19,25 @@ jobs:
                 pnpm i
                 pnpm build
                 mkdir rabbithole
+                zip -r rabbithole.zip dist
                 mv dist rabbithole
             - uses: actions/upload-artifact@v3
               with:
                 name: rabbithole
                 path: rabbithole
+            - name: Get Next Version
+              id: semver
+              uses: ietf-tools/semver-action@v1
+              with:
+                token: ${{ github.token }}
+                majorList: release
+            - name: Create Release
+              uses: ncipollo/release-action@v1
+              with:
+                tag: ${{ steps.semver.outputs.next }}
+                artifacts: |
+                  rabbithole.zip
+                allowUpdates: true
+                draft: false
+                body: Changelog Contents
+                token: ${{ github.token }}
