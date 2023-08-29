@@ -1,4 +1,4 @@
-name: Test
+name: Generate Package
 
 on:
     push:
@@ -18,8 +18,9 @@ jobs:
               run: |
                 pnpm i
                 pnpm build
-                zip -r rabbithole.zip dist
+                mkdir rabbithole
+                mv dist rabbithole
             - uses: actions/upload-artifact@v3
               with:
-                name: my-artifact
-                path: rabbithole.zip
+                name: rabbithole
+                path: rabbithole
