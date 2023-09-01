@@ -56,6 +56,27 @@ chrome.runtime.onMessage.addListener(
             sendResponse(err)
           });
         break;
+      case MessageRequest.GET_SETTINGS:
+        db.getSettings()
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.UPDATE_SETTINGS:
+        if (!("settings" in request)) {
+          sendResponse({
+            error: "settings required"
+          });
+        }
+        db.updateSettings(request.settings)
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
       default:
     }
 

@@ -1,28 +1,42 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Options from "./Options.svelte";
   import { Button, Group, Tooltip } from '@svelteuidev/core';
+  import Options from "./Options.svelte";
+  import { MessageRequest } from "../utils.ts"
 
-  let show = true;
+  let settings: Settings = {
+    show: false,
+    alignment: "right"
+  };
   let isHovering = false;
-  let count = 0;
-  let alignment = "right"
 
   function changeAlignment(event) {
-    if (alignment === "left") {
-      alignment = "right";
+    if (settings.alignment === "left") {
+      settings.alignment = "right";
     } else {
-      alignment = "left";
+      settings.alignment = "left";
     }
+    chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_SETTINGS,
+      settings,
+    });
   }
 
-  function hideOverlay(event) {
-    show = false;
+  async function hideOverlay(event) {
+    settings.show = false;
+    chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_SETTINGS,
+      settings,
+    });
   }
+
+  onMount(async () => {
+    settings = await chrome.runtime.sendMessage({type: MessageRequest.GET_SETTINGS});
+  });
 </script>
 
-{#if show}
-  <div id="overlay-container" class="overlay {alignment}">
+{#if settings.show}
+  <div id="overlay-container" class="overlay {settings.alignment}">
     <div class="buttons">
       <Group position="center" spacing="md">
         <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
