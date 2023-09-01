@@ -1,5 +1,5 @@
 import { MessageRequest } from "../utils"
-import { WebsiteStore } from "../indexedDb"
+import { WebsiteStore } from "../storage/db"
 
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("just installed!")
