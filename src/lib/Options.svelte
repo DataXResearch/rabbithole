@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { storage } from "../storage";
   import { MessageRequest } from "../utils"
   import { Button, Group } from '@svelteuidev/core';
 

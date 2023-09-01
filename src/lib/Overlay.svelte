@@ -44,7 +44,7 @@
       </Group>
     </div>
     <div>
-      <Options {count} />
+      <Options/>
     </div>
   </div>
 {/if}
