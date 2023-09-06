@@ -8,7 +8,7 @@ export interface Settings {
 }
 
 export interface Website {
-  url: string;
+  url: string; // key
   name: string;
   savedAt: number;
   faviconUrl: string;
@@ -16,15 +16,16 @@ export interface Website {
   description?: string;
 };
 
-export interface Rabbithole {
-  id: string;
+export interface Project {
+  id: string; // key
   createdAt: number;
-  savedWebsites: Website[];
+  savedWebsites: string[]; // url/"foreign" key
   name: string;
 }
 
 export interface User {
-  id: string;
+  id: string; // key
+  currentProject: string;
   settings: Settings;
 }
 
