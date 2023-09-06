@@ -49,7 +49,7 @@ chrome.runtime.onMessage.addListener(
           });
         break;
       case MessageRequest.GET_ALL_ITEMS:
-        db.getAll()
+        db.getAllWebsites()
           .then((res) => sendResponse(res))
           .catch(err => {
             console.log(err)
