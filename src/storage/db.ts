@@ -130,7 +130,7 @@ export class WebsiteStore {
     });
   }
 
-  async getAll(): Promise<Website[]> {
+  async getAllWebsites(): Promise<Website[]> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
       try {
