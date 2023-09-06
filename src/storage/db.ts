@@ -51,7 +51,7 @@ export class WebsiteStore {
         resolve(db);
       };
       request.onerror = () => {
-        alert("Please allow Rabbithole to use storage!");
+        console.error("Please allow Rabbithole to use storage!");
         reject(new Error("Insufficient permissions"));
       }
     });
@@ -61,13 +61,13 @@ export class WebsiteStore {
   static async init(factory: IDBFactory): Promise<void> {
     await new Promise((resolve, reject) => {
       if (factory === undefined) {
-        // FIXME: this won't work on service worker
-        alert("This browser doesn't support Rabbithole! You should uninstall it :(");
+        console.error("This browser doesn't support Rabbithole! You should uninstall it :(");
         reject(new Error("indexedDB not supported"));
       } else {
         let request = factory.open('rabbithole', version);
-        request.onerror = () => {
-          alert("Please allow Rabbithole to use storage!");
+        request.onerror = (e) => {
+          console.error(e);
+          console.error("Please allow Rabbithole to use storage!");
           reject(new Error("Insufficient permissions"));
         }
 
