@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 
-const version = 2;
+const version = 3;
 
 export interface Settings {
   alignment: string;
@@ -84,22 +84,45 @@ export class WebsiteStore {
 
           }
           if (event.oldVersion < 2) {
-            const userStore = db.createObjectStore("user", { keyPath: "id" });
-            userStore.transaction.oncomplete = async (event) => {
-              await db.transaction(["user"], "readwrite")
-                .objectStore("user")
-                .add({
-                  id: uuid(),
-                  settings: {
-                    show: true,
-                    alignment: "right"
-                  }
-                });
-            }
+            db.createObjectStore("user", { keyPath: "id" });
+
+          }
+          if (event.oldVersion < 3) {
+            db.createObjectStore("projects", { keyPath: "id" });
           }
 
           resolve(db);
         };
+
+        request.onsuccess = async (event) => {
+          const db = request.result;
+
+          const store = new WebsiteStore(factory);
+          let user = await store.getUser();
+
+          if (user === undefined) {
+            const newUser: User = {
+              id: uuid(),
+              settings: {
+                show: true,
+                alignment: "right"
+              },
+              currentProject: null,
+            };
+            const userRequest = db.transaction(["user"], "readwrite")
+              .objectStore("user")
+              .add(newUser);
+            userRequest.onsuccess = async () => {
+              await store.createNewActiveProject(newUser, "Default project");
+            }
+            return;
+          }
+
+          if (!("currentProject" in user) || user.currentProject === null
+            || user.currentProject === undefined) {
+            await store.createNewActiveProject(user, "Default project");
+          }
+        }
       }
     });
   }
