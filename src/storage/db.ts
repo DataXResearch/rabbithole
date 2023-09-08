@@ -33,6 +33,7 @@ export interface User {
 // functions seems a bit strange
 export class WebsiteStore {
   factory: IDBFactory;
+  db: IDBDatabase = null;
 
   constructor(factory: IDBFactory) {
     this.factory = factory;
@@ -40,6 +41,10 @@ export class WebsiteStore {
 
   private async getDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
+      if (this.db !== null) {
+        resolve(this.db)
+        return;
+      }
       let request = this.factory.open('rabbithole', version);
       request.onsuccess = () => {
         const db = request.result;
@@ -49,6 +54,7 @@ export class WebsiteStore {
           console.error(`Database error: ${event.target}`);
           reject(new Error("Database error"));
         };
+        this.db = db;
         resolve(db);
       };
       request.onerror = () => {
