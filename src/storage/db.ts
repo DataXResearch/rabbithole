@@ -141,14 +141,12 @@ export class WebsiteStore {
 
       request.onsuccess = (event) => {
         console.log(`store item success: ${event.target}`);
-        db.close();
         resolve(item);
       };
 
       request.onerror = (event) => {
         console.log(`store item error`);
         console.log(event.target);
-        db.close();
         reject(new Error("Failed to store item"));
       };
     });
@@ -168,13 +166,11 @@ export class WebsiteStore {
 
       request.onsuccess = (_) => {
         console.log("getAll success");
-        db.close();
         resolve(request.result);
       };
 
       request.onerror = (event) => {
         console.log(`getAll error: ${event.target}`);
-        db.close();
         reject(new Error("Failed to retrieve items"));
       };
     });
@@ -198,14 +194,12 @@ export class WebsiteStore {
 
       request.onsuccess = (event) => {
         console.log(`update settings success: ${event.target}`);
-        db.close();
         resolve(settings);
       };
 
       request.onerror = (event) => {
         console.log(`update settings error`);
         console.log(event.target);
-        db.close();
         reject(new Error("Failed to update settings"));
       };
     });
@@ -224,7 +218,6 @@ export class WebsiteStore {
         .getAll();
 
       request.onsuccess = (_) => {
-        db.close();
         const [user] = request.result;
         console.log("getSettings success");
         resolve(user.settings);
@@ -232,7 +225,6 @@ export class WebsiteStore {
 
       request.onerror = (event) => {
         console.log(`getSettings error: ${event.target}`);
-        db.close();
         reject(new Error("Failed to retrieve settings"));
       };
     });
@@ -251,7 +243,6 @@ export class WebsiteStore {
         .getAll();
 
       request.onsuccess = (_) => {
-        db.close();
         const [user] = request.result;
         console.log("getUser success");
         console.log(request.result);
@@ -260,7 +251,6 @@ export class WebsiteStore {
 
       request.onerror = (event) => {
         console.log(`getUser error: ${event.target}`);
-        db.close();
         reject(new Error("Failed to retrieve user"));
       };
     });
