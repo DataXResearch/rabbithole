@@ -145,9 +145,26 @@ export class WebsiteStore {
         .objectStore("savedWebsites")
         .add(item);
 
-      request.onsuccess = (event) => {
-        console.log(`store item success: ${event.target}`);
-        resolve(item);
+      request.onsuccess = async (event) => {
+        // update website list of active project
+        let currentProject = await this.getActiveProject();
+        currentProject.savedWebsites.push(item.url);
+
+        const projectRequest = db.transaction(["projects"], "readwrite")
+          .objectStore("projects")
+          .put(currentProject);
+
+        projectRequest.onsuccess = (event) => {
+          console.log(`store item success: ${event.target}`);
+          resolve(item);
+        }
+
+        projectRequest.onerror = (event) => {
+          console.log(`store item error`);
+          console.log(event.target);
+          reject(new Error("Failed to store item"));
+        };
+
       };
 
       request.onerror = (event) => {
