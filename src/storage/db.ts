@@ -261,4 +261,136 @@ export class WebsiteStore {
       };
     });
   }
+
+  async getActiveProject(): Promise<Project> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+      const userRequest = db.transaction(["user"])
+        .objectStore("user")
+        .getAll();
+
+      userRequest.onsuccess = (_) => {
+        const [user] = userRequest.result;
+        const projectRequest = db.transaction(["projects"], "readwrite")
+          .objectStore("projects")
+          .get(user.currentProject);
+
+        projectRequest.onsuccess = () => {
+          const project = projectRequest.result;
+          console.log("getProject success");
+          resolve(project);
+        }
+
+        projectRequest.onerror = (event) => {
+          console.log(`getProject error: ${event.target}`);
+          reject(new Error("Failed to retrieve settings"));
+        }
+      };
+
+      userRequest.onerror = (event) => {
+        console.log(`getProject error: ${event.target}`);
+        reject(new Error("Failed to retrieve settings"));
+      };
+    });
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+      const request = db.transaction(["projects"])
+        .objectStore("projects")
+        .getAll();
+
+      request.onsuccess = (_) => {
+        console.log("getAll success");
+        resolve(request.result);
+      };
+
+      request.onerror = (event) => {
+        console.log(`getAll error: ${event.target}`);
+        reject(new Error("Failed to retrieve items"));
+      };
+    });
+  }
+
+  async changeActiveProject(projectId: string): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+      const userRequest = db.transaction(["user"])
+        .objectStore("user")
+        .getAll();
+
+      userRequest.onsuccess = async (event) => {
+        const [user] = userRequest.result;
+        user.currentProject = projectId;
+
+        const userPutRequest = db.transaction(["user"], "readwrite")
+          .objectStore("user")
+          .put(user);
+
+        userPutRequest.onsuccess = () => {
+          console.log("changeActiveProject success");
+          resolve();
+        }
+
+        userPutRequest.onerror = (event) => {
+          console.log(`changeActiveProject error: ${event.target}`);
+          reject(new Error("Failed to retrieve settings"));
+        }
+      };
+
+      userRequest.onerror = (event) => {
+        console.log(`getProject error: ${event.target}`);
+        reject(new Error("Failed to retrieve settings"));
+      };
+    });
+  }
+
+  // create new project and set it as user's active project
+  async createNewActiveProject(user: User, projectName: string): Promise<Project> {
+    return new Promise(async (resolve, reject) => {
+      const db = await this.getDb();
+      const project: Project = {
+        id: uuid(),
+        createdAt: Date.now(),
+        name: projectName,
+        savedWebsites: [],
+      };
+      const projectReq = db.transaction(["projects"], "readwrite")
+        .objectStore("projects")
+        .add(project);
+
+      projectReq.onsuccess = () => {
+        // add default store to user.currentProject
+        db.transaction(["user"], "readwrite")
+          .objectStore("user")
+          .put({
+            ...user,
+            currentProject: project.id,
+          });
+
+        resolve(project);
+      }
+
+      projectReq.onerror = () => {
+        console.log(`getAll error: ${event.target}`);
+        reject(new Error("Failed to retrieve items"));
+      }
+    });
+  }
 }
