@@ -86,7 +86,7 @@ export class WebsiteStore {
             objectStore.createIndex("name", "name", { unique: false });
             objectStore.createIndex("url", "url", { unique: true });
 
-            objectStore.transaction.oncomplete = (event) => { };
+            objectStore.transaction.oncomplete = () => { };
 
           }
           if (event.oldVersion < 2) {
@@ -100,7 +100,7 @@ export class WebsiteStore {
           resolve(db);
         };
 
-        request.onsuccess = async (event) => {
+        request.onsuccess = async () => {
           const db = request.result;
 
           const store = new WebsiteStore(factory);
@@ -145,7 +145,7 @@ export class WebsiteStore {
         .objectStore("savedWebsites")
         .add(item);
 
-      request.onsuccess = async (event) => {
+      request.onsuccess = async () => {
         // update website list of active project
         let currentProject = await this.getActiveProject();
         currentProject.savedWebsites.push(item.url);
@@ -413,7 +413,7 @@ export class WebsiteStore {
         .objectStore("user")
         .getAll();
 
-      userRequest.onsuccess = async (event) => {
+      userRequest.onsuccess = async () => {
         const [user] = userRequest.result;
         user.currentProject = projectId;
 
@@ -466,7 +466,7 @@ export class WebsiteStore {
         resolve(project);
       }
 
-      projectReq.onerror = () => {
+      projectReq.onerror = (event) => {
         console.log(`getAll error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       }
