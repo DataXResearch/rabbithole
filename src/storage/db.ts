@@ -175,6 +175,30 @@ export class WebsiteStore {
     });
   }
 
+  async getWebsite(url: string): Promise<Website> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+      const request = db.transaction(["savedWebsites"])
+        .objectStore("savedWebsites")
+        .get(url);
+
+      request.onsuccess = () => {
+        console.log("getWebsite success");
+        resolve(request.result);
+      };
+
+      request.onerror = (event) => {
+        console.log(`getWebsite error: ${event.target}`);
+        reject(new Error("Failed to retrieve items"));
+      };
+    });
+  }
+
   async getAllWebsites(): Promise<Website[]> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
@@ -337,6 +361,43 @@ export class WebsiteStore {
         console.log(`getAll error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       };
+    });
+  }
+
+  async getProject(projectId: string): Promise<Project> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+      const request = db.transaction(["projects"])
+        .objectStore("projects")
+        .get(projectId);
+
+      request.onsuccess = () => {
+        console.log("getProject success");
+        resolve(request.result);
+      };
+
+      request.onerror = (event) => {
+        console.log(`getProject error: ${event.target}`);
+        reject(new Error("Failed to retrieve items"));
+      };
+    });
+  }
+
+  async getAllWebsitesForProject(projectId: string): Promise<Website[]> {
+    return new Promise(async (resolve, reject) => {
+      let websites: Website[] = [];
+      const project = await this.getProject(projectId);
+      for (const url of project.savedWebsites) {
+        const website = await this.getWebsite(url);
+        websites.push(website);
+      }
+      console.log("getAllWebsitesForProject successful");
+      resolve(websites);
     });
   }
 

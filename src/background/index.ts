@@ -69,8 +69,81 @@ chrome.runtime.onMessage.addListener(
           sendResponse({
             error: "settings required"
           });
+          break;
         }
         db.updateSettings(request.settings)
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.GET_ALL_PROJECTS:
+        db.getAllProjects()
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.GET_PROJECT_SAVED_WEBSITES:
+        if (!("projectId" in request)) {
+          sendResponse({
+            error: "projectId required"
+          });
+          break;
+        }
+        db.getAllWebsitesForProject(request.projectId)
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.CREATE_NEW_PROJECT:
+        if (!("newProjectName" in request)) {
+          sendResponse({
+            error: "newProjectName required"
+          });
+          break;
+        }
+        db.createNewActiveProject(request.newProjectName)
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.CHANGE_ACTIVE_PROJECT:
+        if (!("projectId" in request)) {
+          sendResponse({
+            error: "projectId required"
+          });
+          break;
+        }
+        db.changeActiveProject(request.projectId)
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.GET_ACTIVE_PROJECT:
+        db.getActiveProject()
+          .then((res) => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
+      case MessageRequest.GET_PROJECT:
+        if (!("projectId" in request)) {
+          sendResponse({
+            error: "projectId required"
+          });
+          break;
+        }
+        db.getProject(request.projectId)
           .then((res) => sendResponse(res))
           .catch(err => {
             console.log(err)
