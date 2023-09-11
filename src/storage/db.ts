@@ -119,14 +119,14 @@ export class WebsiteStore {
               .objectStore("user")
               .add(newUser);
             userRequest.onsuccess = async () => {
-              await store.createNewActiveProject(newUser, "Default project");
+              await store.createNewActiveProject("Default project");
             }
             return;
           }
 
           if (!("currentProject" in user) || user.currentProject === null
             || user.currentProject === undefined) {
-            await store.createNewActiveProject(user, "Default project");
+            await store.createNewActiveProject("Default project");
           }
         }
       }
@@ -440,9 +440,10 @@ export class WebsiteStore {
   }
 
   // create new project and set it as user's active project
-  async createNewActiveProject(user: User, projectName: string): Promise<Project> {
+  async createNewActiveProject(projectName: string): Promise<Project> {
     return new Promise(async (resolve, reject) => {
       const db = await this.getDb();
+      const user = await this.getUser();
       const project: Project = {
         id: uuid(),
         createdAt: Date.now(),
