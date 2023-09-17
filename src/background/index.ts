@@ -1,6 +1,53 @@
 import { MessageRequest } from "../utils"
 import { WebsiteStore } from "../storage/db"
 
+function storeWebsite(tab: chrome.tabs.Tab, db: WebsiteStore, sendResponse: any): Promise<void> {
+  const requestOptions = {
+    method: 'GET',
+    redirect: 'follow'
+  };
+
+  // FIXME: add some guarantees that this won't randomly crash
+  return fetch(`https://cardyb.bsky.app/v1/extract?url=${encodeURIComponent(tab.url)}`,
+    requestOptions)
+    .then(response => response.json())
+    .then(result => {
+      return {
+        url: tab.url,
+        name: (result.error === "") ? result.title : tab.title,
+        faviconUrl: tab.favIconUrl,
+        savedAt: Date.now(),
+        openGraphImageUrl: (result.error === "") ? result.image : null,
+        description: (result.error === "") ? result.description : null,
+      };
+    })
+    .then(website => {
+      db.store(website)
+        .then(res => sendResponse(res))
+        .catch(err => {
+          console.log(err)
+          sendResponse(err)
+        });
+    })
+    .catch(error => {
+      console.log('error', error)
+      // FIXME: temp
+      db.store({
+        url: tab.url,
+        name: tab.title,
+        faviconUrl: tab.favIconUrl,
+        savedAt: Date.now(),
+        openGraphImageUrl: null,
+        description: null,
+      })
+        .then(res => sendResponse(res))
+        .catch(err => {
+          console.log(err)
+          sendResponse(err)
+        });
+    });
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("just installed!")
   WebsiteStore.init(indexedDB);
@@ -20,33 +67,7 @@ chrome.runtime.onMessage.addListener(
     switch (request.type) {
       case MessageRequest.SAVE_TAB:
         chrome.tabs.query({ active: true, lastFocusedWindow: true },
-          ([tab]) => {
-            const requestOptions = {
-              method: 'GET',
-              redirect: 'follow'
-            };
-
-            // FIXME: add some guarantees that this won't randomly crash
-            fetch(`https://cardyb.bsky.app/v1/extract?url=${encodeURIComponent(tab.url)}`,
-              requestOptions)
-              .then(response => response.json())
-              .then(result => {
-                db.store({
-                  url: tab.url,
-                  name: (result.error === "") ? result.title : tab.title,
-                  faviconUrl: tab.favIconUrl,
-                  savedAt: Date.now(),
-                  openGraphImageUrl: (result.error === "") ? result.image : null,
-                  description: (result.error === "") ? result.description : null,
-                })
-                  .then(res => sendResponse(res))
-                  .catch(err => {
-                    console.log(err)
-                    sendResponse(err)
-                  });
-              })
-              .catch(error => console.log('error', error));
-          });
+          ([tab]) => storeWebsite(tab, db, sendResponse));
         break;
       case MessageRequest.GET_ALL_ITEMS:
         db.getAllWebsites()
