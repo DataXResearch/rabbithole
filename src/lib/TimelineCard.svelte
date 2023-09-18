@@ -15,9 +15,9 @@
 
   <Group position='apart'>
     <Text weight={500}>{website.name}</Text>
-    <Badge color='pink' variant='light'>
-      On Sale
-    </Badge>
+    <!-- <Badge color='pink' variant='light'> -->
+      <!-- On Sale -->
+    <!-- </Badge> -->
   </Group>
 
   <Text size='sm'>{website.description}</Text>
