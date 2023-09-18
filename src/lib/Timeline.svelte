@@ -53,11 +53,29 @@
   }
 
   async function createNewProject() {
+    if (value === "") {
+      // TODO: error modal
+      return;
+    }
     await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_PROJECT,
       newProjectName: value,
     });
     refreshProjects();
+  }
+
+  async function saveAllTabs() {
+    if (value === "") {
+      // TODO: error modal
+      chrome.windows.getCurrent(window => console.log(window));
+      return;
+    }
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
+      newProjectName: value,
+    });
+    refreshProjects();
+    refreshWebsites();
   }
 </script>
 
@@ -80,6 +98,13 @@
           color='blue'
           >
           Create
+        </Button>
+        <Button
+          on:click={saveAllTabs}
+          variant='light'
+          color='blue'
+          >
+          Create and save all tabs in window
         </Button>
       </div>
   </div>
