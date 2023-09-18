@@ -85,16 +85,14 @@ export class WebsiteStore {
             const objectStore = db.createObjectStore("savedWebsites", { keyPath: "url" });
             objectStore.createIndex("name", "name", { unique: false });
             objectStore.createIndex("url", "url", { unique: true });
-
             objectStore.transaction.oncomplete = () => { };
-
           }
           if (event.oldVersion < 2) {
             db.createObjectStore("user", { keyPath: "id" });
-
           }
           if (event.oldVersion < 3) {
-            db.createObjectStore("projects", { keyPath: "id" });
+            const objectStore = db.createObjectStore("projects", { keyPath: "id" });
+            objectStore.createIndex("name", "name", { unique: true });
           }
 
           resolve(db);
