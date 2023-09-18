@@ -440,7 +440,8 @@ export class WebsiteStore {
   }
 
   // create new project and set it as user's active project
-  async createNewActiveProject(projectName: string): Promise<Project> {
+  async createNewActiveProject(projectName: string, savedWebsites?: string[])
+    : Promise<Project> {
     return new Promise(async (resolve, reject) => {
       const db = await this.getDb();
       const user = await this.getUser();
@@ -448,11 +449,14 @@ export class WebsiteStore {
         id: uuid(),
         createdAt: Date.now(),
         name: projectName,
-        savedWebsites: [],
+        savedWebsites: [...new Set(savedWebsites)],
       };
+      // FIXME: when rabbithole is installed, the first time a session is saved
+      // the website list is duplicated, so dedup here for now
+      // Also see how else this can be repro'd
       const projectReq = db.transaction(["projects"], "readwrite")
         .objectStore("projects")
-        .add(project);
+        .put(project);
 
       projectReq.onsuccess = () => {
         // add default store to user.currentProject

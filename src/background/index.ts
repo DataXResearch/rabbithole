@@ -54,7 +54,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener(
-  (request, _, sendResponse) => {
+  (request, sender, sendResponse) => {
     if (!("type" in request)) {
       sendResponse({
         error: "request type required"
@@ -170,6 +170,29 @@ chrome.runtime.onMessage.addListener(
             console.log(err)
             sendResponse(err)
           });
+        break;
+      case MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT:
+        chrome.tabs.query({ windowId: sender.tab.windowId })
+          .then(tabs => {
+            let websites: string[] = [];
+            for (const tab of tabs) {
+              // store website async
+              storeWebsite(tab, db, sendResponse);
+              websites.push(tab.url);
+            }
+            if (!("newProjectName" in request)) {
+              sendResponse({
+                error: "projectName required"
+              });
+            }
+            db.createNewActiveProject(request.newProjectName, websites)
+              .then((res) => sendResponse(res))
+              .catch(err => {
+                console.log(err)
+                sendResponse(err)
+              });
+          });
+
         break;
       default:
     }
