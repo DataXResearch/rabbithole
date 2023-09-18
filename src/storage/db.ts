@@ -160,17 +160,23 @@ export class WebsiteStore {
         }
 
         projectRequest.onerror = (event) => {
-          console.log(`store item error`);
-          console.log(event.target);
-          reject(new Error("Failed to store item"));
+          // ignore error if website is stored already
+          if (!("exists" in event.target.error)) {
+            console.log(`store item error`);
+            console.log(event.target);
+            reject(new Error("Failed to store item"));
+          }
         };
 
       };
 
       request.onerror = (event) => {
-        console.log(`store item error`);
-        console.log(event.target);
-        reject(new Error("Failed to store item"));
+        // ignore error if website is stored already
+        if (!("exists" in event.target.error)) {
+          console.log(`store item error`);
+          console.log(event.target);
+          reject(new Error("Failed to store item"));
+        }
       };
     });
   }
