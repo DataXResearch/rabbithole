@@ -9,7 +9,7 @@
   let websites = [];
   let projects = [];
   let loading = true;
-  let value = ""; // TODO: see if this can be changed to an accurate name
+  let newRabbitholeName = "";
   let activeProject = {};
 
   onMount(async () => {
@@ -53,26 +53,26 @@
   }
 
   async function createNewProject() {
-    if (value === "") {
+    if (newRabbitholeName === "") {
       // TODO: error modal
       return;
     }
     await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_PROJECT,
-      newProjectName: value,
+      newProjectName: newRabbitholeName,
     });
     refreshProjects();
   }
 
   async function saveAllTabs() {
-    if (value === "") {
+    if (newRabbitholeName === "") {
       // TODO: error modal
       chrome.windows.getCurrent(window => console.log(window));
       return;
     }
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
-      newProjectName: value,
+      newProjectName: newRabbitholeName,
     });
     refreshProjects();
     refreshWebsites();
@@ -90,7 +90,7 @@
         <TextInput
           placeholder="My new rabbithole"
           label="New Project"
-          bind:value
+          bind:value={newRabbitholeName}
           />
         <Button
           on:click={createNewProject}
