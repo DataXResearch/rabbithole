@@ -14,14 +14,21 @@
 
   onMount(async () => {
     websites = await chrome.runtime.sendMessage({type: MessageRequest.GET_ALL_ITEMS});
-    // TODO: load active project and set title as default value on the dropdown
-    activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
-    refreshProjects();
-    refreshWebsites();
+    refresh();
     loading = false;
   });
 
-  async function refreshWebsites() {
+  function makeActiveProjectFirst() {
+    for (let i = 0; i < projects.length; i++) {
+      if (projects[i].name === activeProject.name) {
+        projects.splice(i, 1);
+      }
+    }
+    projects.unshift(activeProject);
+  }
+
+  async function refresh() {
+    activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
     // FIXME: when rabbithole is installed, the first time a session is saved
     // the website list is duplicated, so dedup here for now
     const possiblyDuplicatedWebsites = await chrome.runtime.sendMessage({
@@ -33,11 +40,8 @@
         t.url === value.url
       ))
     )
-    console.log(websites)
-  }
-
-  async function refreshProjects() {
     projects = await chrome.runtime.sendMessage({type: MessageRequest.GET_ALL_PROJECTS});
+    makeActiveProjectFirst();
   }
 
   async function handleProjectChange(event) {
@@ -48,8 +52,8 @@
     activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_PROJECT,
       projectId: event.target.value,
-    })
-    refreshWebsites();
+    });
+    refresh();
   }
 
   async function createNewProject() {
@@ -61,7 +65,7 @@
       type: MessageRequest.CREATE_NEW_PROJECT,
       newProjectName: newRabbitholeName,
     });
-    refreshProjects();
+    refresh();
   }
 
   async function saveAllTabs() {
@@ -74,8 +78,8 @@
       type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
       newProjectName: newRabbitholeName,
     });
-    refreshProjects();
-    refreshWebsites();
+
+    refresh();
   }
 </script>
 
