@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { Button, Group, Tooltip } from '@svelteuidev/core';
   import Options from "./Options.svelte";
+  import ProjectSelector from "src/lib/ProjectSelector.svelte"
   import { MessageRequest } from "../utils.ts"
 
   let settings: Settings = {
@@ -9,6 +10,10 @@
     alignment: "right"
   };
   let isHovering = false;
+
+  onMount(async () => {
+    settings = await chrome.runtime.sendMessage({type: MessageRequest.GET_SETTINGS});
+  });
 
   function changeAlignment(event) {
     if (settings.alignment === "left") {
@@ -30,13 +35,17 @@
     });
   }
 
-  onMount(async () => {
-    settings = await chrome.runtime.sendMessage({type: MessageRequest.GET_SETTINGS});
-  });
+  async function handleProjectChange(event) {
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_PROJECT,
+      projectId: event.target.value,
+    });
+  }
 </script>
 
 {#if settings.show}
   <div id="overlay-container" class="overlay {settings.alignment}">
+    <ProjectSelector handleProjectChange={handleProjectChange} />
     <div class="buttons">
       <Group position="center" spacing="md">
         <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
