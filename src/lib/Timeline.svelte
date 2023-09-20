@@ -1,8 +1,9 @@
 <script>
   import { onMount } from "svelte";
-  import { Badge, Button, Card, Group, Image, Text, NativeSelect, TextInput } from '@svelteuidev/core';
+  import { Badge, Button, Card, Group, Image, Text, TextInput } from '@svelteuidev/core';
   import { MessageRequest } from "../utils"
   import TimelineCard from "src/lib/TimelineCard.svelte";
+  import ProjectSelector from "src/lib/ProjectSelector.svelte"
 
   // FIXME: why aren't types working here?
 
@@ -40,8 +41,6 @@
         t.url === value.url
       ))
     )
-    projects = await chrome.runtime.sendMessage({type: MessageRequest.GET_ALL_PROJECTS});
-    makeActiveProjectFirst();
   }
 
   async function handleProjectChange(event) {
@@ -86,31 +85,28 @@
 <div class="timeline">
   <img src="../assets/icons/logo.png">
   <div>
-    <NativeSelect data={projects.map(p => { return { label: p.name, value: p.id }; })}
-                  label="Active Project"
-                  on:change={handleProjectChange}
-                  />
-      <div>
-        <TextInput
-          placeholder="My new rabbithole"
-          label="New Project"
-          bind:value={newRabbitholeName}
-          />
-        <Button
-          on:click={createNewProject}
-          variant='light'
-          color='blue'
-          >
-          Create
-        </Button>
-        <Button
-          on:click={saveAllTabs}
-          variant='light'
-          color='blue'
-          >
-          Create and save all tabs in window
-        </Button>
-      </div>
+    <ProjectSelector projects={projects} handleProjectChange={handleProjectChange} />
+    <div>
+      <TextInput
+        placeholder="My new rabbithole"
+        label="New Project"
+        bind:value={newRabbitholeName}
+        />
+      <Button
+        on:click={createNewProject}
+        variant='light'
+        color='blue'
+        >
+        Create
+      </Button>
+      <Button
+        on:click={saveAllTabs}
+        variant='light'
+        color='blue'
+        >
+        Create and save all tabs in window
+      </Button>
+    </div>
   </div>
   <div class="feed">
   {#if !loading}
