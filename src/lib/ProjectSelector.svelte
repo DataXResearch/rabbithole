@@ -34,7 +34,6 @@
 
 <div>
  <NativeSelect data={projects.map(p => { return { label: p.name, value: p.id }; })}
-    label="Active Project"
     on:change={handleProjectChangeWrapper}
     />
 </div>
