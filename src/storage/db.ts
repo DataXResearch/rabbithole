@@ -139,36 +139,44 @@ export class WebsiteStore {
       } catch (err) {
         reject(err)
       }
-      const request = db.transaction(["savedWebsites"], "readwrite")
-        .objectStore("savedWebsites")
-        .add(item);
 
-      request.onsuccess = async () => {
-        // update website list of active project
-        let currentProject = await this.getActiveProject();
-        currentProject.savedWebsites.push(item.url);
+      // update website list of active project
+      let currentProject = await this.getActiveProject();
+      for (const w of currentProject.savedWebsites) {
+        if (w === item.url) {
+          reject(new Error("Item already stored"));
+        }
+      }
+      currentProject.savedWebsites.push(item.url);
 
-        const projectRequest = db.transaction(["projects"], "readwrite")
-          .objectStore("projects")
-          .put(currentProject);
+      const projectRequest = db.transaction(["projects"], "readwrite")
+        .objectStore("projects")
+        .put(currentProject);
 
-        projectRequest.onsuccess = (event) => {
+      projectRequest.onsuccess = (event) => {
+        const request = db.transaction(["savedWebsites"], "readwrite")
+          .objectStore("savedWebsites")
+          .add(item);
+
+        request.onsuccess = async () => {
           console.log(`store item success: ${event.target}`);
           resolve(item);
-        }
+        };
 
-        projectRequest.onerror = (event) => {
+        request.onerror = (event) => {
           // ignore error if website is stored already
           if (!("exists" in event.target.error)) {
             console.log(`store item error`);
             console.log(event.target);
-            reject(new Error("Failed to store item"));
+            reject(new Error("Item already stored"));
           }
         };
 
-      };
+        console.log(`store item success: ${event.target}`);
+        resolve(item);
+      }
 
-      request.onerror = (event) => {
+      projectRequest.onerror = (event) => {
         // ignore error if website is stored already
         if (!("exists" in event.target.error)) {
           console.log(`store item error`);
