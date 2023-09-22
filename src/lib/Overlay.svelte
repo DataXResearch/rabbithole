@@ -45,13 +45,11 @@
 
 {#if settings.show}
   <div id="overlay-container" class="overlay {settings.alignment}">
-    <ProjectSelector handleProjectChange={handleProjectChange} />
     <div class="buttons">
       <Group position="center" spacing="md">
         <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
           Move
         </Button>
-
         <Tooltip {isHovering} label="You can unhide from the newtab page">
           <Button
             on:click={hideOverlay}
@@ -66,6 +64,9 @@
         </Tooltip>
       </Group>
     </div>
+    <div class="selector">
+      <ProjectSelector handleProjectChange={handleProjectChange} />
+    </div>
     <div>
       <Options/>
     </div>
@@ -73,6 +74,12 @@
 {/if}
 
 <style>
+  .selector {
+    width: 175px;
+    margin: 0 auto;
+    margin-top: 10px;
+  }
+
   .buttons {
     margin-top: 10px;
   }
@@ -80,7 +87,7 @@
   .overlay {
     z-index: 1000000000;
     width: 250px;
-    height: 140px;
+    height: 200px;
     position: fixed;
     bottom: 16px;
     background-color: rgba(255,255,255,0.8);
