@@ -1,16 +1,16 @@
 import { MessageRequest } from "../utils"
 import { WebsiteStore } from "../storage/db"
 
-function storeWebsite(tab: chrome.tabs.Tab, db: WebsiteStore, sendResponse: any): Promise<void> {
-  const requestOptions = {
-    method: 'GET',
-    redirect: 'follow'
-  };
-
+// this is meant to be called async
+function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: any): Promise<void[]> {
+  // FIXME: delegate this to db
   // FIXME: add some guarantees that this won't randomly crash
-  return fetch(`https://cardyb.bsky.app/v1/extract?url=${encodeURIComponent(tab.url)}`,
-    requestOptions)
-    .then(response => response.json())
+  const promiseArray = tabs.map(tab => fetch(`https://cardyb.bsky.app/v1/extract?url=${encodeURIComponent(tab.url)}`,
+    {
+      method: 'GET',
+      redirect: 'follow'
+    })
+    .then(response => { const res = response.json(); console.log(res); return res })
     .then(result => {
       return {
         url: tab.url,
@@ -22,7 +22,7 @@ function storeWebsite(tab: chrome.tabs.Tab, db: WebsiteStore, sendResponse: any)
       };
     })
     .then(website => {
-      db.store(website)
+      db.store([website])
         .then(res => sendResponse(res))
         .catch(err => {
           console.log(err)
@@ -30,22 +30,23 @@ function storeWebsite(tab: chrome.tabs.Tab, db: WebsiteStore, sendResponse: any)
         });
     })
     .catch(error => {
-      console.log('error', error)
-      // FIXME: temp
-      db.store({
+      // just use info at hand if OG information cannot be retrieved
+      db.store([{
         url: tab.url,
         name: tab.title,
         faviconUrl: tab.favIconUrl,
         savedAt: Date.now(),
         openGraphImageUrl: null,
         description: null,
-      })
+      }])
         .then(res => sendResponse(res))
         .catch(err => {
           console.log(err)
           sendResponse(err)
         });
-    });
+    }));
+
+  return Promise.all(promiseArray);
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -67,7 +68,7 @@ chrome.runtime.onMessage.addListener(
     switch (request.type) {
       case MessageRequest.SAVE_TAB:
         chrome.tabs.query({ active: true, lastFocusedWindow: true },
-          ([tab]) => storeWebsite(tab, db, sendResponse));
+          (tabs) => storeWebsites(tabs, db, sendResponse));
         break;
       case MessageRequest.GET_ALL_ITEMS:
         db.getAllWebsites()
@@ -174,17 +175,16 @@ chrome.runtime.onMessage.addListener(
       case MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT:
         chrome.tabs.query({ windowId: sender.tab.windowId })
           .then(tabs => {
-            let websites: string[] = [];
-            for (const tab of tabs) {
-              // store website async
-              storeWebsite(tab, db, sendResponse);
-              websites.push(tab.url);
-            }
+            let websites: string[] = tabs.map(tab => tab.url);
+            // store websites async
+            storeWebsites(tabs, db, sendResponse);
+
             if (!("newProjectName" in request)) {
               sendResponse({
                 error: "projectName required"
               });
             }
+            // FIXME: remove websites to see if that fixes double website store
             db.createNewActiveProject(request.newProjectName, websites)
               .then((res) => sendResponse(res))
               .catch(err => {
