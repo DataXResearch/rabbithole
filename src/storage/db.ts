@@ -131,7 +131,7 @@ export class WebsiteStore {
     });
   }
 
-  async store(item: Website): Promise<Website> {
+  async store(items: Website[]): Promise<Website[]> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
       try {
@@ -142,38 +142,40 @@ export class WebsiteStore {
 
       // update website list of active project
       let currentProject = await this.getActiveProject();
-      for (const w of currentProject.savedWebsites) {
-        if (w === item.url) {
-          reject(new Error("Item already stored"));
+      for (const item of items) {
+        for (const w of currentProject.savedWebsites) {
+          if (w === item.url) {
+            reject(new Error("Item already stored"));
+          }
         }
+        currentProject.savedWebsites.push(item.url);
       }
-      currentProject.savedWebsites.push(item.url);
 
       const projectRequest = db.transaction(["projects"], "readwrite")
         .objectStore("projects")
         .put(currentProject);
 
       projectRequest.onsuccess = (event) => {
-        const request = db.transaction(["savedWebsites"], "readwrite")
+        const tx = db.transaction(["savedWebsites"], "readwrite");
+        items.forEach(item => tx
           .objectStore("savedWebsites")
-          .add(item);
+          .add(item));
 
-        request.onsuccess = async () => {
+        tx.oncomplete = async () => {
           console.log(`store item success: ${event.target}`);
-          resolve(item);
+          resolve(items);
         };
 
-        request.onerror = (event) => {
+        tx.onerror = (event) => {
           // ignore error if website is stored already
           if (!("exists" in event.target.error)) {
             console.log(`store item error`);
-            console.log(event.target);
-            reject(new Error("Item already stored"));
+            reject(new Error(event.target.error));
           }
         };
 
         console.log(`store item success: ${event.target}`);
-        resolve(item);
+        resolve(items);
       }
 
       projectRequest.onerror = (event) => {
