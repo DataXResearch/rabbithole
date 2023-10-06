@@ -67,10 +67,17 @@
     refresh();
   }
 
+  async function saveAllTabsToActiveProject() {
+    const tabs = await chrome.runtime.sendMessage({
+      type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
+    });
+
+    refresh();
+  }
+
   async function saveAllTabs() {
     if (newRabbitholeName === "") {
       // TODO: error modal
-      chrome.windows.getCurrent(window => console.log(window));
       return;
     }
     await chrome.runtime.sendMessage({
@@ -105,6 +112,13 @@
         color='blue'
         >
         Create and save all tabs in window
+      </Button>
+      <Button
+        on:click={saveAllTabsToActiveProject}
+        variant='light'
+        color='blue'
+        >
+        Save all tabs in window to current project
       </Button>
     </div>
   </div>

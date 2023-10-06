@@ -194,6 +194,14 @@ chrome.runtime.onMessage.addListener(
           });
 
         break;
+      case MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT:
+        chrome.tabs.query({ windowId: sender.tab.windowId })
+          .then(tabs => {
+            // store websites async
+            storeWebsites(tabs, db, sendResponse);
+          });
+
+        break;
       default:
     }
 
