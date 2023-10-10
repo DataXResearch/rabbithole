@@ -5,14 +5,8 @@
   let successMessage: string = null;
 
   async function save() {
-    // FIXME: stop this from logging an error
-    const savedTab = await chrome.runtime.sendMessage({type: MessageRequest.SAVE_TAB});
-
-    if(("url" in savedTab)){
-      successMessage = "Website saved!";
-    } else {
-      successMessage = "Website already saved!";
-    }
+    const [savedTab] = await chrome.runtime.sendMessage({type: MessageRequest.SAVE_TAB});
+    successMessage = (savedTab.alreadySaved)? "Website already saved!" : "Website saved!";
     setTimeout(() => {
       successMessage = null;
     }, 1500);
