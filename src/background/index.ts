@@ -10,7 +10,7 @@ function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: 
       method: 'GET',
       redirect: 'follow'
     })
-    .then(response => { const res = response.json(); console.log(res); return res })
+    .then(response => response.json())
     .then(result => {
       return {
         url: tab.url,

@@ -182,8 +182,7 @@ export class WebsiteStore {
         // ignore error if website is stored already
         if (!("exists" in event.target.error)) {
           console.log(`store item error`);
-          console.log(event.target);
-          reject(new Error("Failed to store item"));
+          reject(new Error(event.target.error));
         }
       };
     });
@@ -260,8 +259,7 @@ export class WebsiteStore {
 
       request.onerror = (event) => {
         console.log(`update settings error`);
-        console.log(event.target);
-        reject(new Error("Failed to update settings"));
+        reject(new Error(event.target.error));
       };
     });
   }
@@ -306,7 +304,6 @@ export class WebsiteStore {
       request.onsuccess = (_) => {
         const [user] = request.result;
         console.log("getUser success");
-        console.log(request.result);
         resolve(user);
       };
 
