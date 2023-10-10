@@ -131,7 +131,7 @@ export class WebsiteStore {
     });
   }
 
-  async store(items: Website[]): Promise<Website[]> {
+  async store(items: Website[]): Promise<Website | { alreadySaved: boolean }[]> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
       try {
@@ -142,13 +142,13 @@ export class WebsiteStore {
 
       // update website list of active project
       let currentProject = await this.getActiveProject();
-      for (const item of items) {
-        for (const w of currentProject.savedWebsites) {
-          if (w === item.url) {
-            reject(new Error("Item already stored"));
-          }
+      for (let item of items) {
+        if (!currentProject.savedWebsites.includes(item.url)) {
+          currentProject.savedWebsites.push(item.url);
+          item.alreadySaved = false;
+        } else {
+          item.alreadySaved = true;
         }
-        currentProject.savedWebsites.push(item.url);
       }
 
       const projectRequest = db.transaction(["projects"], "readwrite")
