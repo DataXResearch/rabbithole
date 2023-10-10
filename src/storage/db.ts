@@ -51,8 +51,10 @@ export class WebsiteStore {
         db.onerror = (event) => {
           // Generic error handler for all errors targeted at this database's
           // requests
-          console.error(`Database error: ${event.target}`);
-          reject(new Error("Database error"));
+          // FIXME: is this reqd?
+          // if (!("exists" in event.target.error)) {
+          // reject(new Error("Database error ${event.target.error}"));
+          // }
         };
         this.db = db;
         resolve(db);
@@ -162,26 +164,26 @@ export class WebsiteStore {
           .add(item));
 
         tx.oncomplete = async () => {
-          console.log(`store item success: ${event.target}`);
+          console.log(`store item success`);
           resolve(items);
         };
 
         tx.onerror = (event) => {
           // ignore error if website is stored already
-          if (!("exists" in event.target.error)) {
-            console.log(`store item error`);
+          if (!(event.target.error.message.indexOf("exists"))) {
             reject(new Error(event.target.error));
           }
         };
 
-        console.log(`store item success: ${event.target}`);
+        console.log(`store item success`);
         resolve(items);
       }
 
       projectRequest.onerror = (event) => {
         // ignore error if website is stored already
-        if (!("exists" in event.target.error)) {
+        if (!(event.target.error.message.indexOf("exists"))) {
           console.log(`store item error`);
+          console.log(event.target)
           reject(new Error(event.target.error));
         }
       };
