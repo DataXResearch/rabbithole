@@ -11,4 +11,5 @@ export enum MessageRequest {
   GET_PROJECT,
   SAVE_WINDOW_TO_NEW_PROJECT,
   SAVE_WINDOW_TO_ACTIVE_PROJECT,
+  PING,
 }

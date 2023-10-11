@@ -1,6 +1,14 @@
 import { MessageRequest } from "../utils"
 import { WebsiteStore } from "../storage/db"
 
+function sendOverlayUpdate(tabId: number) {
+  // ignore errors; receiving end won't exist if it's the newtab page
+  try {
+    chrome.tabs.sendMessage(tabId, { type: MessageRequest.PING })
+  } catch (err) {
+  }
+}
+
 // this is meant to be called async
 function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: any): Promise<void[]> {
   // FIXME: delegate this to db
@@ -210,3 +218,32 @@ chrome.runtime.onMessage.addListener(
     return true;
   }
 );
+
+// send updates to tabs when created, changed, updated
+// chrome.tabs.onUpdated.addListener((tabId, info) => {
+// if (info.status === "complete") {
+// sendOverlayUpdate(tabId);
+// }
+// });
+chrome.tabs.onActivated.addListener(tab => {
+  chrome.tabs.query({ active: true, lastFocusedWindow: true },
+    (tabInfo) => {
+      // FIXME: firefox? also maybe should be abstracted
+      if ("pendingUrl" in tabInfo[0]) {
+        if (!tabInfo[0].pendingUrl.includes("chrome://") &&
+          !tabInfo[0].pendingUrl.includes("brave://") &&
+          !tabInfo[0].pendingUrl.includes("edge://")
+        ) {
+          sendOverlayUpdate(tab.tabId);
+        }
+      } else {
+        if (!tabInfo[0].url.includes("chrome://") &&
+          !tabInfo[0].url.includes("brave://") &&
+          !tabInfo[0].url.includes("edge://")
+        ) {
+          sendOverlayUpdate(tab.tabId);
+        }
+      }
+    }
+  )
+});
