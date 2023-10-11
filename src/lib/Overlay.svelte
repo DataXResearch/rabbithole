@@ -85,7 +85,7 @@
   }
 
   .overlay {
-    z-index: 1000000000;
+    z-index: 2147483647;
     width: 250px;
     height: 200px;
     position: fixed;
