@@ -1,5 +1,5 @@
 <script>
-  import { Badge, Button, Card, Group, Image, Text } from '@svelteuidev/core';
+  import { Button, Card, Group, Image, Text } from '@svelteuidev/core';
 
   export let website;
 </script>
@@ -13,12 +13,9 @@
       />
   </Card.Section>
 
-  <Group position='apart'>
-    <Text weight={500}>{website.name}</Text>
-    <!-- <Badge color='pink' variant='light'> -->
-      <!-- On Sale -->
-    <!-- </Badge> -->
-  </Group>
+    <Group position='apart'>
+      <h3>{website.name}</h3>
+    </Group>
 
   <Text size='sm'>{website.description}</Text>
 
