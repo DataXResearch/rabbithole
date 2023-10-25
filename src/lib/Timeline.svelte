@@ -93,47 +93,16 @@
   <img src="../assets/icons/logo.png">
   <div>
     <ProjectSelector projects={projects} handleProjectChange={handleProjectChange} />
-    <div>
-      <TextInput
-        placeholder="My new rabbithole"
-        label="New Project"
-        bind:value={newRabbitholeName}
-        />
-      <Button
-        on:click={createNewProject}
-        variant='light'
-        color='blue'
-        >
-        Create
-      </Button>
-      <Button
-        on:click={saveAllTabs}
-        variant='light'
-        color='blue'
-        >
-        Create and save all tabs in window
-      </Button>
-      <Button
-        on:click={saveAllTabsToActiveProject}
-        variant='light'
-        color='blue'
-        >
-        Save all tabs in window to current project
-      </Button>
-    </div>
   </div>
   <div class="feed">
-  {#if !loading}
-    {#each websites as site}
-      <div>
-        <h3>{site.name}</h3>
-      </div>
-      <TimelineCard website={site} />
-    {/each}
-  {:else}
-    <p> Loading... </p>
-  {/if}
-</div>
+    {#if !loading}
+      {#each websites as site}
+        <TimelineCard website={site} />
+      {/each}
+    {:else}
+      <p> Loading... </p>
+    {/if}
+  </div>
 </div>
 
 <style>

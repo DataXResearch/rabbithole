@@ -1,11 +1,11 @@
-import Timeline from "src/lib/Timeline.svelte";
-import SettingsButtons from "src/lib/SettingsButtons.svelte"
+import Rabbithole from "src/lib/Rabbithole.svelte"
 
 const target = document.getElementById("app");
 
 function render() {
-  new SettingsButtons({ target });
-  new Timeline({ target });
+  new Rabbithole({
+    target,
+  });
 }
 
 document.addEventListener("DOMContentLoaded", render);
