@@ -57,7 +57,7 @@
 
 <style>
   .timeline {
-    width: 50vw;
+    width: 40vw;
     margin: 0 auto;
   }
 </style>
