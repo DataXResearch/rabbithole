@@ -22,7 +22,7 @@ function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: 
     .then(result => {
       return {
         url: tab.url,
-        name: (result.error === "") ? result.title : tab.title,
+        name: (result.error === "" && result.title !== "") ? result.title : tab.title,
         faviconUrl: tab.favIconUrl,
         savedAt: Date.now(),
         openGraphImageUrl: (result.error === "") ? result.image : null,
