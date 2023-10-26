@@ -210,6 +210,20 @@ chrome.runtime.onMessage.addListener(
           });
 
         break;
+      case MessageRequest.RENAME_PROJECT:
+        if (!("newName" in request) || !("projectId" in request)) {
+          sendResponse({
+            error: "projectId and newName required"
+          });
+          break;
+        }
+        db.renameProject(request.projectId, request.newName)
+          .then(res => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
       default:
     }
 

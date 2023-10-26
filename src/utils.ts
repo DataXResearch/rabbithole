@@ -1,3 +1,5 @@
+// Can these be reordered without breaking older versions?
+// seems like no because they are bound to ints
 export enum MessageRequest {
   SAVE_TAB,
   GET_ALL_ITEMS,
@@ -12,4 +14,5 @@ export enum MessageRequest {
   SAVE_WINDOW_TO_NEW_PROJECT,
   SAVE_WINDOW_TO_ACTIVE_PROJECT,
   PING,
+  RENAME_PROJECT
 }
