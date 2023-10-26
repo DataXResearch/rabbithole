@@ -82,7 +82,6 @@
       base: 100
       }}
       hidden={!opened}>
-      >
       <Sidebar
         on:newProject={createNewProject}
         on:newProjectSync={createNewProjectFromWindow}
