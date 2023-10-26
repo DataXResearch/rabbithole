@@ -82,6 +82,6 @@
   }
 
   .input-div {
-    max-width: 350px;
+    max-width: 400px;
   }
 </style>
