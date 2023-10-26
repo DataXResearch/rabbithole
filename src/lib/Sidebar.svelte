@@ -7,10 +7,11 @@
 
   // FIXME: why aren't types working here?
   const dispatch = createEventDispatcher();
+
+  export let projects;
+
   let newRabbitholeName = "";
   let isHovering = false;
-
-  let projects = [];
 
   async function handleProjectChange(event) {
     dispatch('projectChange', {

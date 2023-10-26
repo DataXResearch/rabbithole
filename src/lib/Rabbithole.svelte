@@ -2,15 +2,17 @@
   import { onMount } from "svelte";
   import Timeline from "src/lib/Timeline.svelte"
   import Sidebar from "src/lib/Sidebar.svelte"
-  import { MessageRequest } from "../utils"
+  import { MessageRequest, getOrderedProjects } from "../utils"
   import { SvelteUIProvider, fns, AppShell, Aside, Navbar, Header, Title, Divider } from "@svelteuidev/core";
 
   let activeProject = {};
   let websites = [];
+  let projects = [];
   let isDark = true;
   let opened = false;
 
   onMount(async () => {
+    projects = await getOrderedProjects()
     activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
     updateWebsites();
   });
@@ -57,6 +59,7 @@
       newName: event.detail.newActiveProjectName,
       projectId: activeProject.id
     });
+    projects = await getOrderedProjects();
   }
 
   async function updateWebsites() {
@@ -91,6 +94,7 @@
       }}
       hidden={!opened}>
       <Sidebar
+        projects={projects}
         on:projectChange={updateActiveProject}
         on:newProject={createNewProject}
         on:newProjectSync={createNewProjectFromWindow}

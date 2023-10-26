@@ -3,16 +3,18 @@
   import { Button, Group, Tooltip } from '@svelteuidev/core';
   import Options from "./Options.svelte";
   import ProjectSelector from "src/lib/ProjectSelector.svelte"
-  import { MessageRequest } from "../utils.ts"
+  import { MessageRequest, getOrderedProjects } from "../utils.ts"
 
   let settings: Settings = {
     show: false,
     alignment: "right"
   };
+  let projects = [];
   let isHovering = false;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({type: MessageRequest.GET_SETTINGS});
+    projects = await getOrderedProjects()
   });
 
   function changeAlignment(event) {
@@ -65,7 +67,7 @@
       </Group>
     </div>
     <div class="selector">
-      <ProjectSelector handleProjectChange={handleProjectChange} />
+      <ProjectSelector projects={projects} handleProjectChange={handleProjectChange} />
     </div>
     <div>
       <Options/>
