@@ -11,8 +11,6 @@
   export let activeProject = {};
   export let websites = [];
 
-  let projects = [];
-
   function makeActiveProjectFirst() {
     for (let i = 0; i < projects.length; i++) {
       if (projects[i].name === activeProject.name) {
@@ -36,18 +34,9 @@
       ))
     )
   }
-
-  async function handleProjectChange(event) {
-    dispatch('projectChange', {
-      newProjectId: event.target.value,
-    });
-  }
 </script>
 
 <div class="timeline">
-  <div>
-    <ProjectSelector projects={projects} handleProjectChange={handleProjectChange} />
-  </div>
   <div class="feed">
     {#each websites as site}
       <TimelineCard website={site} />
