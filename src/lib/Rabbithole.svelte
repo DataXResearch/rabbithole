@@ -83,6 +83,7 @@
       }}
       hidden={!opened}>
       <Sidebar
+        on:projectChange={updateActiveProject}
         on:newProject={createNewProject}
         on:newProjectSync={createNewProjectFromWindow}
         on:projectSync={saveWindowToActiveProject} />
@@ -92,7 +93,7 @@
         <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png">
       </div>
     </Header>
-    <Timeline on:projectChange={updateActiveProject} activeProject={activeProject} websites={websites} />
+    <Timeline activeProject={activeProject} websites={websites} />
   </AppShell>
 </SvelteUIProvider>
 

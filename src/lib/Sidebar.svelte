@@ -3,11 +3,20 @@
   import { Badge, Button, Card, Group, Image, Text, TextInput, Tooltip } from '@svelteuidev/core';
   import SettingsButtons from "src/lib/SettingsButtons.svelte"
   import { MessageRequest } from "../utils"
+  import ProjectSelector from "src/lib/ProjectSelector.svelte"
 
   // FIXME: why aren't types working here?
   const dispatch = createEventDispatcher();
   let newRabbitholeName = "";
   let isHovering = false;
+
+  let projects = [];
+
+  async function handleProjectChange(event) {
+    dispatch('projectChange', {
+      newProjectId: event.target.value,
+    });
+  }
 
   async function createNewProject() {
     if (newRabbitholeName === "") {
@@ -37,6 +46,12 @@
 <div class="sidebar">
   <SettingsButtons/>
   <div>
+    <div>
+      <ProjectSelector
+        id="project-selector"
+        projects={projects}
+        handleProjectChange={handleProjectChange} />
+    </div>
     <TextInput
       placeholder="My new rabbithole"
       label="New Project"
