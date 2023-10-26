@@ -51,6 +51,14 @@
     updateWebsites();
   }
 
+  async function renameActiveProject(event) {
+    activeProject = await chrome.runtime.sendMessage({
+      type: MessageRequest.RENAME_PROJECT,
+      newName: event.detail.newActiveProjectName,
+      projectId: activeProject.id
+    });
+  }
+
   async function updateWebsites() {
     // FIXME: when rabbithole is installed, the first time a session is saved
     // the website list is duplicated, so dedup here for now
@@ -93,7 +101,10 @@
         <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png">
       </div>
     </Header>
-    <Timeline activeProject={activeProject} websites={websites} />
+    <Timeline
+      on:projectRename={renameActiveProject}
+      activeProject={activeProject}
+      websites={websites} />
   </AppShell>
 </SvelteUIProvider>
 

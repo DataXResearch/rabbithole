@@ -12,6 +12,16 @@
   export let activeProject = {};
   export let websites = [];
 
+  async function renameProject() {
+    if (activeProject.name === "") {
+      // TODO: error modal
+      return;
+    }
+    dispatch("projectRename", {
+      newActiveProjectName: activeProject.name
+    });
+  }
+
   function makeActiveProjectFirst() {
     for (let i = 0; i < projects.length; i++) {
       if (projects[i].name === activeProject.name) {
