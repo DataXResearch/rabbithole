@@ -4,6 +4,9 @@ dependencies:
   '@svelteuidev/core':
     specifier: ^0.15.3
     version: 0.15.3(@svelteuidev/composables@0.15.3)(svelte@3.52.0)
+  radix-icons-svelte:
+    specifier: ^1.2.1
+    version: 1.2.1
   uuid:
     specifier: ^9.0.0
     version: 9.0.0
@@ -1296,6 +1299,10 @@ packages:
   /queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
     dev: true
+
+  /radix-icons-svelte@1.2.1:
+    resolution: {integrity: sha512-svmiMd0ocpdTm9cvAz0klcZpnh639lVctj6psQiawd4pYalVzOG4cX+JizAgRckyTAsRVdzObP7D2EBrSfdghA==}
+    dev: false
 
   /react-refresh@0.13.0:
     resolution: {integrity: sha512-XP8A9BT0CpRBD+NYLLeIhld/RqG9+gktUjW1FkE+Vm7OCinbG1SshcK5tb9ls4kzvjZr9mOQc7HYgBngEyPAXg==}

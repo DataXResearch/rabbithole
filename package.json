@@ -25,6 +25,7 @@
     },
     "dependencies": {
         "@svelteuidev/core": "^0.15.3",
+        "radix-icons-svelte": "^1.2.1",
         "uuid": "^9.0.0"
     }
 }

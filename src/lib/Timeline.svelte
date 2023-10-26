@@ -1,12 +1,13 @@
 <script>
   import { onMount, createEventDispatcher } from "svelte";
-  import { Badge, Button, Card, Group, Image, Text, TextInput } from '@svelteuidev/core';
+  import { Badge, Button, Card, Group, Image, Input, Text, TextInput } from '@svelteuidev/core';
   import { MessageRequest } from "../utils"
   import TimelineCard from "src/lib/TimelineCard.svelte";
-  import ProjectSelector from "src/lib/ProjectSelector.svelte"
+  import { Pencil1 } from 'radix-icons-svelte';
 
   // FIXME: why aren't types working here?
   const dispatch = createEventDispatcher();
+  let nameClicked = false;
 
   export let activeProject = {};
   export let websites = [];
@@ -37,6 +38,26 @@
 </script>
 
 <div class="timeline">
+  <Group position="center">
+    <div class="input-div">
+      <Input id="project-name"
+             icon={Pencil1}
+             variant="unstyled"
+             size="lg"
+             on:click={() => { nameClicked = true; }}
+             bind:value={activeProject.name}
+             />
+    </div>
+    {#if nameClicked}
+      <Button
+        on:click={renameProject}
+        variant='light'
+        color='blue'
+        >
+        Rename
+      </Button>
+    {/if}
+  </Group>
   <div class="feed">
     {#each websites as site}
       <TimelineCard website={site} />
@@ -48,5 +69,9 @@
   .timeline {
     width: 40vw;
     margin: 0 auto;
+  }
+
+  .input-div {
+    max-width: 350px;
   }
 </style>
