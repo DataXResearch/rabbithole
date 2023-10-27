@@ -12,6 +12,10 @@
   export let activeProject = {};
   export let websites = [];
 
+  async function deleteProject() {
+    dispatch("projectDelete");
+  }
+
   async function renameProject() {
     if (activeProject.name === "") {
       // TODO: error modal
@@ -65,6 +69,13 @@
         color='blue'
         >
         Rename
+      </Button>
+      <Button
+        on:click={deleteProject}
+        variant='filled'
+        color='red'
+        >
+        Delete
       </Button>
     {/if}
   </Group>

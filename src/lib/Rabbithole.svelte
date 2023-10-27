@@ -67,6 +67,15 @@
     projects = await getOrderedProjects();
   }
 
+  async function deleteActiveProject(event) {
+    activeProject = await chrome.runtime.sendMessage({
+      type: MessageRequest.DELETE_PROJECT,
+      projectId: activeProject.id
+    });
+    projects = await getOrderedProjects();
+    updateWebsites();
+  }
+
   async function updateWebsites() {
     // FIXME: when rabbithole is installed, the first time a session is saved
     // the website list is duplicated, so dedup here for now
@@ -115,6 +124,7 @@
     </Header>
     <Timeline
       on:projectRename={renameActiveProject}
+      on:projectDelete={deleteActiveProject}
       activeProject={activeProject}
       websites={websites} />
   </AppShell>
