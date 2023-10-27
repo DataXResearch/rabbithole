@@ -79,6 +79,7 @@
   .timeline {
     width: 40vw;
     margin: 0 auto;
+    margin-top: 50px;
   }
 
   .input-div {
