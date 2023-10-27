@@ -133,7 +133,8 @@ export class WebsiteStore {
     });
   }
 
-  async store(items: Website[]): Promise<Website | { alreadySaved: boolean }[]> {
+  // also adds website to savedWebsites if it isn't there already
+  async saveWebsiteToProject(items: Website[]): Promise<Website | { alreadySaved: boolean }[]> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
       try {
