@@ -11,7 +11,7 @@ function sendOverlayUpdate(tabId: number) {
 
 // this is meant to be called async
 function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: any): Promise<void[]> {
-  // FIXME: delegate this to db
+  // delegate this to db?
   // FIXME: add some guarantees that this won't randomly crash
   const promiseArray = tabs.map(tab => fetch(`https://cardyb.bsky.app/v1/extract?url=${encodeURIComponent(tab.url)}`,
     {
@@ -30,7 +30,7 @@ function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: 
       };
     })
     .then(website => {
-      db.store([website])
+      db.saveWebsiteToProject([website])
         .then(res => sendResponse(res))
         .catch(err => {
           console.log(err)
@@ -39,7 +39,7 @@ function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: 
     })
     .catch(error => {
       // just use info at hand if OG information cannot be retrieved
-      db.store([{
+      db.saveWebsiteToProject([{
         url: tab.url,
         name: tab.title,
         faviconUrl: tab.favIconUrl,
