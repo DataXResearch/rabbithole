@@ -39,7 +39,7 @@
   });
 </script>
 
-<div class="buttons">
+<div>
   <Group position="center" spacing="md">
     <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
       {#if settings.alignment === "right"}
@@ -64,9 +64,3 @@
     </Button>
   </Group>
 </div>
-
-<style>
-  .buttons {
-    margin-top: 10px;
-  }
-</style>
