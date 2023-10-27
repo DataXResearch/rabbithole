@@ -23,18 +23,20 @@
   });
 
   async function createNewProject(event) {
-    await chrome.runtime.sendMessage({
+    activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_PROJECT,
       newProjectName: event.detail.newProjectName,
     });
+    projects = await getOrderedProjects();
     updateWebsites();
   }
 
   async function createNewProjectFromWindow(event) {
-    await chrome.runtime.sendMessage({
+    activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
       newProjectName: event.detail.newProjectName,
     });
+    projects = await getOrderedProjects();
     updateWebsites();
   }
 
@@ -55,6 +57,7 @@
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
     });
+    activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
     updateWebsites();
   }
 
