@@ -1,16 +1,18 @@
 <script>
   import { onMount, createEventDispatcher } from "svelte";
-  import { Badge, Button, Card, Group, Image, Input, Text, TextInput } from '@svelteuidev/core';
+  import { Badge, Button, Card, Group, Image, Input, Text, TextInput, Tooltip } from '@svelteuidev/core';
   import { MessageRequest } from "../utils"
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import { Pencil1 } from 'radix-icons-svelte';
 
   // FIXME: why aren't types working here?
   const dispatch = createEventDispatcher();
-  let nameClicked = false;
 
   export let activeProject = {};
   export let websites = [];
+
+  let nameClicked = false;
+  let isHovering = false;
 
   async function deleteProject() {
     dispatch("projectDelete");
@@ -60,13 +62,17 @@
 <div class="timeline">
   <Group position="center">
     <div class="input-div">
-      <Input id="project-name"
-             icon={Pencil1}
-             variant="unstyled"
-             size="lg"
-             on:click={() => { nameClicked = true; }}
-             bind:value={activeProject.name}
-             />
+      <Tooltip {isHovering} label="Click to rename/delete project">
+        <Input id="project-name"
+               icon={Pencil1}
+               variant="unstyled"
+               size="lg"
+               on:click={() => { nameClicked = true; }}
+               on:mouseenter={()=>{isHovering=true}}
+               on:mouseleave={()=>{isHovering=false}}
+               bind:value={activeProject.name}
+               />
+      </Tooltip>
     </div>
     {#if nameClicked}
       <Button
