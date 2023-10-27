@@ -76,6 +76,15 @@
     updateWebsites();
   }
 
+  async function deleteWebsite(event) {
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.DELETE_WEBSITE,
+      projectId: activeProject.id,
+      url: event.detail.url
+    });
+    updateWebsites();
+  }
+
   async function updateWebsites() {
     // FIXME: when rabbithole is installed, the first time a session is saved
     // the website list is duplicated, so dedup here for now
@@ -123,6 +132,7 @@
       </div>
     </Header>
     <Timeline
+      on:websiteDelete={deleteWebsite}
       on:projectRename={renameActiveProject}
       on:projectDelete={deleteActiveProject}
       activeProject={activeProject}
