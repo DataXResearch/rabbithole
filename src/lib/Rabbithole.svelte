@@ -3,13 +3,18 @@
   import Timeline from "src/lib/Timeline.svelte"
   import Sidebar from "src/lib/Sidebar.svelte"
   import { MessageRequest, getOrderedProjects } from "../utils"
-  import { SvelteUIProvider, fns, AppShell, Aside, Navbar, Header, Title, Divider } from "@svelteuidev/core";
+  import { SvelteUIProvider, fns, AppShell, Navbar, Header, Title, Divider } from "@svelteuidev/core";
 
   let activeProject = {};
   let websites = [];
   let projects = [];
   let isDark = true;
   let opened = false;
+
+  const navbarStyleOverride = {
+    borderTop: "1px solid rgb(233, 236, 239)",
+    borderRight: "1px solid rgb(233, 236, 239)"
+  }
 
   onMount(async () => {
     projects = await getOrderedProjects()
@@ -87,11 +92,14 @@
 <SvelteUIProvider>
   <AppShell>
     <Navbar
+      fixed
       width={{
-      sm: 300,
-      lg: 400,
-      base: 100
+        sm: 300,
+        lg: 400,
+        base: 100
       }}
+      height={"100%"}
+      override={navbarStyleOverride}
       hidden={!opened}>
       <Sidebar
         projects={projects}

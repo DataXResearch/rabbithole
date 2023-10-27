@@ -12,6 +12,12 @@
 
   let newRabbitholeName = "";
   let isHovering = false;
+  const groupStyleOverride = {
+    alignItems: "left"
+  }
+  const textStyleOverride = {
+    marginTop: "15px"
+  }
 
   async function handleProjectChange(event) {
     dispatch('projectChange', {
@@ -45,33 +51,14 @@
 </script>
 
 <div class="sidebar">
-  <SettingsButtons/>
-  <div>
-    <div>
-      <ProjectSelector
-        id="project-selector"
-        projects={projects}
-        handleProjectChange={handleProjectChange} />
-    </div>
-    <TextInput
-      placeholder="My new rabbithole"
-      label="New Project"
-      bind:value={newRabbitholeName}
-      />
-    <Button
-      on:click={createNewProject}
-      variant='light'
-      color='blue'
-      >
-      Create
-    </Button>
-    <Button
-      on:click={saveAllTabs}
-      variant='light'
-      color='blue'
-      >
-      Create and save all tabs in window
-    </Button>
+  <Group direction="column" position="left" override={groupStyleOverride}>
+    <Text weight="bold" size="lg" override={textStyleOverride}>Overlay Settings</Text>
+    <SettingsButtons/>
+    <Text weight="bold" size="lg" override={textStyleOverride}>Change Project</Text>
+    <ProjectSelector
+      id="project-selector"
+      projects={projects}
+      handleProjectChange={handleProjectChange} />
     <Tooltip {isHovering} label="Save all tabs in window to current project">
       <Button
         on:click={saveAllTabsToActiveProject}
@@ -80,14 +67,34 @@
         variant='light'
         color='blue'
         >
-        Sync Window
+        Sync window
       </Button>
     </Tooltip>
-  </div>
+    <Text weight="bold" size="lg" override={textStyleOverride}>Create Project</Text>
+    <TextInput
+      placeholder="My new rabbithole"
+      bind:value={newRabbitholeName}
+      />
+    <Button
+      on:click={createNewProject}
+      variant='light'
+      color='blue'
+      >
+      Create empty project
+    </Button>
+    <Button
+      on:click={saveAllTabs}
+      variant='light'
+      color='blue'
+      >
+      Create and save all tabs in window
+    </Button>
+  </Group>
 </div>
 
 <style>
   .sidebar {
-    color: #ab4f16dc;
+    margin-top: 15px;
+    margin-left: 10px;
   }
 </style>

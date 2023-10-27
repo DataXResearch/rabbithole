@@ -8,7 +8,7 @@
 </script>
 
 <div>
- <NativeSelect data={projects.map(p => { return { label: p.name, value: p.id }; })}
+  <NativeSelect data={projects.map(p => { return { label: p.name, value: p.id }; })}
     on:change={handleProjectChange}
     />
 </div>
