@@ -16,7 +16,8 @@ export enum MessageRequest {
   SAVE_WINDOW_TO_NEW_PROJECT,
   SAVE_WINDOW_TO_ACTIVE_PROJECT,
   PING,
-  RENAME_PROJECT
+  RENAME_PROJECT,
+  DELETE_PROJECT,
 }
 
 export async function getOrderedProjects(): Promise<Project[]> {

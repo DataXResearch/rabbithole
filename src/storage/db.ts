@@ -268,6 +268,36 @@ export class WebsiteStore {
     });
   }
 
+  // returns new active project
+  async deleteProject(projectId: string): Promise<Project> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+
+      const projectRequest = db.transaction(["projects"], "readwrite")
+        .objectStore("projects")
+        .delete(projectId);
+
+      projectRequest.onsuccess = async () => {
+        console.log(`delete project success`);
+        // replace active project
+        const projects = await this.getAllProjects();
+        await this.changeActiveProject(projects[0].id)
+        resolve(projects[0]);
+      }
+
+      projectRequest.onerror = (event) => {
+        console.log(`rename project error`);
+        console.log(event.target)
+        reject(new Error(event.target.error));
+      };
+    });
+  }
+
   async updateSettings(settings: Settings): Promise<Settings> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;

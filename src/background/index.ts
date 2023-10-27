@@ -224,6 +224,20 @@ chrome.runtime.onMessage.addListener(
             sendResponse(err)
           });
         break;
+      case MessageRequest.DELETE_PROJECT:
+        if (!("projectId" in request)) {
+          sendResponse({
+            error: "projectId required"
+          });
+          break;
+        }
+        db.deleteProject(request.projectId)
+          .then(res => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
       default:
     }
 
