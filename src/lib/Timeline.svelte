@@ -35,6 +35,12 @@
     projects.unshift(activeProject);
   }
 
+  async function deleteWebsite(event) {
+    dispatch("websiteDelete", {
+      url: event.detail.url
+    });
+  }
+
   async function updateItems() {
     activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
     // FIXME: when rabbithole is installed, the first time a session is saved
@@ -81,7 +87,7 @@
   </Group>
   <div class="feed">
     {#each websites as site}
-      <TimelineCard website={site} />
+      <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
     {/each}
   </div>
 </div>

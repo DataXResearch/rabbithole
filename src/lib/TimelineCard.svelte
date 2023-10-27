@@ -1,7 +1,17 @@
 <script>
+  import { createEventDispatcher } from "svelte";
   import { Button, Card, Group, Image, Text } from "@svelteuidev/core";
+  import { Trash } from 'radix-icons-svelte';
+
+  const dispatch = createEventDispatcher();
 
   export let website;
+
+  async function deleteWebsite() {
+    dispatch("websiteDelete", {
+      url: website.url
+    });
+  }
 </script>
 
 <div class="card-container">
@@ -21,9 +31,18 @@
       <Text size="lg">{website.description}</Text>
     </div>
 
-    <Button variant="light" color="blue" href={website.url} target="_blank" fullSize>
-      Open
-    </Button>
+    <Group spacing="xs">
+      <Button variant="light" color="blue" href={website.url} target="_blank" override={{width: "85%"}}>
+        Open
+      </Button>
+      <Button
+        on:click={deleteWebsite}
+        variant="light"
+        color="red"
+        override={{width: "10%"}}>
+        <Trash size="30"/>
+      </Button>
+    </Group>
   </Card>
 </div>
 

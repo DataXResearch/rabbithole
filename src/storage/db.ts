@@ -190,6 +190,42 @@ export class WebsiteStore {
     });
   }
 
+  async deleteWebsiteFromProject(projectId: string, url: string): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      let db: IDBDatabase;
+      try {
+        db = await this.getDb();
+      } catch (err) {
+        reject(err)
+      }
+
+      // update website list of active project
+      let project = await this.getProject(projectId);
+
+      project.savedWebsites = project.savedWebsites.filter((w) => {
+        return w !== url;
+      });
+
+      const projectRequest = db.transaction(["projects"], "readwrite")
+        .objectStore("projects")
+        .put(project);
+
+      projectRequest.onsuccess = (event) => {
+        console.log(`delete item success`);
+        resolve();
+      }
+
+      projectRequest.onerror = (event) => {
+        // ignore error if website is stored already
+        if (!(event.target.error.message.indexOf("exists"))) {
+          console.log(`store item error`);
+          console.log(event.target)
+          reject(new Error(event.target.error));
+        }
+      };
+    });
+  }
+
   async getWebsite(url: string): Promise<Website> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;

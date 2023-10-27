@@ -238,6 +238,20 @@ chrome.runtime.onMessage.addListener(
             sendResponse(err)
           });
         break;
+      case MessageRequest.DELETE_WEBSITE:
+        if (!("url" in request) || !("projectId" in request)) {
+          sendResponse({
+            error: "projectId and url required"
+          });
+          break;
+        }
+        db.deleteWebsiteFromProject(request.projectId, request.url)
+          .then(res => sendResponse(res))
+          .catch(err => {
+            console.log(err)
+            sendResponse(err)
+          });
+        break;
       default:
     }
 

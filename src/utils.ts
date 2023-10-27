@@ -18,6 +18,7 @@ export enum MessageRequest {
   PING,
   RENAME_PROJECT,
   DELETE_PROJECT,
+  DELETE_WEBSITE,
 }
 
 export async function getOrderedProjects(): Promise<Project[]> {
