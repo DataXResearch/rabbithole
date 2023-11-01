@@ -3,7 +3,7 @@
   import Timeline from "src/lib/Timeline.svelte"
   import Sidebar from "src/lib/Sidebar.svelte"
   import { MessageRequest, getOrderedProjects } from "../utils"
-  import { SvelteUIProvider, fns, AppShell, Navbar, Header, Title, Divider } from "@svelteuidev/core";
+  import { SvelteUIProvider, fns, AppShell, Navbar, Title, Divider } from "@svelteuidev/core";
 
   let activeProject = {};
   let websites = [];
@@ -127,11 +127,6 @@
         on:newProjectSync={createNewProjectFromWindow}
         on:projectSync={saveWindowToActiveProject} />
     </Navbar>
-    <Header slot="header">
-      <div class="logo-container">
-        <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png">
-      </div>
-    </Header>
     <Timeline
       on:websiteDelete={deleteWebsite}
       on:projectRename={renameActiveProject}
@@ -140,14 +135,3 @@
       websites={websites} />
   </AppShell>
 </SvelteUIProvider>
-
-<style>
-  .logo-container {
-    display: flex;
-    justify-content: center;
-  }
-  .logo {
-    width: 150px;
-    height: auto;
-  }
-</style>
