@@ -32,6 +32,9 @@ jobs:
                 token: ${{ github.token }}
                 majorList: release
                 noVersionBumpBehavior: silent
+            - name: Changelog
+              id  : autoChangelog
+              uses: ardalanamini/auto-changelog@v4
             - name: Create Release
               uses: ncipollo/release-action@v1
               with:
@@ -40,5 +43,5 @@ jobs:
                   rabbithole.zip
                 allowUpdates: true
                 draft: false
-                body: Changelog Contents
+                body: ${{ steps.autoChangelog.outputs.changelog }}
                 token: ${{ github.token }}
