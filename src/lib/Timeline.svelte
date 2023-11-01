@@ -14,10 +14,6 @@
   let nameClicked = false;
   let isHovering = false;
 
-  async function deleteProject() {
-    dispatch("projectDelete");
-  }
-
   async function renameProject() {
     if (activeProject.name === "") {
       // TODO: error modal
@@ -50,7 +46,7 @@
       <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png">
     </div>
     <div class="input-div">
-      <Tooltip {isHovering} label="Click to rename/delete project">
+      <Tooltip {isHovering} label="Click to rename project">
         <Input id="project-name"
                icon={Pencil1}
                variant="unstyled"
@@ -69,13 +65,6 @@
         color='blue'
         >
         Rename
-      </Button>
-      <Button
-        on:click={deleteProject}
-        variant='filled'
-        color='red'
-        >
-        Delete
       </Button>
     {/if}
   </Group>

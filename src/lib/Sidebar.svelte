@@ -11,7 +11,8 @@
   export let projects;
 
   let newRabbitholeName = "";
-  let isHovering = false;
+  let isHoveringOverSync = false;
+  let isHoveringOverDelete = false;
   const textStyleOverride = {
     marginTop: "15px"
   }
@@ -45,6 +46,10 @@
   async function saveAllTabsToActiveProject() {
     dispatch('projectSync');
   }
+
+  async function deleteProject() {
+    dispatch("projectDelete");
+  }
 </script>
 
 <div class="sidebar">
@@ -58,15 +63,26 @@
       id="project-selector"
       projects={projects}
       handleProjectChange={handleProjectChange} />
-    <Tooltip {isHovering} label="Save all tabs in window to current project">
+    <Tooltip {isHoveringOverSync} label="Save all tabs in window to current project">
       <Button
         on:click={saveAllTabsToActiveProject}
-        on:mouseenter={()=>{isHovering=true}}
-        on:mouseleave={()=>{isHovering=false}}
+        on:mouseenter={()=>{isHoveringOverSync=true}}
+        on:mouseleave={()=>{isHoveringOverSync=false}}
         variant='light'
         color='blue'
         >
         Sync window
+      </Button>
+    </Tooltip>
+    <Tooltip {isHoveringOverDelete} label="This action is irreversible!">
+      <Button
+        on:click={deleteProject}
+        on:mouseenter={()=>{isHoveringOverDelete=true}}
+        on:mouseleave={()=>{isHoveringOverDelete=false}}
+        variant='filled'
+        color='red'
+        >
+        Delete Project
       </Button>
     </Tooltip>
     <Text weight="bold" size="lg" override={textStyleOverride}>Create Project</Text>

@@ -122,6 +122,7 @@
       hidden={!opened}>
       <Sidebar
         projects={projects}
+        on:projectDelete={deleteActiveProject}
         on:projectChange={updateActiveProject}
         on:newProject={createNewProject}
         on:newProjectSync={createNewProjectFromWindow}
@@ -130,7 +131,6 @@
     <Timeline
       on:websiteDelete={deleteWebsite}
       on:projectRename={renameActiveProject}
-      on:projectDelete={deleteActiveProject}
       activeProject={activeProject}
       websites={websites} />
   </AppShell>
