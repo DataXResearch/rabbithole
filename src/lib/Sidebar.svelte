@@ -12,9 +12,6 @@
 
   let newRabbitholeName = "";
   let isHovering = false;
-  const groupStyleOverride = {
-    alignItems: "left"
-  }
   const textStyleOverride = {
     marginTop: "15px"
   }
@@ -51,7 +48,9 @@
 </script>
 
 <div class="sidebar">
-  <Group direction="column" position="left" override={groupStyleOverride}>
+  <Group direction="column" position="left" override={{
+         alignItems: "left"
+     }}>
     <Text weight="bold" size="lg" override={textStyleOverride}>Overlay Settings</Text>
     <SettingsButtons/>
     <Text weight="bold" size="lg" override={textStyleOverride}>Change Project</Text>
