@@ -35,6 +35,8 @@ jobs:
             - name: Changelog
               id  : autoChangelog
               uses: ardalanamini/auto-changelog@v4
+              with:
+                release-name: ${{ steps.semver.outputs.next }}
             - name: Create Release
               uses: ncipollo/release-action@v1
               with:
