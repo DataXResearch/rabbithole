@@ -11,11 +11,6 @@
   let isDark = true;
   let opened = false;
 
-  const navbarStyleOverride = {
-    borderTop: "1px solid rgb(233, 236, 239)",
-    borderRight: "1px solid rgb(233, 236, 239)"
-  }
-
   onMount(async () => {
     projects = await getOrderedProjects()
     activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
@@ -120,7 +115,10 @@
         base: 100
       }}
       height={"100%"}
-      override={navbarStyleOverride}
+      override={{
+        borderRight: "1px solid rgb(233, 236, 239)",
+        overflowY: "scroll"
+      }}
       hidden={!opened}>
       <Sidebar
         projects={projects}
