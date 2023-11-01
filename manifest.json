@@ -1,6 +1,6 @@
 {
   "name": "Rabbithole",
-  "description": "Track your internet explorations!",
+  "description": "Track your internet rabbitholes!",
   "version": "1.0",
   "manifest_version": 3,
   "icons": {
@@ -49,6 +49,7 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://cardyb.bsky.app/*"
+    "https://cardyb.bsky.app/*",
+    "https://rabbithole.to/*"
   ]
 }
