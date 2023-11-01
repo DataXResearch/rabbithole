@@ -46,6 +46,9 @@
 
 <div class="timeline">
   <Group position="center">
+    <div class="logo-container">
+      <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png">
+    </div>
     <div class="input-div">
       <Tooltip {isHovering} label="Click to rename/delete project">
         <Input id="project-name"
@@ -92,5 +95,15 @@
 
   .input-div {
     max-width: 400px;
+  }
+
+  .logo-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .logo {
+    width: 150px;
+    height: auto;
   }
 </style>
