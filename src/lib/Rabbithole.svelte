@@ -10,6 +10,10 @@
   let projects = [];
   let isDark = true;
   let opened = false;
+
+  // status for updatingComponents
+  // TODO: better; is dispatching from parent to child an antipattern?
+  // how can `Sidebar` be cut out as a middleman? should it?
   let syncSuccess = false;
   let syncFail = false;
 
