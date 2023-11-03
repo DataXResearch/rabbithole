@@ -12,11 +12,23 @@
   export let projects;
   export let syncSuccess;
 
+  let createProjectFail = false;
+  let createProjectFailMsg = "Project name required!";
+
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
   let isHoveringOverDelete = false;
   const textStyleOverride = {
     marginTop: "15px"
+  }
+
+  function validateProjectName() {
+    if (newRabbitholeName === "") {
+      createProjectFail = true;
+      setTimeout(() => { createProjectFail = false; }, NotificationDuration);
+      return false;
+    }
+    return true;
   }
 
   async function handleProjectChange(event) {
@@ -86,10 +98,12 @@
       </Button>
     </Tooltip>
     <Text weight="bold" size="lg" override={textStyleOverride}>Create Project</Text>
-    <TextInput
-      placeholder="My new rabbithole"
-      bind:value={newRabbitholeName}
-      />
+    <UpdatingComponent fail={createProjectFail} failMsg={createProjectFailMsg}>
+      <TextInput
+        placeholder="My new rabbithole"
+        bind:value={newRabbitholeName}
+        />
+    </UpdatingComponent>
     <Button
       on:click={createNewProject}
       variant='light'
