@@ -26,23 +26,19 @@
   }
 
   async function createNewProject() {
-    if (newRabbitholeName === "") {
-      // TODO: error modal
-      return;
+    if (validateProjectName()){
+      dispatch('newProject', {
+        newProjectName: newRabbitholeName
+      });
     }
-    dispatch('newProject', {
-      newProjectName: newRabbitholeName
-    });
   }
 
-  async function saveAllTabs() {
-    if (newRabbitholeName === "") {
-      // TODO: error modal
-      return;
+  async function saveAllTabsToNewProject() {
+    if (validateProjectName()){
+      dispatch('newProjectSync', {
+        newProjectName: newRabbitholeName
+      });
     }
-    dispatch('newProjectSync', {
-      newProjectName: newRabbitholeName
-    });
   }
 
   async function saveAllTabsToActiveProject() {
@@ -102,7 +98,7 @@
       Create empty project
     </Button>
     <Button
-      on:click={saveAllTabs}
+      on:click={saveAllTabsToNewProject}
       variant='light'
       color='blue'
       >
