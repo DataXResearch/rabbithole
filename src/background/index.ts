@@ -39,6 +39,7 @@ function storeWebsites(tabs: chrome.tabs.Tab[], db: WebsiteStore, sendResponse: 
     })
     .catch(error => {
       // just use info at hand if OG information cannot be retrieved
+      // TODO: are there cases when it's preferable to do this?
       db.saveWebsiteToProject([{
         url: tab.url,
         name: tab.title,
