@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MessageRequest } from "../utils"
+  import { MessageRequest, NotificationDuration } from "../utils"
   import { Button, Group } from '@svelteuidev/core';
 
   let successMessage: string = null;
@@ -9,7 +9,7 @@
     successMessage = (savedTab.alreadySaved)? "Website already saved!" : "Website saved!";
     setTimeout(() => {
       successMessage = null;
-    }, 1500);
+    }, NotificationDuration);
   }
 </script>
 

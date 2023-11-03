@@ -3,7 +3,7 @@
   import { Badge, Button, Card, Group, Image, Text, TextInput, Tooltip } from '@svelteuidev/core';
   import SettingsButtons from "src/lib/SettingsButtons.svelte"
   import UpdatingComponent from "src/lib/UpdatingComponent.svelte"
-  import { MessageRequest } from "../utils"
+  import { MessageRequest, NotificationDuration } from "../utils"
   import ProjectSelector from "src/lib/ProjectSelector.svelte"
 
   // FIXME: why aren't types working here?
