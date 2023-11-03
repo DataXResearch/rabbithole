@@ -21,6 +21,8 @@ export enum MessageRequest {
   DELETE_WEBSITE,
 }
 
+export const NotificationDuration = 1500;
+
 export async function getOrderedProjects(): Promise<Project[]> {
   let projects = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_PROJECTS });
   const activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT });

@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import Timeline from "src/lib/Timeline.svelte"
   import Sidebar from "src/lib/Sidebar.svelte"
-  import { MessageRequest, getOrderedProjects } from "../utils"
+  import { MessageRequest, getOrderedProjects, NotificationDuration } from "../utils"
   import { SvelteUIProvider, fns, AppShell, Navbar, Title, Divider } from "@svelteuidev/core";
 
   let activeProject = {};
@@ -60,7 +60,7 @@
     setTimeout(() => {
       updateWebsites();
       syncSuccess = true;
-      setTimeout(() => { syncSuccess = false }, 1500);
+      setTimeout(() => { syncSuccess = false }, NotificationDuration);
     }, 300);
     setTimeout(() => {
       updateWebsites();
