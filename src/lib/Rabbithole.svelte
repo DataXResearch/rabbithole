@@ -54,9 +54,17 @@
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
     });
-    activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
-    updateWebsites();
+    // FIXME: this is a direct consequence of the background script's `storeWebsites`
+    // function being a weird hybrid of sync and async. This makes the UI behave
+    // somewhat correctly but is quite an ugly temp solution
+    setTimeout(() => {
+      updateWebsites();
+      syncSuccess = true;
       setTimeout(() => { syncSuccess = false }, 1500);
+    }, 300);
+    setTimeout(() => {
+      updateWebsites();
+    }, 1000);
   }
 
   async function renameActiveProject(event) {
