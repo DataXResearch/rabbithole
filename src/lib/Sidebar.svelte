@@ -2,6 +2,7 @@
   import { onMount, createEventDispatcher } from "svelte";
   import { Badge, Button, Card, Group, Image, Text, TextInput, Tooltip } from '@svelteuidev/core';
   import SettingsButtons from "src/lib/SettingsButtons.svelte"
+  import UpdatingComponent from "src/lib/UpdatingComponent.svelte"
   import { MessageRequest } from "../utils"
   import ProjectSelector from "src/lib/ProjectSelector.svelte"
 
@@ -9,6 +10,7 @@
   const dispatch = createEventDispatcher();
 
   export let projects;
+  export let syncSuccess;
 
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
@@ -64,15 +66,17 @@
       projects={projects}
       handleProjectChange={handleProjectChange} />
     <Tooltip {isHoveringOverSync} label="Save all tabs in window to current project">
-      <Button
-        on:click={saveAllTabsToActiveProject}
-        on:mouseenter={()=>{isHoveringOverSync=true}}
-        on:mouseleave={()=>{isHoveringOverSync=false}}
-        variant='light'
-        color='blue'
-        >
-        Sync window
-      </Button>
+      <UpdatingComponent success={syncSuccess}>
+        <Button
+          on:click={saveAllTabsToActiveProject}
+          on:mouseenter={()=>{isHoveringOverSync=true}}
+          on:mouseleave={()=>{isHoveringOverSync=false}}
+          variant='light'
+          color='blue'
+          >
+          Sync window
+        </Button>
+      </UpdatingComponent>
     </Tooltip>
     <Tooltip {isHoveringOverDelete} label="This action is irreversible!">
       <Button

@@ -10,6 +10,8 @@
   let projects = [];
   let isDark = true;
   let opened = false;
+  let syncSuccess = false;
+  let syncFail = false;
 
   onMount(async () => {
     projects = await getOrderedProjects()
@@ -54,6 +56,7 @@
     });
     activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT })
     updateWebsites();
+      setTimeout(() => { syncSuccess = false }, 1500);
   }
 
   async function renameActiveProject(event) {
@@ -121,6 +124,7 @@
       }}
       hidden={!opened}>
       <Sidebar
+        syncSuccess={syncSuccess}
         projects={projects}
         on:projectDelete={deleteActiveProject}
         on:projectChange={updateActiveProject}
