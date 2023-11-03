@@ -13,7 +13,7 @@
   export let syncSuccess;
 
   let createProjectFail = false;
-  let createProjectFailMsg = "Project name required!";
+  let createProjectFailMsg = "";
 
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
@@ -23,12 +23,21 @@
   }
 
   function validateProjectName() {
+    let valid = true;
     if (newRabbitholeName === "") {
+      createProjectFailMsg = "Project name required!";
+      valid = false;
+    }
+    if (projects.filter(p => p.name === newRabbitholeName).length > 0) {
+      createProjectFailMsg = "Project name already used!";
+      valid = false;
+    }
+    if (!valid) {
       createProjectFail = true;
       setTimeout(() => { createProjectFail = false; }, NotificationDuration);
       return false;
     }
-    return true;
+    return valid;
   }
 
   async function handleProjectChange(event) {
