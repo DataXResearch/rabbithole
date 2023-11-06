@@ -46,9 +46,7 @@
   "permissions": [
     "storage",
     "tabs",
-    "activeTab"
-  ],
-  "host_permissions": [
+    "activeTab",
     "https://cardyb.bsky.app/*",
     "https://rabbithole.to/*"
   ]
