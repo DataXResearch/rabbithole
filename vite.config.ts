@@ -16,7 +16,9 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ["tailwind-config", "svelte-navigator"],
+    exclude: ["svelte-navigator"],
   },
+
   plugins: [svelte(), crx({ manifest })],
   resolve: {
     alias: {
