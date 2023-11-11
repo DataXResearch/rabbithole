@@ -12,6 +12,7 @@ export default defineConfig({
     commonjsOptions: {
       include: ["tailwind.config.js", "node_modules/**"],
     },
+    sourcemap: true,
   },
   optimizeDeps: {
     include: ["tailwind-config", "svelte-navigator"],

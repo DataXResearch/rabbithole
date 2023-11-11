@@ -47,7 +47,7 @@ module.exports = {
         semibold: "700",
       },
       fontFamily: {
-        "public-sans": ["Public Sans"],
+        lato: ["Lato", "sans-serif"],
       },
       container: {
         center: true,
@@ -100,19 +100,19 @@ module.exports = {
       addBase({
         // Default colors
         ":root": {
-          "--color-primary": toRGB(colors.emerald["900"]),
+          "--color-primary": toRGB(colors.blue["900"]),
           "--color-secondary": toRGB(colors.slate["200"]),
-          "--color-success": toRGB(colors.emerald["600"]),
+          "--color-success": toRGB(colors.teal["600"]),
           "--color-info": toRGB(colors.cyan["500"]),
-          "--color-warning": toRGB(colors.yellow["400"]),
-          "--color-pending": toRGB(colors.amber["500"]),
-          "--color-danger": toRGB(colors.rose["600"]),
+          "--color-warning": toRGB(colors.amber["500"]),
+          "--color-pending": toRGB(colors.orange["500"]),
+          "--color-danger": toRGB(colors.red["700"]),
           "--color-light": toRGB(colors.slate["100"]),
           "--color-dark": toRGB(colors.slate["800"]),
         },
         // Default dark-mode colors
         ".dark": {
-          "--color-primary": toRGB(colors.emerald["800"]),
+          "--color-primary": toRGB(colors.blue["800"]),
           "--color-darkmode-50": "87 103 132",
           "--color-darkmode-100": "74 90 121",
           "--color-darkmode-200": "65 81 114",
@@ -126,13 +126,13 @@ module.exports = {
         },
         // Theme 1 colors
         ".theme-1": {
-          "--color-primary": toRGB(colors.blue["800"]),
+          "--color-primary": toRGB(colors.emerald["900"]),
           "--color-secondary": toRGB(colors.slate["200"]),
-          "--color-success": toRGB(colors.lime["500"]),
+          "--color-success": toRGB(colors.emerald["600"]),
           "--color-info": toRGB(colors.cyan["500"]),
           "--color-warning": toRGB(colors.yellow["400"]),
-          "--color-pending": toRGB(colors.orange["500"]),
-          "--color-danger": toRGB(colors.red["600"]),
+          "--color-pending": toRGB(colors.amber["500"]),
+          "--color-danger": toRGB(colors.rose["600"]),
           "--color-light": toRGB(colors.slate["100"]),
           "--color-dark": toRGB(colors.slate["800"]),
           "&.dark": {
@@ -141,13 +141,13 @@ module.exports = {
         },
         // Theme 2 colors
         ".theme-2": {
-          "--color-primary": toRGB(colors.blue["900"]),
+          "--color-primary": toRGB(colors.blue["800"]),
           "--color-secondary": toRGB(colors.slate["200"]),
-          "--color-success": toRGB(colors.teal["600"]),
+          "--color-success": toRGB(colors.lime["500"]),
           "--color-info": toRGB(colors.cyan["500"]),
-          "--color-warning": toRGB(colors.amber["500"]),
+          "--color-warning": toRGB(colors.yellow["400"]),
           "--color-pending": toRGB(colors.orange["500"]),
-          "--color-danger": toRGB(colors.red["700"]),
+          "--color-danger": toRGB(colors.red["600"]),
           "--color-light": toRGB(colors.slate["100"]),
           "--color-dark": toRGB(colors.slate["800"]),
           "&.dark": {
