@@ -1,0 +1,28 @@
+/*
+ |--------------------------------------------------------------------------
+ | TailwindCSS Directives
+ |--------------------------------------------------------------------------
+ */
+@import "./_tailwind.css";
+
+/*
+ |--------------------------------------------------------------------------
+ | 3rd Party Libraries
+ |--------------------------------------------------------------------------
+ */
+@import "tippy.js/dist/tippy.css";
+@import "tippy.js/themes/light.css";
+@import "tippy.js/dist/svg-arrow.css";
+@import "tippy.js/animations/shift-away.css";
+
+/*
+ |--------------------------------------------------------------------------
+ | Core Styles
+ |--------------------------------------------------------------------------
+ */
+
+@import "./components/_global.css";
+@import "./components/_side-nav.css";
+@import "./components/_top-nav.css";
+@import "./components/_box.css";
+@import "./components/_tippy.css";
