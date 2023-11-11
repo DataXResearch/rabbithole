@@ -24,5 +24,6 @@
 @import "./components/_global.css";
 @import "./components/_side-nav.css";
 @import "./components/_top-nav.css";
+@import "./components/_image-fit.css";
 @import "./components/_box.css";
 @import "./components/_tippy.css";

@@ -1,9 +1,9 @@
 <script>
+  import { AppShell, Navbar, SvelteUIProvider } from "@svelteuidev/core";
+  import Sidebar from "src/lib/Sidebar.svelte";
+  import Timeline from "src/lib/Timeline.svelte";
   import { onMount } from "svelte";
-  import Timeline from "src/lib/Timeline.svelte"
-  import Sidebar from "src/lib/Sidebar.svelte"
-  import { MessageRequest, getOrderedProjects, NotificationDuration } from "../utils"
-  import { SvelteUIProvider, fns, AppShell, Navbar, Title, Divider } from "@svelteuidev/core";
+  import { MessageRequest, NotificationDuration, getOrderedProjects } from "../utils";
 
   let activeProject = {};
   let websites = [];

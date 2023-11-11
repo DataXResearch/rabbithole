@@ -1,9 +1,8 @@
 <script>
-  import { onMount, createEventDispatcher } from "svelte";
-  import { Badge, Button, Card, Group, Image, Input, Text, TextInput, Tooltip } from '@svelteuidev/core';
-  import { MessageRequest } from "../utils"
-  import TimelineCard from "src/lib/TimelineCard.svelte";
+  import { Button, Group, Input, Tooltip } from '@svelteuidev/core';
   import { Pencil1 } from 'radix-icons-svelte';
+  import TimelineCard from "src/lib/TimelineCard.svelte";
+  import { createEventDispatcher } from "svelte";
 
   // FIXME: why aren't types working here?
   const dispatch = createEventDispatcher();
