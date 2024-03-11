@@ -1,4 +1,5 @@
 <script>
+  import Fuse from "fuse.js";
   import { onMount, createEventDispatcher } from "svelte";
   import { Badge, Button, Card, Group, Image, Input, Text, TextInput, Tooltip } from '@svelteuidev/core';
   import { MessageRequest } from "../utils"
@@ -11,8 +12,10 @@
   export let activeProject = {};
   export let websites = [];
 
+  let searchResults = [];
   let nameClicked = false;
   let isHovering = false;
+  let searchQuery = "";
 
   async function renameProject() {
     if (activeProject.name === "") {
@@ -37,6 +40,24 @@
     dispatch("websiteDelete", {
       url: event.detail.url
     });
+  }
+
+  function checkWebsiteForQuery(websites) {
+    const fuse = new Fuse(websites, {
+      keys: ["name", "description", "url"],
+      includeScore: true,
+      // anything more has too many irrelevant results
+      threshold: 0.3,
+    });
+
+    const results = fuse.search(searchQuery);
+    // const filteredResults = results.map((result) => result.item).filter((item, index, self) => self.indexOf(item) === index);
+    return results;
+  }
+
+  function applySearchQuery(node) {
+    const results = checkWebsiteForQuery(websites);
+    searchResults = results.map(res => res.item);
   }
 </script>
 
@@ -69,9 +90,23 @@
     {/if}
   </Group>
   <div class="feed">
-    {#each websites as site}
-      <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
-    {/each}
+    <div class="search-bar">
+      <TextInput
+        placeholder="Search"
+        bind:value={searchQuery}
+        on:input={applySearchQuery}
+        />
+    </div>
+    <!-- Following deadgrep's convention of 3 char minimum -->
+    {#if searchQuery.length < 3}
+      {#each websites as site}
+        <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
+      {/each}
+    {:else}
+      {#each searchResults as site}
+        <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
+      {/each}
+    {/if}
   </div>
 </div>
 
@@ -94,5 +129,10 @@
   .logo {
     width: 150px;
     height: auto;
+  }
+
+  .search-bar {
+    width: inherit;
+    margin-x: 20px
   }
 </style>

@@ -112,6 +112,18 @@
     );
   }
 
+  async function exportRabbitholes(event) {
+    const projects = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ALL_PROJECTS,
+    });
+    const blob = new Blob([JSON.stringify(projects)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', "rabbithole.json");
+    link.click();
+  }
+
   function toggleTheme() {
     isDark = !isDark;
   }
@@ -142,7 +154,8 @@
         on:projectChange={updateActiveProject}
         on:newProject={createNewProject}
         on:newProjectSync={createNewProjectFromWindow}
-        on:projectSync={saveWindowToActiveProject} />
+        on:projectSync={saveWindowToActiveProject}
+        on:exportRabbitholes={exportRabbitholes} />
     </Navbar>
     <Timeline
       on:websiteDelete={deleteWebsite}

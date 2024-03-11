@@ -1,5 +1,5 @@
 {
-    "name": "chrome-extension-svelte-typescript-boilerplate",
+    "name": "rabbithole",
     "version": "3.0.0",
     "type": "module",
     "repository": {
@@ -25,6 +25,7 @@
     },
     "dependencies": {
         "@svelteuidev/core": "^0.15.3",
+        "fuse.js": "^7.0.0",
         "radix-icons-svelte": "^1.2.1",
         "uuid": "^9.0.0"
     }
