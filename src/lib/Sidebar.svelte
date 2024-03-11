@@ -69,6 +69,10 @@
   async function deleteProject() {
     dispatch("projectDelete");
   }
+
+  async function exportRabbitholes() {
+    dispatch("exportRabbitholes");
+  }
 </script>
 
 <div class="sidebar">
@@ -126,6 +130,13 @@
       color='blue'
       >
       Create and save all tabs in window
+    </Button>
+    <Button
+      on:click={exportRabbitholes}
+      variant='light'
+      color='blue'
+      >
+      Export rabbitholes
     </Button>
   </Group>
 </div>
