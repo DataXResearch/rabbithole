@@ -33,6 +33,7 @@ export async function getOrderedProjects(): Promise<Project[]> {
       projects.splice(i, 1);
     }
   }
+  projects.sort((a, b) => a.name.localeCompare(b.name));
   projects.unshift(activeProject);
   return projects
 }
