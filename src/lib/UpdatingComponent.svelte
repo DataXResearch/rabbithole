@@ -15,7 +15,7 @@
       <span class="success"><CheckCircled size="20"/></span>
     </div>
     <div>
-      <span class="success">{{ successMsg }}</span>
+      <span class="success">{successMsg}</span>
     </div>
   {/if}
   {#if fail}
