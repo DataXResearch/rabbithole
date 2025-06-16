@@ -87,7 +87,7 @@
       projects={projects}
       handleProjectChange={handleProjectChange} />
     <Tooltip {isHoveringOverSync} label="Save all tabs in window to current project">
-      <UpdatingComponent success={syncSuccess}>
+      <UpdatingComponent success={syncSuccess} successMsg="Window synced successfully!">
         <Button
           on:click={saveAllTabsToActiveProject}
           on:mouseenter={()=>{isHoveringOverSync=true}}
