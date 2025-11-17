@@ -24,9 +24,12 @@ export enum MessageRequest {
 export const NotificationDuration = 1500;
 
 export async function getOrderedProjects(): Promise<Project[]> {
-  let projects = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_PROJECTS });
-  const activeProject = await chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_PROJECT });
-
+  let projects = await chrome.runtime.sendMessage({
+    type: MessageRequest.GET_ALL_PROJECTS,
+  });
+  const activeProject = await chrome.runtime.sendMessage({
+    type: MessageRequest.GET_ACTIVE_PROJECT,
+  });
 
   for (let i = 0; i < projects.length; i++) {
     if (projects[i].name === activeProject.name) {
@@ -35,5 +38,5 @@ export async function getOrderedProjects(): Promise<Project[]> {
   }
   projects.sort((a, b) => a.name.localeCompare(b.name));
   projects.unshift(activeProject);
-  return projects
+  return projects;
 }

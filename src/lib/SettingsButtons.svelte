@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Button, Group, Tooltip } from '@svelteuidev/core';
+  import { Button, Group, Tooltip } from "@svelteuidev/core";
   import Options from "./Options.svelte";
-  import { MessageRequest } from "../utils.ts"
+  import { MessageRequest } from "../utils.ts";
 
   export let settings: Settings = {
     show: false,
-    alignment: "right"
+    alignment: "right",
   };
   let isHovering = false;
 
@@ -35,13 +35,15 @@
   }
 
   onMount(async () => {
-    settings = await chrome.runtime.sendMessage({type: MessageRequest.GET_SETTINGS});
+    settings = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_SETTINGS,
+    });
   });
 </script>
 
 <div>
   <Group position="center" spacing="md">
-    <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
+    <Button on:click={changeAlignment} id="move" variant="light" color="blue">
       {#if settings.alignment === "right"}
         Move button left
       {:else}
@@ -50,12 +52,16 @@
     </Button>
     <Button
       on:click={hideOverlay}
-      on:mouseenter={()=>{isHovering=true}}
-      on:mouseleave={()=>{isHovering=false}}
+      on:mouseenter={() => {
+        isHovering = true;
+      }}
+      on:mouseleave={() => {
+        isHovering = false;
+      }}
       id="move"
-      variant='light'
-      color='blue'
-      >
+      variant="light"
+      color="blue"
+    >
       {#if settings.show}
         Hide
       {:else}

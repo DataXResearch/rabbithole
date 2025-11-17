@@ -1,4 +1,4 @@
-import Rabbithole from "src/lib/Rabbithole.svelte"
+import Rabbithole from "src/lib/Rabbithole.svelte";
 
 // global styles
 import "./styles.css";
