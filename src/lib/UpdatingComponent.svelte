@@ -1,6 +1,6 @@
 <script>
-  import { Button, Group } from '@svelteuidev/core';
-  import { CheckCircled, CrossCircled } from 'radix-icons-svelte';
+  import { Button, Group } from "@svelteuidev/core";
+  import { CheckCircled, CrossCircled } from "radix-icons-svelte";
 
   export let success, fail;
   export let successMsg, failMsg;
@@ -12,7 +12,7 @@
   </div>
   {#if success}
     <div class="child">
-      <span class="success"><CheckCircled size="20"/></span>
+      <span class="success"><CheckCircled size="20" /></span>
     </div>
     <div>
       <span class="success">{successMsg}</span>
@@ -20,10 +20,10 @@
   {/if}
   {#if fail}
     <div class="child">
-      <span class="fail"><CrossCircled size="20"/></span>
+      <span class="fail"><CrossCircled size="20" /></span>
     </div>
     <div>
-      <span class="fail">{ failMsg }</span>
+      <span class="fail">{failMsg}</span>
     </div>
   {/if}
 </div>

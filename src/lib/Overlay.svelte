@@ -1,20 +1,22 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Button, Group, Tooltip } from '@svelteuidev/core';
+  import { Button, Group, Tooltip } from "@svelteuidev/core";
   import Options from "./Options.svelte";
-  import ProjectSelector from "src/lib/ProjectSelector.svelte"
-  import { MessageRequest, getOrderedProjects } from "../utils.ts"
+  import ProjectSelector from "src/lib/ProjectSelector.svelte";
+  import { MessageRequest, getOrderedProjects } from "../utils.ts";
 
   let settings: Settings = {
     show: false,
-    alignment: "right"
+    alignment: "right",
   };
   let projects = [];
   let isHovering = false;
 
   onMount(async () => {
-    settings = await chrome.runtime.sendMessage({type: MessageRequest.GET_SETTINGS});
-    projects = await getOrderedProjects()
+    settings = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_SETTINGS,
+    });
+    projects = await getOrderedProjects();
   });
 
   function changeAlignment(event) {
@@ -49,28 +51,37 @@
   <div id="overlay-container" class="overlay {settings.alignment}">
     <div class="buttons">
       <Group position="center" spacing="md">
-        <Button on:click={changeAlignment} id="move" variant='light' color='blue'>
+        <Button
+          on:click={changeAlignment}
+          id="move"
+          variant="light"
+          color="blue"
+        >
           Move
         </Button>
         <Tooltip {isHovering} label="You can unhide from the newtab page">
           <Button
             on:click={hideOverlay}
-            on:mouseenter={()=>{isHovering=true}}
-            on:mouseleave={()=>{isHovering=false}}
+            on:mouseenter={() => {
+              isHovering = true;
+            }}
+            on:mouseleave={() => {
+              isHovering = false;
+            }}
             id="move"
-            variant='light'
-            color='blue'
-            >
+            variant="light"
+            color="blue"
+          >
             Hide
           </Button>
         </Tooltip>
       </Group>
     </div>
     <div class="selector">
-      <ProjectSelector projects={projects} handleProjectChange={handleProjectChange} />
+      <ProjectSelector {projects} {handleProjectChange} />
     </div>
     <div>
-      <Options/>
+      <Options />
     </div>
   </div>
 {/if}
@@ -92,7 +103,7 @@
     height: 200px;
     position: fixed;
     bottom: 16px;
-    background-color: rgba(255,255,255,0.8);
+    background-color: rgba(255, 255, 255, 0.8);
     border-radius: 20px;
     border: 1px solid black;
     padding: 4px;

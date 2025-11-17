@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid';
+import { v4 as uuid } from "uuid";
 
 const version = 3;
 
@@ -14,7 +14,7 @@ export interface Website {
   faviconUrl: string;
   openGraphImageUrl?: string;
   description?: string;
-};
+}
 
 export interface Project {
   id: string; // key
@@ -42,10 +42,10 @@ export class WebsiteStore {
   private async getDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       if (this.db !== null) {
-        resolve(this.db)
+        resolve(this.db);
         return;
       }
-      let request = this.factory.open('rabbithole', version);
+      let request = this.factory.open("rabbithole", version);
       request.onsuccess = () => {
         const db = request.result;
         db.onerror = (event) => {
@@ -62,7 +62,7 @@ export class WebsiteStore {
       request.onerror = () => {
         console.error("Please allow Rabbithole to use storage!");
         reject(new Error("Insufficient permissions"));
-      }
+      };
     });
   }
 
@@ -70,30 +70,36 @@ export class WebsiteStore {
   static async init(factory: IDBFactory): Promise<void> {
     await new Promise((resolve, reject) => {
       if (factory === undefined) {
-        console.error("This browser doesn't support Rabbithole! You should uninstall it :(");
+        console.error(
+          "This browser doesn't support Rabbithole! You should uninstall it :(",
+        );
         reject(new Error("indexedDB not supported"));
       } else {
-        let request = factory.open('rabbithole', version);
+        let request = factory.open("rabbithole", version);
         request.onerror = (e) => {
           console.error(e);
           console.error("Please allow Rabbithole to use storage!");
           reject(new Error("Insufficient permissions"));
-        }
+        };
 
         // This event is only implemented in recent browsers
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (event.oldVersion < 1) {
-            const objectStore = db.createObjectStore("savedWebsites", { keyPath: "url" });
+            const objectStore = db.createObjectStore("savedWebsites", {
+              keyPath: "url",
+            });
             objectStore.createIndex("name", "name", { unique: false });
             objectStore.createIndex("url", "url", { unique: true });
-            objectStore.transaction.oncomplete = () => { };
+            objectStore.transaction.oncomplete = () => {};
           }
           if (event.oldVersion < 2) {
             db.createObjectStore("user", { keyPath: "id" });
           }
           if (event.oldVersion < 3) {
-            const objectStore = db.createObjectStore("projects", { keyPath: "id" });
+            const objectStore = db.createObjectStore("projects", {
+              keyPath: "id",
+            });
             objectStore.createIndex("name", "name", { unique: true });
           }
 
@@ -111,36 +117,42 @@ export class WebsiteStore {
               id: uuid(),
               settings: {
                 show: true,
-                alignment: "right"
+                alignment: "right",
               },
               currentProject: null,
             };
-            const userRequest = db.transaction(["user"], "readwrite")
+            const userRequest = db
+              .transaction(["user"], "readwrite")
               .objectStore("user")
               .add(newUser);
             userRequest.onsuccess = async () => {
               await store.createNewActiveProject("Default project");
-            }
+            };
             return;
           }
 
-          if (!("currentProject" in user) || user.currentProject === null
-            || user.currentProject === undefined) {
+          if (
+            !("currentProject" in user) ||
+            user.currentProject === null ||
+            user.currentProject === undefined
+          ) {
             await store.createNewActiveProject("Default project");
           }
-        }
+        };
       }
     });
   }
 
   // also adds website to savedWebsites if it isn't there already
-  async saveWebsiteToProject(items: Website[]): Promise<Website | { alreadySaved: boolean }[]> {
+  async saveWebsiteToProject(
+    items: Website[],
+  ): Promise<Website | { alreadySaved: boolean }[]> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
 
       // update website list of active project
@@ -154,15 +166,14 @@ export class WebsiteStore {
         }
       }
 
-      const projectRequest = db.transaction(["projects"], "readwrite")
+      const projectRequest = db
+        .transaction(["projects"], "readwrite")
         .objectStore("projects")
         .put(currentProject);
 
       projectRequest.onsuccess = (event) => {
         const tx = db.transaction(["savedWebsites"], "readwrite");
-        items.forEach(item => tx
-          .objectStore("savedWebsites")
-          .add(item));
+        items.forEach((item) => tx.objectStore("savedWebsites").add(item));
 
         tx.oncomplete = async () => {
           console.log(`store item success`);
@@ -171,33 +182,36 @@ export class WebsiteStore {
 
         tx.onerror = (event) => {
           // ignore error if website is stored already
-          if (!(event.target.error.message.indexOf("exists"))) {
+          if (!event.target.error.message.indexOf("exists")) {
             reject(new Error(event.target.error));
           }
         };
 
         console.log(`store item success`);
         resolve(items);
-      }
+      };
 
       projectRequest.onerror = (event) => {
         // ignore error if website is stored already
-        if (!(event.target.error.message.indexOf("exists"))) {
+        if (!event.target.error.message.indexOf("exists")) {
           console.log(`store item error`);
-          console.log(event.target)
+          console.log(event.target);
           reject(new Error(event.target.error));
         }
       };
     });
   }
 
-  async deleteWebsiteFromProject(projectId: string, url: string): Promise<void> {
+  async deleteWebsiteFromProject(
+    projectId: string,
+    url: string,
+  ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       let db: IDBDatabase;
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
 
       // update website list of active project
@@ -207,20 +221,21 @@ export class WebsiteStore {
         return w !== url;
       });
 
-      const projectRequest = db.transaction(["projects"], "readwrite")
+      const projectRequest = db
+        .transaction(["projects"], "readwrite")
         .objectStore("projects")
         .put(project);
 
       projectRequest.onsuccess = (event) => {
         console.log(`delete item success`);
         resolve();
-      }
+      };
 
       projectRequest.onerror = (event) => {
         // ignore error if website is stored already
-        if (!(event.target.error.message.indexOf("exists"))) {
+        if (!event.target.error.message.indexOf("exists")) {
           console.log(`store item error`);
-          console.log(event.target)
+          console.log(event.target);
           reject(new Error(event.target.error));
         }
       };
@@ -233,9 +248,10 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const request = db.transaction(["savedWebsites"])
+      const request = db
+        .transaction(["savedWebsites"])
         .objectStore("savedWebsites")
         .get(url);
 
@@ -257,9 +273,10 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const request = db.transaction(["savedWebsites"])
+      const request = db
+        .transaction(["savedWebsites"])
         .objectStore("savedWebsites")
         .getAll();
 
@@ -281,25 +298,26 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
 
       // update website list of active project
       let project = await this.getProject(projectId);
       project.name = newName;
 
-      const projectRequest = db.transaction(["projects"], "readwrite")
+      const projectRequest = db
+        .transaction(["projects"], "readwrite")
         .objectStore("projects")
         .put(project);
 
       projectRequest.onsuccess = (event) => {
         console.log(`rename project success`);
         resolve(project);
-      }
+      };
 
       projectRequest.onerror = (event) => {
         console.log(`rename project error`);
-        console.log(event.target)
+        console.log(event.target);
         reject(new Error(event.target.error));
       };
     });
@@ -312,10 +330,11 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
 
-      const projectRequest = db.transaction(["projects"], "readwrite")
+      const projectRequest = db
+        .transaction(["projects"], "readwrite")
         .objectStore("projects")
         .delete(projectId);
 
@@ -323,13 +342,13 @@ export class WebsiteStore {
         console.log(`delete project success`);
         // replace active project
         const projects = await this.getAllProjects();
-        await this.changeActiveProject(projects[0].id)
+        await this.changeActiveProject(projects[0].id);
         resolve(projects[0]);
-      }
+      };
 
       projectRequest.onerror = (event) => {
         console.log(`rename project error`);
-        console.log(event.target)
+        console.log(event.target);
         reject(new Error(event.target.error));
       };
     });
@@ -341,13 +360,14 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
 
       let user = await this.getUser();
       user.settings = settings;
 
-      const request = db.transaction(["user"], "readwrite")
+      const request = db
+        .transaction(["user"], "readwrite")
         .objectStore("user")
         .put(user);
 
@@ -369,11 +389,9 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const request = db.transaction(["user"])
-        .objectStore("user")
-        .getAll();
+      const request = db.transaction(["user"]).objectStore("user").getAll();
 
       request.onsuccess = (_) => {
         const [user] = request.result;
@@ -394,11 +412,9 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const request = db.transaction(["user"])
-        .objectStore("user")
-        .getAll();
+      const request = db.transaction(["user"]).objectStore("user").getAll();
 
       request.onsuccess = (_) => {
         const [user] = request.result;
@@ -419,15 +435,14 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const userRequest = db.transaction(["user"])
-        .objectStore("user")
-        .getAll();
+      const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = (_) => {
         const [user] = userRequest.result;
-        const projectRequest = db.transaction(["projects"], "readwrite")
+        const projectRequest = db
+          .transaction(["projects"], "readwrite")
           .objectStore("projects")
           .get(user.currentProject);
 
@@ -435,12 +450,12 @@ export class WebsiteStore {
           const project = projectRequest.result;
           console.log("getProject success");
           resolve(project);
-        }
+        };
 
         projectRequest.onerror = (event) => {
           console.log(`getProject error: ${event.target}`);
           reject(new Error("Failed to retrieve settings"));
-        }
+        };
       };
 
       userRequest.onerror = (event) => {
@@ -456,9 +471,10 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const request = db.transaction(["projects"])
+      const request = db
+        .transaction(["projects"])
         .objectStore("projects")
         .getAll();
 
@@ -480,9 +496,10 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const request = db.transaction(["projects"])
+      const request = db
+        .transaction(["projects"])
         .objectStore("projects")
         .get(projectId);
 
@@ -517,29 +534,28 @@ export class WebsiteStore {
       try {
         db = await this.getDb();
       } catch (err) {
-        reject(err)
+        reject(err);
       }
-      const userRequest = db.transaction(["user"])
-        .objectStore("user")
-        .getAll();
+      const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = async () => {
         const [user] = userRequest.result;
         user.currentProject = projectId;
 
-        const userPutRequest = db.transaction(["user"], "readwrite")
+        const userPutRequest = db
+          .transaction(["user"], "readwrite")
           .objectStore("user")
           .put(user);
 
         userPutRequest.onsuccess = () => {
           console.log("changeActiveProject success");
           resolve();
-        }
+        };
 
         userPutRequest.onerror = (event) => {
           console.log(`changeActiveProject error: ${event.target}`);
           reject(new Error("Failed to retrieve settings"));
-        }
+        };
       };
 
       userRequest.onerror = (event) => {
@@ -550,8 +566,10 @@ export class WebsiteStore {
   }
 
   // create new project and set it as user's active project
-  async createNewActiveProject(projectName: string, savedWebsites?: string[])
-    : Promise<Project> {
+  async createNewActiveProject(
+    projectName: string,
+    savedWebsites?: string[],
+  ): Promise<Project> {
     return new Promise(async (resolve, reject) => {
       const db = await this.getDb();
       const user = await this.getUser();
@@ -564,7 +582,8 @@ export class WebsiteStore {
       // FIXME: when rabbithole is installed, the first time a session is saved
       // the website list is duplicated, so dedup here for now
       // Also see how else this can be repro'd
-      const projectReq = db.transaction(["projects"], "readwrite")
+      const projectReq = db
+        .transaction(["projects"], "readwrite")
         .objectStore("projects")
         .put(project);
 
@@ -578,12 +597,12 @@ export class WebsiteStore {
           });
 
         resolve(project);
-      }
+      };
 
       projectReq.onerror = (event) => {
         console.log(`getAll error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
-      }
+      };
     });
   }
 }
