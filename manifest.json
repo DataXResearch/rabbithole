@@ -11,8 +11,14 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/assets/icons/logo.png"],
-      "matches": [ "https://*/*" ]
+      "resources": [
+        "src/assets/icons/logo.png",
+        "*.js",
+        "*.css",
+        "assets/*",
+        "src/*"
+      ],
+      "matches": ["<all_urls>"]
     }
   ],
   "chrome_url_overrides": {
@@ -20,12 +26,8 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://*/*"
-      ],
-      "js": [
-        "src/content/index.ts"
-      ]
+      "matches": ["https://*/*"],
+      "js": ["src/content/index.ts"]
     }
   ],
   "background": {
