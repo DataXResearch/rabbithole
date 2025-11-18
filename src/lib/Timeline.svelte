@@ -119,12 +119,13 @@
     </Button>
   </Group>
 
-  <TimelineSlider
-    {websites}
-    {startDate}
-    {endDate}
-    on:dateRangeChange={handleDateRangeChange}
-  />
+  <!-- FIXME: make this functional-->
+  <!-- <TimelineSlider -->
+  <!--   {websites} -->
+  <!--   {startDate} -->
+  <!--   {endDate} -->
+  <!--   on:dateRangeChange={handleDateRangeChange} -->
+  <!-- /> -->
 
   <div class="feed">
     <div class="search-bar">
