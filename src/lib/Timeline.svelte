@@ -1,23 +1,18 @@
 <script>
   import Fuse from "fuse.js";
-  import { onMount, createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import {
-    Badge,
     Button,
-    Card,
     Group,
-    Image,
     Input,
     Text,
     TextInput,
     Tooltip,
   } from "@svelteuidev/core";
-  import { MessageRequest } from "../utils";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
   import { Pencil1, Moon, Sun } from "radix-icons-svelte";
 
-  // FIXME: why aren't types working here?
   const dispatch = createEventDispatcher();
 
   export let activeProject = {};
@@ -35,23 +30,14 @@
   function toggleDarkMode() {
     dispatch("toggleTheme");
   }
+
   async function renameProject() {
     if (activeProject.name === "") {
-      // TODO: error modal
       return;
     }
     dispatch("projectRename", {
       newActiveProjectName: activeProject.name,
     });
-  }
-
-  function makeActiveProjectFirst() {
-    for (let i = 0; i < projects.length; i++) {
-      if (projects[i].name === activeProject.name) {
-        projects.splice(i, 1);
-      }
-    }
-    projects.unshift(activeProject);
   }
 
   async function deleteWebsite(event) {
@@ -64,12 +50,10 @@
     const fuse = new Fuse(websites, {
       keys: ["name", "description", "url"],
       includeScore: true,
-      // anything more has too many irrelevant results
       threshold: 0.3,
     });
 
     const results = fuse.search(searchQuery);
-    // const filteredResults = results.map((result) => result.item).filter((item, index, self) => self.indexOf(item) === index);
     return results;
   }
 
@@ -150,7 +134,6 @@
         on:input={applySearchQuery}
       />
     </div>
-    <!-- Following deadgrep's convention of 3 char minimum -->
     {#each websitesToDisplay as site}
       <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
     {/each}
@@ -165,11 +148,6 @@
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
-  }
-
-  .timeline.dark {
-    background-color: #1a1a1a;
-    color: #ffffff;
   }
 
   .input-div {
@@ -189,5 +167,14 @@
   .search-bar {
     width: inherit;
     margin-x: 20px;
+  }
+
+  :global(body.dark-mode .feed) {
+    background-color: #1a1a1a;
+  }
+
+  :global(body.dark-mode .search-bar .mantine-TextInput-input) {
+    background-color: #2c2c2c;
+    border-color: #444;
   }
 </style>
