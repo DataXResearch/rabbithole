@@ -7,20 +7,26 @@
     getOrderedProjects,
     NotificationDuration,
   } from "../utils";
-  import {
-    SvelteUIProvider,
-    AppShell,
-    Navbar,
-  } from "@svelteuidev/core";
+  import { SvelteUIProvider, AppShell, Navbar } from "@svelteuidev/core";
+
   let activeProject = {};
   let websites = [];
   let projects = [];
   let isDark = false;
   let opened = true;
   let syncSuccess = false;
-  let syncFail = false;
+  let settings = {
+    show: false,
+    alignment: "right",
+    darkMode: false,
+  };
 
   onMount(async () => {
+    settings = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_SETTINGS,
+    });
+    isDark = settings.darkMode;
+    document.body.classList.toggle("dark-mode", isDark);
     projects = await getOrderedProjects();
     activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_PROJECT,
@@ -109,7 +115,7 @@
     });
     websites = possiblyDuplicatedWebsites.filter(
       (value, index, self) =>
-        index === self.findIndex((t) => t.url === value.url),
+        index === self.findIndex((t) => t.url === value.url)
     );
   }
 
@@ -127,9 +133,14 @@
     link.click();
   }
 
-  function toggleTheme() {
+  async function toggleTheme() {
     isDark = !isDark;
     document.body.classList.toggle("dark-mode", isDark);
+    settings.darkMode = isDark;
+    chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_SETTINGS,
+      settings,
+    });
   }
 
   function handleToggleSidebar() {
@@ -164,8 +175,8 @@
           on:projectSync={saveWindowToActiveProject}
           on:exportRabbitholes={exportRabbitholes}
           on:toggleSidebar={handleToggleSidebar}
-      />
-    </Navbar>
+        />
+      </Navbar>
     {:else}
       <div class="hamburger-only">
         <Sidebar

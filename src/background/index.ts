@@ -5,7 +5,7 @@ function sendOverlayUpdate(tabId: number) {
   // ignore errors; receiving end won't exist if it's the newtab page
   try {
     chrome.tabs.sendMessage(tabId, { type: MessageRequest.PING });
-  } catch (err) {}
+  } catch (err) { }
 }
 
 // this is meant to be called async
@@ -263,6 +263,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     default:
   }
 
