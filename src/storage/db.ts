@@ -5,6 +5,7 @@ const version = 3;
 export interface Settings {
   alignment: string;
   show: boolean;
+  darkMode: boolean;
 }
 
 export interface Website {
@@ -91,7 +92,7 @@ export class WebsiteStore {
             });
             objectStore.createIndex("name", "name", { unique: false });
             objectStore.createIndex("url", "url", { unique: true });
-            objectStore.transaction.oncomplete = () => {};
+            objectStore.transaction.oncomplete = () => { };
           }
           if (event.oldVersion < 2) {
             db.createObjectStore("user", { keyPath: "id" });
@@ -372,7 +373,7 @@ export class WebsiteStore {
         .put(user);
 
       request.onsuccess = (event) => {
-        console.log(`update settings success: ${event.target}`);
+        console.log(`update settings success: ${JSON.stringify(event.target)}`);
         resolve(settings);
       };
 

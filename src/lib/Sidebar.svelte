@@ -1,12 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import {
-    Button,
-    Group,
-    Text,
-    TextInput,
-    Tooltip,
-  } from "@svelteuidev/core";
+  import { Button, Group, Text, TextInput, Tooltip } from "@svelteuidev/core";
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
   import UpdatingComponent from "src/lib/UpdatingComponent.svelte";
   import { NotificationDuration } from "../utils";
@@ -114,7 +108,11 @@
         <Text weight="bold" size="lg" override={textStyleOverride}
           >Change Project</Text
         >
-        <ProjectSelector id="project-selector" {projects} {handleProjectChange} />
+        <ProjectSelector
+          id="project-selector"
+          {projects}
+          {handleProjectChange}
+        />
         <Tooltip
           {isHoveringOverSync}
           label="Save all tabs in window to current project"
@@ -156,7 +154,10 @@
         <Text weight="bold" size="lg" override={textStyleOverride}
           >Create Project</Text
         >
-        <UpdatingComponent fail={createProjectFail} failMsg={createProjectFailMsg}>
+        <UpdatingComponent
+          fail={createProjectFail}
+          failMsg={createProjectFailMsg}
+        >
           <TextInput
             placeholder="My new rabbithole"
             bind:value={newRabbitholeName}
