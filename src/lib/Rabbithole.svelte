@@ -9,22 +9,14 @@
   } from "../utils";
   import {
     SvelteUIProvider,
-    fns,
     AppShell,
     Navbar,
-    Title,
-    Divider,
   } from "@svelteuidev/core";
-
   let activeProject = {};
   let websites = [];
   let projects = [];
   let isDark = false;
-  let opened = false;
-
-  // status for updatingComponents
-  // TODO: better; is dispatching from parent to child an antipattern?
-  // how can `Sidebar` be cut out as a middleman? should it?
+  let opened = true;
   let syncSuccess = false;
   let syncFail = false;
 
@@ -71,9 +63,6 @@
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
     });
-    // FIXME: this is a direct consequence of the background script's `storeWebsites`
-    // function being a weird hybrid of sync and async. This makes the UI behave
-    // somewhat correctly but is quite an ugly temp solution
     setTimeout(() => {
       updateWebsites();
       syncSuccess = true;
@@ -114,8 +103,6 @@
   }
 
   async function updateWebsites() {
-    // FIXME: when rabbithole is installed, the first time a session is saved
-    // the website list is duplicated, so dedup here for now
     const possiblyDuplicatedWebsites = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_PROJECT_SAVED_WEBSITES,
       projectId: activeProject.id,
@@ -145,58 +132,94 @@
     document.body.classList.toggle("dark-mode", isDark);
   }
 
-  function toggleOpened() {
+  function handleToggleSidebar() {
     opened = !opened;
   }
 </script>
 
 <SvelteUIProvider>
   <AppShell>
-    <Navbar
-      fixed
-      width={{
-        sm: 300,
-        lg: 400,
-        base: 100,
-      }}
-      height={"100%"}
-      override={{
-        borderRight: "1px solid rgb(233, 236, 239)",
-        overflowY: "scroll",
-      }}
-      hidden={!opened}
-    >
-      <Sidebar
-        {syncSuccess}
-        {projects}
-        on:projectDelete={deleteActiveProject}
-        on:projectChange={updateActiveProject}
-        on:newProject={createNewProject}
-        on:newProjectSync={createNewProjectFromWindow}
-        on:projectSync={saveWindowToActiveProject}
-        on:exportRabbitholes={exportRabbitholes}
+    {#if opened}
+      <Navbar
+        fixed
+        width={{
+          sm: 300,
+          lg: 400,
+          base: 100,
+        }}
+        height={"100%"}
+        override={{
+          borderRight: "1px solid rgb(233, 236, 239)",
+          overflowY: "auto",
+        }}
+      >
+        <Sidebar
+          {syncSuccess}
+          {projects}
+          {opened}
+          on:projectDelete={deleteActiveProject}
+          on:projectChange={updateActiveProject}
+          on:newProject={createNewProject}
+          on:newProjectSync={createNewProjectFromWindow}
+          on:projectSync={saveWindowToActiveProject}
+          on:exportRabbitholes={exportRabbitholes}
+          on:toggleSidebar={handleToggleSidebar}
       />
     </Navbar>
-    <Timeline
-      on:websiteDelete={deleteWebsite}
-      on:projectRename={renameActiveProject}
-      on:toggleTheme={toggleTheme}
-      {activeProject}
-      {websites}
-      {isDark}
-    />
+    {:else}
+      <div class="hamburger-only">
+        <Sidebar
+          {syncSuccess}
+          {projects}
+          {opened}
+          on:projectDelete={deleteActiveProject}
+          on:projectChange={updateActiveProject}
+          on:newProject={createNewProject}
+          on:newProjectSync={createNewProjectFromWindow}
+          on:projectSync={saveWindowToActiveProject}
+          on:exportRabbitholes={exportRabbitholes}
+          on:toggleSidebar={handleToggleSidebar}
+        />
+      </div>
+    {/if}
+    <div class="main-content" class:sidebar-closed={!opened}>
+      <Timeline
+        on:websiteDelete={deleteWebsite}
+        on:projectRename={renameActiveProject}
+        on:toggleTheme={toggleTheme}
+        {activeProject}
+        {websites}
+        {isDark}
+      />
+    </div>
   </AppShell>
 </SvelteUIProvider>
 
 <style>
-  :global(body.dark-mode) {
-    background-color: #1a1a1a;
-    color: #ffffff;
+  .main-content {
+    width: 100%;
   }
 
-  :global(body.dark-mode .timeline) {
+  .main-content.sidebar-closed {
+    display: flex;
+    justify-content: center;
+  }
+
+  .hamburger-only {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    background: transparent;
+  }
+
+  :global(.hamburger-only .sidebar-wrapper) {
+    background: transparent !important;
+  }
+
+  :global(body.dark-mode) {
     background-color: #1a1a1a;
-    color: #ffffff;
+    color: white;
   }
 
   :global(body.dark-mode .mantine-AppShell-root) {
@@ -205,16 +228,11 @@
 
   :global(body.dark-mode .mantine-AppShell-main) {
     background-color: #1a1a1a;
-    color: #ffffff;
-  }
-
-  :global(body.dark-mode .mantine-Card-root) {
-    background-color: #2c2c2c;
-    color: #ffffff;
+    color: white;
   }
 
   :global(body.dark-mode .mantine-Text-root) {
-    color: #ffffff;
+    color: white;
   }
 
   :global(body.dark-mode .mantine-TextInput-input) {
@@ -229,16 +247,32 @@
   }
 
   :global(body.dark-mode .mantine-Navbar-root) {
-    background-color: #2c2c2c;
-    border-right: 1px solid #444 !important;
+    background-color: #d3d3d3 !important;
+    border-right: 1px solid #bbb !important;
   }
 
-  :global(body.dark-mode .mantine-Button-root) {
-    background-color: #2c2c2c;
-    color: #ffffff;
+  :global(body.dark-mode .mantine-Navbar-root[aria-hidden="true"]) {
+    background-color: transparent !important;
+  }
+
+  :global(body.dark-mode .mantine-Navbar-root[aria-hidden="false"]) {
+    border-right: 1px solid #bbb !important;
+  }
+
+  :global(body.dark-mode .mantine-Navbar-root *) {
+    color: #1a1a1a;
   }
 
   :global(body.dark-mode .mantine-Divider-root) {
     border-color: #444;
+  }
+
+  :global(body.dark-mode #project-name) {
+    color: white !important;
+  }
+
+  :global(body.dark-mode .active-rabbithole) {
+    color: white !important;
+    font-weight: bold;
   }
 </style>

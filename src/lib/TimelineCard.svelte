@@ -15,16 +15,7 @@
 </script>
 
 <div class="card-container">
-  <Card shadow="lg" padding="lg">
-    <!-- TODO: figure out card image display by avoiding rate limited API calls -->
-    <!-- <Card.Section first padding="lg"> -->
-    <!-- <Image -->
-    <!-- src={website.openGraphImageUrl} -->
-    <!-- height={160} -->
-    <!-- alt={website.title} -->
-    <!-- /> -->
-    <!-- </Card.Section> -->
-
+  <Card shadow="lg" padding="lg" class="timeline-card">
     <Text weight="bold" size="xl">{website.name}</Text>
 
     <div class="website-description">
@@ -60,5 +51,14 @@
 
   .website-description {
     margin: 20px auto;
+  }
+
+  :global(body.dark-mode .timeline-card) {
+    background-color: #d3d3d3 !important;
+    color: #1a1a1a !important;
+  }
+
+  :global(body.dark-mode .timeline-card .mantine-Text-root) {
+    color: #1a1a1a !important;
   }
 </style>

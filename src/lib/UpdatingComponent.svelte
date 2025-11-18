@@ -41,4 +41,12 @@
     color: rgb(250, 82, 82);
     font-weight: bold;
   }
+
+  :global(body.dark-mode .success) {
+    color: #2ecc71;
+  }
+
+  :global(body.dark-mode .fail) {
+    color: rgb(250, 82, 82);
+  }
 </style>
