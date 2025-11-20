@@ -121,7 +121,7 @@ function isNewtabPage(url: string): boolean {
   if (url.includes("vivaldi://newtab")) return true;
   // Generic about:home for Firefox
   if (url.includes("about:home")) return true;
-  
+
   return false;
 }
 
@@ -148,7 +148,8 @@ function storeWebsites(
         const { title, image, description } = extractOpenGraphData(html);
         return {
           url: tab.url,
-          name: title !== null ? title : tab.title,
+          // FIXME: is it worth even having og title?
+          name: tab.title ?? title,
           faviconUrl: tab.favIconUrl,
           savedAt: Date.now(),
           openGraphImageUrl: image,
@@ -399,7 +400,7 @@ chrome.tabs.onActivated.addListener((tab) => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabInfo) => {
     // Check for various browser newtab/home pages
     const url = "pendingUrl" in tabInfo[0] ? tabInfo[0].pendingUrl : tabInfo[0].url;
-    
+
     if (
       !url.includes("chrome://") &&
       !url.includes("brave://") &&

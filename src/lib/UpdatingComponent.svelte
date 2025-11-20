@@ -1,15 +1,23 @@
 <script>
-  import { Button, Group } from "@svelteuidev/core";
+  import { Button, Group, Loader } from "@svelteuidev/core";
   import { CheckCircled, CrossCircled } from "radix-icons-svelte";
 
-  export let success, fail;
-  export let successMsg, failMsg;
+  export let success = false;
+  export let fail = false;
+  export let loading = false;
+  export let successMsg = "";
+  export let failMsg = "";
 </script>
 
 <div class="updating-component">
   <div class="child">
     <slot />
   </div>
+  {#if loading}
+    <div class="child">
+      <Loader size="xs" />
+    </div>
+  {/if}
   {#if success}
     <div class="child">
       <span class="success"><CheckCircled size="20" /></span>
