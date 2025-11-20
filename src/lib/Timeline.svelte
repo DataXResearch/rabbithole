@@ -8,6 +8,7 @@
     Text,
     TextInput,
     Tooltip,
+    Loader,
   } from "@svelteuidev/core";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
@@ -18,6 +19,7 @@
   export let activeProject = {};
   export let websites = [];
   export let isDark = false;
+  export let isLoading = false;
 
   let searchResults = [];
   let nameClicked = false;
@@ -72,8 +74,10 @@
     });
   }
 
-  $: if (websites.length > 0 && filteredWebsites.length === 0) {
+  $: {
     filteredWebsites = websites;
+    searchResults = [];
+    searchQuery = "";
   }
 
   $: websitesToDisplay =
@@ -128,16 +132,23 @@
   <!-- /> -->
 
   <div class="feed">
-    <div class="search-bar">
-      <TextInput
-        placeholder="Search"
-        bind:value={searchQuery}
-        on:input={applySearchQuery}
-      />
-    </div>
-    {#each websitesToDisplay as site}
-      <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
-    {/each}
+    {#if isLoading}
+      <div class="loading-container">
+        <Loader size="lg" />
+        <Text size="lg" color="dimmed">Loading websites...</Text>
+      </div>
+    {:else}
+      <div class="search-bar">
+        <TextInput
+          placeholder="Search"
+          bind:value={searchQuery}
+          on:input={applySearchQuery}
+        />
+      </div>
+      {#each websitesToDisplay as site}
+        <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
+      {/each}
+    {/if}
   </div>
 </div>
 
@@ -170,6 +181,15 @@
     margin-x: 20px;
   }
 
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 60px 20px;
+  }
+
   :global(body.dark-mode .feed) {
     background-color: #1a1a1a;
   }
@@ -177,5 +197,9 @@
   :global(body.dark-mode .search-bar .mantine-TextInput-input) {
     background-color: #2c2c2c;
     border-color: #444;
+  }
+
+  :global(body.dark-mode .loading-container .mantine-Text-root) {
+    color: white;
   }
 </style>

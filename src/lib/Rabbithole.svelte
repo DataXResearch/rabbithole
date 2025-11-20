@@ -15,6 +15,8 @@
   let isDark = false;
   let opened = true;
   let syncSuccess = false;
+  let isSyncing = false;
+  let isLoadingWebsites = false;
   let settings = {
     show: false,
     alignment: "right",
@@ -44,12 +46,18 @@
   }
 
   async function createNewProjectFromWindow(event) {
+    isSyncing = true;
+    isLoadingWebsites = true;
     activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
       newProjectName: event.detail.newProjectName,
     });
     projects = await getOrderedProjects();
+    // Wait for websites to be stored in the background
+    await new Promise(resolve => setTimeout(resolve, 1500));
     updateWebsites();
+    isSyncing = false;
+    isLoadingWebsites = false;
   }
 
   async function updateActiveProject(event) {
@@ -66,19 +74,19 @@
   }
 
   async function saveWindowToActiveProject(event) {
+    isSyncing = true;
+    isLoadingWebsites = true;
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
     });
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    updateWebsites();
+    syncSuccess = true;
+    isSyncing = false;
+    isLoadingWebsites = false;
     setTimeout(() => {
-      updateWebsites();
-      syncSuccess = true;
-      setTimeout(() => {
-        syncSuccess = false;
-      }, NotificationDuration);
-    }, 300);
-    setTimeout(() => {
-      updateWebsites();
-    }, 1000);
+      syncSuccess = false;
+    }, NotificationDuration);
   }
 
   async function renameActiveProject(event) {
@@ -166,6 +174,7 @@
       >
         <Sidebar
           {syncSuccess}
+          {isSyncing}
           {projects}
           {opened}
           on:projectDelete={deleteActiveProject}
@@ -181,6 +190,7 @@
       <div class="hamburger-only">
         <Sidebar
           {syncSuccess}
+          {isSyncing}
           {projects}
           {opened}
           on:projectDelete={deleteActiveProject}
@@ -201,6 +211,7 @@
         {activeProject}
         {websites}
         {isDark}
+        isLoading={isLoadingWebsites}
       />
     </div>
   </AppShell>

@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Button, Group, Text, TextInput, Tooltip } from "@svelteuidev/core";
+  import { Button, Group, Text, TextInput, Tooltip, Loader } from "@svelteuidev/core";
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
   import UpdatingComponent from "src/lib/UpdatingComponent.svelte";
   import { NotificationDuration } from "../utils";
@@ -11,6 +11,7 @@
 
   export let projects;
   export let syncSuccess;
+  export let isSyncing;
   export let opened;
 
   let createProjectFail = false;
@@ -40,7 +41,7 @@
       }, NotificationDuration);
       return false;
     }
-    return valid;
+    return true;
   }
 
   async function handleProjectChange(event) {
@@ -120,6 +121,7 @@
           <UpdatingComponent
             success={syncSuccess}
             successMsg="Window synced successfully!"
+            loading={isSyncing}
           >
             <Button
               on:click={saveAllTabsToActiveProject}
@@ -131,6 +133,7 @@
               }}
               variant="light"
               color="blue"
+              disabled={isSyncing}
             >
               Sync window
             </Button>
@@ -166,9 +169,19 @@
         <Button on:click={createNewProject} variant="light" color="blue">
           Create empty project
         </Button>
-        <Button on:click={saveAllTabsToNewProject} variant="light" color="blue">
-          Create and save all tabs in window
-        </Button>
+        <UpdatingComponent
+          success={false}
+          loading={isSyncing}
+        >
+          <Button
+            on:click={saveAllTabsToNewProject}
+            variant="light"
+            color="blue"
+            disabled={isSyncing}
+          >
+            Create and save all tabs in window
+          </Button>
+        </UpdatingComponent>
         <Button on:click={exportRabbitholes} variant="light" color="blue">
           Export rabbitholes
         </Button>
