@@ -8,34 +8,151 @@ function sendOverlayUpdate(tabId: number) {
   } catch (err) { }
 }
 
+function extractOpenGraphData(html: string): {
+  title: string | null;
+  image: string | null;
+  description: string | null
+} {
+  let title: string | null = null;
+  let image: string | null = null;
+  let description: string | null = null;
+
+  // Extract Open Graph title
+  const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+  if (titleMatch) {
+    title = titleMatch[1];
+  }
+
+  // Extract Open Graph image
+  const imageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+  if (imageMatch) {
+    image = imageMatch[1];
+  }
+
+  // Extract Open Graph description
+  const descriptionMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
+  if (descriptionMatch) {
+    description = descriptionMatch[1];
+  }
+
+  // Fallback 1: Standard meta description
+  if (!description) {
+    const metaDescriptionMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+    if (metaDescriptionMatch) {
+      description = metaDescriptionMatch[1];
+    }
+  }
+
+  // Fallback 2: Twitter card description
+  if (!description) {
+    const twitterDescMatch = html.match(/<meta\s+name=["']twitter:description["']\s+content=["']([^"']+)["']/i);
+    if (twitterDescMatch) {
+      description = twitterDescMatch[1];
+    }
+  }
+
+  // Fallback 3: Extract first paragraph of meaningful text
+  if (!description) {
+    description = extractFirstParagraph(html);
+  }
+
+  // Fallback 4: Use title as description if available
+  if (!description && title) {
+    description = title;
+  }
+
+  // Fallback 5: Generic placeholder
+  if (!description) {
+    description = "No description available";
+  }
+
+  return { title, image, description };
+}
+
+function extractFirstParagraph(html: string): string | null {
+  // Remove script and style tags
+  let cleaned = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  cleaned = cleaned.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
+  // Try to find first paragraph
+  const pMatch = cleaned.match(/<p[^>]*>([^<]+(?:<[^/][^>]*>[^<]*<\/[^>]+>[^<]*)*)<\/p>/i);
+  if (pMatch) {
+    // Strip remaining HTML tags and clean up
+    const text = pMatch[1].replace(/<[^>]+>/g, '').trim();
+    // Limit to reasonable length (e.g., 160 characters)
+    return text.length > 160 ? text.substring(0, 157) + '...' : text;
+  }
+
+  // Fallback: Get any substantial text from body
+  const bodyMatch = cleaned.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  if (bodyMatch) {
+    const bodyText = bodyMatch[1]
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (bodyText.length > 20) {
+      return bodyText.length > 160 ? bodyText.substring(0, 157) + '...' : bodyText;
+    }
+  }
+
+  // Try to extract from any heading tags as last resort
+  const headingMatch = cleaned.match(/<h[1-6][^>]*>([^<]+)<\/h[1-6]>/i);
+  if (headingMatch) {
+    const text = headingMatch[1].trim();
+    return text.length > 0 ? text : null;
+  }
+
+  return null;
+}
+
+function isNewtabPage(url: string): boolean {
+  // Chrome variants
+  if (url.includes("chrome://newtab")) return true;
+  // Firefox
+  if (url.includes("about:newtab")) return true;
+  // Edge
+  if (url.includes("edge://newtab")) return true;
+  // Brave
+  if (url.includes("brave://newtab")) return true;
+  // Opera
+  if (url.includes("opera://newtab")) return true;
+  // Vivaldi
+  if (url.includes("vivaldi://newtab")) return true;
+  // Generic about:home for Firefox
+  if (url.includes("about:home")) return true;
+  
+  return false;
+}
+
 // this is meant to be called async
 function storeWebsites(
   tabs: chrome.tabs.Tab[],
   db: WebsiteStore,
   sendResponse: any,
 ): Promise<void[]> {
+  // Filter out newtab pages
+  const validTabs = tabs.filter(tab => !isNewtabPage(tab.url));
+
+  if (validTabs.length === 0) {
+    sendResponse({ error: "No valid tabs to save" });
+    return Promise.resolve([]);
+  }
+
   // delegate this to db?
   // FIXME: add some guarantees that this won't randomly crash
-  const promiseArray = tabs.map((tab) =>
-    fetch(
-      `https://cardyb.bsky.app/v1/extract?url=${encodeURIComponent(tab.url)}`,
-      {
-        method: "GET",
-        redirect: "follow",
-      },
-    )
-      .then((response) => response.json())
-      .then((result) => {
+  const promiseArray = validTabs.map((tab) =>
+    fetch(tab.url)
+      .then((response) => response.text())
+      .then((html) => {
+        const { title, image, description } = extractOpenGraphData(html);
         return {
           url: tab.url,
-          name:
-            result.error === "" && result.title !== ""
-              ? result.title
-              : tab.title,
+          name: title !== null ? title : tab.title,
           faviconUrl: tab.favIconUrl,
           savedAt: Date.now(),
-          openGraphImageUrl: result.error === "" ? result.image : null,
-          description: result.error === "" ? result.description : null,
+          openGraphImageUrl: image,
+          description: description ?? "",
         };
       })
       .then((website) => {
@@ -56,7 +173,7 @@ function storeWebsites(
             faviconUrl: tab.favIconUrl,
             savedAt: Date.now(),
             openGraphImageUrl: null,
-            description: null,
+            description: "No description available",
           },
         ])
           .then((res) => sendResponse(res))
@@ -195,7 +312,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT:
       chrome.tabs.query({ windowId: sender.tab.windowId }).then((tabs) => {
-        let websites: string[] = tabs.map((tab) => tab.url);
+        let websites: string[] = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
         // store websites async
         storeWebsites(tabs, db, sendResponse);
 
@@ -280,23 +397,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // });
 chrome.tabs.onActivated.addListener((tab) => {
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabInfo) => {
-    // FIXME: firefox? also maybe should be abstracted
-    if ("pendingUrl" in tabInfo[0]) {
-      if (
-        !tabInfo[0].pendingUrl.includes("chrome://") &&
-        !tabInfo[0].pendingUrl.includes("brave://") &&
-        !tabInfo[0].pendingUrl.includes("edge://")
-      ) {
-        sendOverlayUpdate(tab.tabId);
-      }
-    } else {
-      if (
-        !tabInfo[0].url.includes("chrome://") &&
-        !tabInfo[0].url.includes("brave://") &&
-        !tabInfo[0].url.includes("edge://")
-      ) {
-        sendOverlayUpdate(tab.tabId);
-      }
+    // Check for various browser newtab/home pages
+    const url = "pendingUrl" in tabInfo[0] ? tabInfo[0].pendingUrl : tabInfo[0].url;
+    
+    if (
+      !url.includes("chrome://") &&
+      !url.includes("brave://") &&
+      !url.includes("edge://") &&
+      !url.includes("opera://") &&
+      !url.includes("vivaldi://") &&
+      !url.includes("about:")
+    ) {
+      sendOverlayUpdate(tab.tabId);
     }
   });
 });

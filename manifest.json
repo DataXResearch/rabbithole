@@ -49,7 +49,6 @@
     "storage",
     "tabs",
     "activeTab",
-    "https://cardyb.bsky.app/*",
     "https://rabbithole.to/*"
   ]
 }
