@@ -28,6 +28,7 @@
   let filteredWebsites = [];
   let startDate = null;
   let endDate = null;
+  let previousWebsitesLength = 0;
 
   function toggleDarkMode() {
     dispatch("toggleTheme");
@@ -74,10 +75,11 @@
     });
   }
 
-  $: {
+  $: if (websites.length !== previousWebsitesLength) {
     filteredWebsites = websites;
     searchResults = [];
     searchQuery = "";
+    previousWebsitesLength = websites.length;
   }
 
   $: websitesToDisplay =
