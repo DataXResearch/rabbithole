@@ -30,7 +30,7 @@
       createProjectFailMsg = "Project name required!";
       valid = false;
     }
-    if (projects.filter((p) => p.name === newRabbitholeName).length > 0) {
+    if (projects.filter((p) => p.name.toLowerCase() === newRabbitholeName.toLowerCase()).length > 0) {
       createProjectFailMsg = "Project name already used!";
       valid = false;
     }
