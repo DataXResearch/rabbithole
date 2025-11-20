@@ -33,7 +33,6 @@
   "background": {
     "service_worker": "src/background/index.ts"
   },
-  "options_ui": {
   "options_page": "src/options/options.html",
   "action": {
     "default_icon": {
@@ -45,9 +44,6 @@
     "default_popup": "src/popup/popup.html"
   },
   "permissions": [
-    "storage",
-    "tabs",
-    "activeTab",
-    "https://rabbithole.to/*"
+    "tabs"
   ]
 }
