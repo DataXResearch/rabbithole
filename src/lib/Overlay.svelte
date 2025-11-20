@@ -4,10 +4,14 @@
   import Options from "./Options.svelte";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
   import { MessageRequest, getOrderedProjects } from "../utils.ts";
+  import type { Settings } from "../storage/db";
+
+  export let isPopup = false;
 
   let settings: Settings = {
     show: false,
     alignment: "right",
+    darkMode: false,
   };
   let projects = [];
   let isHovering = false;
@@ -20,11 +24,7 @@
   });
 
   function changeAlignment(event) {
-    if (settings.alignment === "left") {
-      settings.alignment = "right";
-    } else {
-      settings.alignment = "left";
-    }
+    settings.alignment = settings.alignment === "left" ? "right" : "left";
     chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
       settings,
@@ -47,8 +47,8 @@
   }
 </script>
 
-{#if settings.show}
-  <div id="overlay-container" class="overlay {settings.alignment}">
+{#if settings.show || isPopup}
+  <div id="overlay-container" class="overlay {settings.alignment}" class:popup={isPopup}>
     <div class="buttons">
       <Group position="center" spacing="md">
         <Button
@@ -107,6 +107,16 @@
     border-radius: 20px;
     border: 1px solid black;
     padding: 4px;
+  }
+
+  .overlay.popup {
+    position: static;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    background-color: transparent;
+    z-index: auto;
   }
 
   .right {

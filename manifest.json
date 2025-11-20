@@ -34,16 +34,15 @@
     "service_worker": "src/background/index.ts"
   },
   "options_ui": {
-    "page": "src/options/options.html",
-    "open_in_tab": false
-  },
+  "options_page": "src/options/options.html",
   "action": {
     "default_icon": {
       "16": "src/assets/icons/logo16.png",
       "32": "src/assets/icons/logo32.png",
       "48": "src/assets/icons/logo48.png",
       "128": "src/assets/icons/logo128.png"
-    }
+    },
+    "default_popup": "src/popup/popup.html"
   },
   "permissions": [
     "storage",
