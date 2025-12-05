@@ -1,6 +1,7 @@
 <script lang="ts">
   import { MessageRequest, NotificationDuration } from "../utils";
-  import { Button, Group } from "@svelteuidev/core";
+  import { Button, Group, Text } from "@svelteuidev/core";
+  import { Bookmark } from "radix-icons-svelte";
 
   let successMessage: string = null;
 
@@ -9,8 +10,8 @@
       type: MessageRequest.SAVE_TAB,
     });
     successMessage = savedTab.alreadySaved
-      ? "Website already saved!"
-      : "Website saved!";
+      ? "Already saved!"
+      : "Saved!";
     setTimeout(() => {
       successMessage = null;
     }, NotificationDuration);
@@ -18,21 +19,24 @@
 </script>
 
 <div class="container">
-  <Group position="center">
-    <Button on:click={save} size="md" id="move" color="blue">
-      Save Website
-    </Button>
-    {#if successMessage}<span class="success">{successMessage}</span>{/if}
-  </Group>
+  <Button 
+    on:click={save} 
+    size="sm" 
+    fullWidth 
+    color="blue" 
+    leftIcon={Bookmark}
+  >
+    Save Website
+  </Button>
+  {#if successMessage}
+    <Text size="xs" color="green" align="center" weight="bold" style="margin-top: 8px;">
+      {successMessage}
+    </Text>
+  {/if}
 </div>
 
 <style>
   .container {
-    margin-top: 10px;
-    max-width: 210px;
-  }
-  .success {
-    color: #2ecc71;
-    font-weight: bold;
+    width: 100%;
   }
 </style>

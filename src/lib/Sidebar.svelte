@@ -1,17 +1,33 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Button, Group, Text, TextInput, Tooltip, Loader } from "@svelteuidev/core";
+  import {
+    Button,
+    Text,
+    TextInput,
+    Tooltip,
+    Stack,
+    ActionIcon,
+  } from "@svelteuidev/core";
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
-  import UpdatingComponent from "src/lib/UpdatingComponent.svelte";
   import { NotificationDuration } from "../utils";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
-  import { HamburgerMenu } from "radix-icons-svelte";
+  import {
+    HamburgerMenu,
+    Plus,
+    Download,
+    Trash,
+    Reload,
+    FilePlus,
+    Check,
+  } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
 
   export let projects;
-  export let syncSuccess;
-  export let isSyncing;
+  export let syncWindowSuccess = false;
+  export let isSyncingWindow = false;
+  export let createAndSyncSuccess = false;
+  export let isCreatingAndSyncing = false;
   export let opened;
 
   let createProjectFail = false;
@@ -20,18 +36,20 @@
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
   let isHoveringOverDelete = false;
-  const textStyleOverride = {
-    marginTop: "15px",
-  };
+  let isHoveringOverCreateSync = false;
 
   function validateProjectName() {
     let valid = true;
     if (newRabbitholeName === "") {
-      createProjectFailMsg = "Project name required!";
+      createProjectFailMsg = "Required!";
       valid = false;
     }
-    if (projects.filter((p) => p.name.toLowerCase() === newRabbitholeName.toLowerCase()).length > 0) {
-      createProjectFailMsg = "Project name already used!";
+    if (
+      projects.filter(
+        (p) => p.name.toLowerCase() === newRabbitholeName.toLowerCase()
+      ).length > 0
+    ) {
+      createProjectFailMsg = "Taken!";
       valid = false;
     }
     if (!valid) {
@@ -55,6 +73,7 @@
       dispatch("newProject", {
         newProjectName: newRabbitholeName,
       });
+      newRabbitholeName = "";
     }
   }
 
@@ -63,6 +82,7 @@
       dispatch("newProjectSync", {
         newProjectName: newRabbitholeName,
       });
+      newRabbitholeName = "";
     }
   }
 
@@ -84,108 +104,197 @@
 </script>
 
 <div class="sidebar-wrapper">
-  <Button
-    on:click={toggleSidebar}
-    variant="subtle"
-    color="gray"
-    override={{ marginBottom: "20px", alignSelf: "flex-start", padding: "4px" }}
-  >
-    <HamburgerMenu size="24" color="#1a1a1a" />
-  </Button>
+  <div class="sidebar-header">
+    <ActionIcon
+      on:click={toggleSidebar}
+      variant="transparent"
+      class="hamburger-btn"
+      size="xl"
+    >
+      <HamburgerMenu size="24" />
+    </ActionIcon>
+  </div>
 
   {#if opened}
-    <div class="sidebar">
-      <Group
-        direction="column"
-        position="left"
-        override={{
-          alignItems: "left",
-        }}
-      >
-        <Text weight="bold" size="lg" override={textStyleOverride}
-          >Overlay Settings</Text
-        >
-        <SettingsButtons />
-        <Text weight="bold" size="lg" override={textStyleOverride}
-          >Change Project</Text
-        >
-        <ProjectSelector
-          id="project-selector"
-          {projects}
-          {handleProjectChange}
-        />
-        <Tooltip
-          {isHoveringOverSync}
-          label="Save all tabs in window to current project"
-        >
-          <UpdatingComponent
-            success={syncSuccess}
-            successMsg="Window synced successfully!"
-            loading={isSyncing}
+    <div class="sidebar-content">
+      <Stack spacing={40}>
+        <!-- Current Project Section -->
+        <div class="section">
+          <Text
+            align="center"
+            weight="bold"
+            size="xs"
+            transform="uppercase"
+            color="dimmed"
+            style="margin-bottom: 20px; letter-spacing: 0.5px;"
           >
+            Active Project
+          </Text>
+          <Stack spacing={20} align="center">
+            <ProjectSelector
+              id="project-selector"
+              {projects}
+              {handleProjectChange}
+            />
+
+            <Tooltip
+              {isHoveringOverSync}
+              label="Save all tabs in window to current project"
+              withArrow
+              position="bottom"
+              color="dark"
+            >
+              <div class="button-wrapper">
+                <Button
+                  on:click={saveAllTabsToActiveProject}
+                  on:mouseenter={() => (isHoveringOverSync = true)}
+                  on:mouseleave={() => (isHoveringOverSync = false)}
+                  variant="light"
+                  color="blue"
+                  fullWidth
+                  class="sidebar-btn"
+                  leftIcon={Reload}
+                  loading={isSyncingWindow}
+                >
+                  Sync Window
+                </Button>
+                {#if syncWindowSuccess}
+                  <div class="success-check-outside">
+                    <Check />
+                  </div>
+                {/if}
+              </div>
+            </Tooltip>
+
+            <Tooltip
+              {isHoveringOverDelete}
+              label="Irreversible!"
+              withArrow
+              position="bottom"
+              color="red"
+            >
+              <Button
+                on:click={deleteProject}
+                on:mouseenter={() => (isHoveringOverDelete = true)}
+                on:mouseleave={() => (isHoveringOverDelete = false)}
+                variant="light"
+                color="red"
+                fullWidth
+                class="sidebar-btn"
+                leftIcon={Trash}
+              >
+                Delete Project
+              </Button>
+            </Tooltip>
+          </Stack>
+        </div>
+
+        <!-- Create Section -->
+        <div class="section">
+          <Text
+            align="center"
+            weight="bold"
+            size="xs"
+            transform="uppercase"
+            color="dimmed"
+            style="margin-bottom: 20px; letter-spacing: 0.5px;"
+          >
+            New Project
+          </Text>
+          <Stack spacing={20} align="center">
+            <TextInput
+              placeholder="Project Name"
+              bind:value={newRabbitholeName}
+              variant="filled"
+              radius="md"
+              error={createProjectFail ? createProjectFailMsg : false}
+            />
+
             <Button
-              on:click={saveAllTabsToActiveProject}
-              on:mouseenter={() => {
-                isHoveringOverSync = true;
-              }}
-              on:mouseleave={() => {
-                isHoveringOverSync = false;
-              }}
+              on:click={createNewProject}
               variant="light"
               color="blue"
-              disabled={isSyncing}
+              fullWidth
+              class="sidebar-btn"
+              leftIcon={FilePlus}
             >
-              Sync window
+              Create Empty
             </Button>
-          </UpdatingComponent>
-        </Tooltip>
-        <Tooltip {isHoveringOverDelete} label="This action is irreversible!">
-          <Button
-            on:click={deleteProject}
-            on:mouseenter={() => {
-              isHoveringOverDelete = true;
-            }}
-            on:mouseleave={() => {
-              isHoveringOverDelete = false;
-            }}
-            variant="filled"
-            color="red"
+            
+            <Tooltip
+              {isHoveringOverCreateSync}
+              label="Create project and save all tabs"
+              withArrow
+              position="bottom"
+              color="dark"
+            >
+              <div class="button-wrapper">
+                <Button
+                  on:click={saveAllTabsToNewProject}
+                  on:mouseenter={() => (isHoveringOverCreateSync = true)}
+                  on:mouseleave={() => (isHoveringOverCreateSync = false)}
+                  variant="light"
+                  color="blue"
+                  fullWidth
+                  class="sidebar-btn"
+                  leftIcon={Reload}
+                  loading={isCreatingAndSyncing}
+                >
+                  Create & Sync Tabs
+                </Button>
+                {#if createAndSyncSuccess}
+                  <div class="success-check-outside">
+                    <Check />
+                  </div>
+                {/if}
+              </div>
+            </Tooltip>
+          </Stack>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="section">
+          <Text
+            align="center"
+            weight="bold"
+            size="xs"
+            transform="uppercase"
+            color="dimmed"
+            style="margin-bottom: 20px; letter-spacing: 0.5px;"
           >
-            Delete Project
-          </Button>
-        </Tooltip>
-        <Text weight="bold" size="lg" override={textStyleOverride}
-          >Create Project</Text
-        >
-        <UpdatingComponent
-          fail={createProjectFail}
-          failMsg={createProjectFailMsg}
-        >
-          <TextInput
-            placeholder="My new rabbithole"
-            bind:value={newRabbitholeName}
-          />
-        </UpdatingComponent>
-        <Button on:click={createNewProject} variant="light" color="blue">
-          Create empty project
-        </Button>
-        <UpdatingComponent
-          success={false}
-          loading={isSyncing}
-        >
-          <Button
-            on:click={saveAllTabsToNewProject}
-            variant="light"
-            color="blue"
-            disabled={isSyncing}
+            Settings
+          </Text>
+          <Stack spacing={20}>
+            <SettingsButtons />
+          </Stack>
+        </div>
+
+        <!-- Export Section -->
+        <div class="section">
+          <Text
+            align="center"
+            weight="bold"
+            size="xs"
+            transform="uppercase"
+            color="dimmed"
+            style="margin-bottom: 20px; letter-spacing: 0.5px;"
           >
-            Create and save all tabs in window
-          </Button>
-        </UpdatingComponent>
-        <Button on:click={exportRabbitholes} variant="light" color="blue">
-          Export rabbitholes
-        </Button>
-      </Group>
+            Export
+          </Text>
+          <Stack spacing={20} align="center">
+            <Button
+              on:click={exportRabbitholes}
+              variant="light"
+              color="blue"
+              fullWidth
+              class="sidebar-btn"
+              leftIcon={Download}
+            >
+              Export Data
+            </Button>
+          </Stack>
+        </div>
+      </Stack>
     </div>
   {/if}
 </div>
@@ -195,34 +304,95 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding: 20px;
   }
 
-  .sidebar {
-    margin-top: 15px;
-    margin-left: 10px;
+  .sidebar-header {
+    margin-bottom: 24px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
   }
 
-  :global(.active-rabbithole) {
-    font-weight: bold;
-    color: #1a1a1a;
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 30px; /* Increased to make room for checkmarks */
+    animation: fadeIn 0.2s ease-in-out;
   }
 
-  :global(body.dark-mode .sidebar) {
-    background-color: #d3d3d3;
-    color: #1a1a1a;
+  .section {
+    width: 100%;
   }
 
-  :global(body.dark-mode .sidebar .mantine-Text-root) {
-    color: #1a1a1a;
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  :global(body.dark-mode .sidebar .mantine-Button-root) {
-    color: #1a1a1a;
+  /* --- Button Standardization --- */
+
+  /* Base Sidebar Button */
+  :global(.sidebar-btn) {
+    height: 42px;
+    font-weight: 500;
+    text-align: center;
+    position: relative;
   }
 
+  :global(.sidebar-btn .mantine-Button-inner) {
+    justify-content: center !important;
+    width: 100%;
+  }
+
+  .button-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .success-check-outside {
+    position: absolute;
+    right: -26px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #40c057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Center text in inputs (like Project Name) */
+  :global(.sidebar-content input) {
+    text-align: center !important;
+  }
+
+  /*
+     Dark Mode Overrides
+  */
   :global(body.dark-mode .sidebar-wrapper) {
-    background-color: #d3d3d3;
+    background-color: #1a1b1e;
+    color: #c1c2c5;
+  }
+
+  :global(body.dark-mode .hamburger-btn) {
+    color: #e7e7e7 !important;
+  }
+  :global(body.dark-mode .hamburger-btn:hover) {
+    background-color: #25262b;
+  }
+
+  :global(body.dark-mode .mantine-TextInput-input) {
+    background-color: #25262b;
+    border-color: transparent;
+    color: #c1c2c5;
+  }
+  :global(body.dark-mode .mantine-TextInput-input:focus) {
+    border-color: #339af0;
   }
 </style>

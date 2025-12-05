@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Button, Group, Tooltip } from "@svelteuidev/core";
-  import Options from "./Options.svelte";
+  import { Button, Group } from "@svelteuidev/core";
   import { MessageRequest } from "../utils.ts";
+  import type { Settings } from "../storage/db";
+  import { Move, EyeOpen, EyeNone } from "radix-icons-svelte";
 
   export let settings: Settings = {
     show: false,
     alignment: "right",
+    darkMode: false,
   };
   let isHovering = false;
 
@@ -41,32 +43,33 @@
   });
 </script>
 
-<div>
-  <Group position="center" spacing="md">
-    <Button on:click={changeAlignment} id="move" variant="light" color="blue">
-      {#if settings.alignment === "right"}
-        Move button left
-      {:else}
-        Move button right
-      {/if}
-    </Button>
-    <Button
-      on:click={hideOverlay}
-      on:mouseenter={() => {
-        isHovering = true;
-      }}
-      on:mouseleave={() => {
-        isHovering = false;
-      }}
-      id="move"
-      variant="light"
-      color="blue"
-    >
-      {#if settings.show}
-        Hide
-      {:else}
-        Show
-      {/if}
-    </Button>
-  </Group>
-</div>
+<Group spacing="xs" grow>
+  <Button
+    on:click={changeAlignment}
+    variant="light"
+    color="blue"
+    class="sidebar-btn"
+    leftIcon={Move}
+  >
+    {settings.alignment === "right" ? "Move Left" : "Move Right"}
+  </Button>
+
+  <Button
+    on:click={hideOverlay}
+    on:mouseenter={() => isHovering = true}
+    on:mouseleave={() => isHovering = false}
+    variant="light"
+    color="blue"
+    class="sidebar-btn"
+    leftIcon={settings.show ? EyeNone : EyeOpen}
+  >
+    {settings.show ? "Hide" : "Show"}
+  </Button>
+</Group>
+
+<style>
+  :global(.sidebar-btn .mantine-Button-inner) {
+    justify-content: center !important;
+    width: 100%;
+  }
+</style>
