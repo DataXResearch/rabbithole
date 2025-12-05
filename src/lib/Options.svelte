@@ -18,7 +18,7 @@
   }
 </script>
 
-<div class="container">
+<div class="rabbithole-container">
   <Button 
     on:click={save} 
     size="sm" 
@@ -36,7 +36,7 @@
 </div>
 
 <style>
-  .container {
+  .rabbithole-container {
     width: 100%;
   }
 </style>
