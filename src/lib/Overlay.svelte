@@ -89,7 +89,7 @@
     width: 260px;
     position: fixed;
     bottom: 24px;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(10px);
     border-radius: 12px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
@@ -99,6 +99,10 @@
     flex-direction: column;
     gap: 12px;
     transition: all 0.3s ease;
+  }
+
+  .rabbithole-overlay:hover {
+    background-color: rgba(255, 255, 255, 0.95);
   }
 
   .rabbithole-overlay.rabbithole-popup {
@@ -134,9 +138,12 @@
   /* Dark mode support for overlay if needed, though usually overlays might stick to one theme or detect system */
   @media (prefers-color-scheme: dark) {
     .rabbithole-overlay:not(.rabbithole-popup) {
-      background-color: rgba(37, 38, 43, 0.95);
+      background-color: rgba(37, 38, 43, 0.4);
       border-color: rgba(255, 255, 255, 0.1);
       color: white;
+    }
+    .rabbithole-overlay:not(.rabbithole-popup):hover {
+      background-color: rgba(37, 38, 43, 0.95);
     }
   }
 </style>

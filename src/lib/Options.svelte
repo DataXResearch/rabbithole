@@ -22,7 +22,6 @@
   <Button 
     on:click={save} 
     size="sm" 
-    fullWidth 
     color="blue" 
     leftIcon={Bookmark}
   >
@@ -38,5 +37,8 @@
 <style>
   .rabbithole-container {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 </style>
