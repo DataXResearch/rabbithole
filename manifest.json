@@ -9,6 +9,10 @@
     "48": "src/assets/icons/logo48.png",
     "128": "src/assets/icons/logo128.png"
   },
+  "oauth2": {
+    "client_id": "YOUR_EXTENSION_ID.chromiumapp.org",
+    "scopes": ["atproto", "transition:generic"]
+  },
   "web_accessible_resources": [
     {
       "resources": [
@@ -44,6 +48,14 @@
     "default_popup": "src/popup/popup.html"
   },
   "permissions": [
-    "tabs"
+    "tabs",
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://*.bsky.social/*",
+    "https://public.api.bsky.app/*",
+    "https://plc.directory/*",
+    "https://*.chromiumapp.org/*"
   ]
 }

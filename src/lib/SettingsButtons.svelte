@@ -46,7 +46,6 @@
 <Group spacing="xs" grow>
   <Button
     on:click={changeAlignment}
-    variant="light"
     color="blue"
     class="sidebar-btn"
     leftIcon={Move}
@@ -58,7 +57,6 @@
     on:click={hideOverlay}
     on:mouseenter={() => isHovering = true}
     on:mouseleave={() => isHovering = false}
-    variant="light"
     color="blue"
     class="sidebar-btn"
     leftIcon={settings.show ? EyeNone : EyeOpen}
