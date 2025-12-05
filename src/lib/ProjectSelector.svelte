@@ -7,7 +7,7 @@
   export let projects = [];
 </script>
 
-<div class="selector-container">
+<div class="rabbithole-selector-container">
   <NativeSelect
     data={projects.map((p) => {
       return { label: p.name, value: p.id };
@@ -16,17 +16,17 @@
     width="100%"
     radius="md"
     size="sm"
-    class="centered-select"
+    class="rabbithole-centered-select"
   />
 </div>
 
 <style>
-  .selector-container {
+  .rabbithole-selector-container {
     width: 100%;
   }
 
   /* Center text in the select element */
-  :global(.centered-select select) {
+  :global(.rabbithole-centered-select select) {
     text-align: center;
     text-align-last: center;
   }

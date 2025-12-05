@@ -49,8 +49,8 @@
 </script>
 
 {#if settings.show || isPopup}
-  <div id="overlay-container" class="overlay {settings.alignment}" class:popup={isPopup}>
-    <div class="header">
+  <div id="rabbithole-overlay-container" class="rabbithole-overlay rabbithole-{settings.alignment}" class:rabbithole-popup={isPopup}>
+    <div class="rabbithole-header">
       <Text size="sm" weight="bold" color="dimmed">Rabbithole</Text>
       <Group spacing="xs">
         <Tooltip label="Move Position" withArrow>
@@ -72,11 +72,11 @@
       </Group>
     </div>
 
-    <div class="content">
-      <div class="selector-wrapper">
+    <div class="rabbithole-content">
+      <div class="rabbithole-selector-wrapper">
         <ProjectSelector {projects} {handleProjectChange} />
       </div>
-      <div class="options-wrapper">
+      <div class="rabbithole-options-wrapper">
         <Options />
       </div>
     </div>
@@ -84,7 +84,7 @@
 {/if}
 
 <style>
-  .overlay {
+  .rabbithole-overlay {
     z-index: 2147483647;
     width: 260px;
     position: fixed;
@@ -101,7 +101,7 @@
     transition: all 0.3s ease;
   }
 
-  .overlay.popup {
+  .rabbithole-overlay.rabbithole-popup {
     position: static;
     width: 100%;
     height: 100%;
@@ -113,27 +113,27 @@
     z-index: auto;
   }
 
-  .header {
+  .rabbithole-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
-  .right {
+  .rabbithole-right {
     right: 24px;
   }
 
-  .left {
+  .rabbithole-left {
     left: 24px;
   }
 
-  .selector-wrapper {
+  .rabbithole-selector-wrapper {
     margin-bottom: 12px;
   }
 
   /* Dark mode support for overlay if needed, though usually overlays might stick to one theme or detect system */
   @media (prefers-color-scheme: dark) {
-    .overlay:not(.popup) {
+    .rabbithole-overlay:not(.rabbithole-popup) {
       background-color: rgba(37, 38, 43, 0.95);
       border-color: rgba(255, 255, 255, 0.1);
       color: white;
