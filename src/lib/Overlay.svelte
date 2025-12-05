@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Button, Group, Tooltip } from "@svelteuidev/core";
+  import { Button, Group, Tooltip, ActionIcon, Text } from "@svelteuidev/core";
   import Options from "./Options.svelte";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
   import { MessageRequest, getOrderedProjects } from "../utils.ts";
   import type { Settings } from "../storage/db";
+  import { Move, EyeNone } from "radix-icons-svelte";
 
   export let isPopup = false;
 
@@ -49,64 +50,55 @@
 
 {#if settings.show || isPopup}
   <div id="overlay-container" class="overlay {settings.alignment}" class:popup={isPopup}>
-    <div class="buttons">
-      <Group position="center" spacing="md">
-        <Button
-          on:click={changeAlignment}
-          id="move"
-          variant="light"
-          color="blue"
-        >
-          Move
-        </Button>
-        <Tooltip {isHovering} label="You can unhide from the newtab page">
-          <Button
+    <div class="header">
+      <Text size="sm" weight="bold" color="dimmed">Rabbithole</Text>
+      <Group spacing="xs">
+        <Tooltip label="Move Position" withArrow>
+          <ActionIcon on:click={changeAlignment} variant="subtle" size="sm">
+            <Move />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip {isHovering} label="Hide Overlay" withArrow>
+          <ActionIcon
             on:click={hideOverlay}
-            on:mouseenter={() => {
-              isHovering = true;
-            }}
-            on:mouseleave={() => {
-              isHovering = false;
-            }}
-            id="move"
-            variant="light"
-            color="blue"
+            on:mouseenter={() => isHovering = true}
+            on:mouseleave={() => isHovering = false}
+            variant="subtle"
+            size="sm"
           >
-            Hide
-          </Button>
+            <EyeNone />
+          </ActionIcon>
         </Tooltip>
       </Group>
     </div>
-    <div class="selector">
-      <ProjectSelector {projects} {handleProjectChange} />
-    </div>
-    <div>
-      <Options />
+
+    <div class="content">
+      <div class="selector-wrapper">
+        <ProjectSelector {projects} {handleProjectChange} />
+      </div>
+      <div class="options-wrapper">
+        <Options />
+      </div>
     </div>
   </div>
 {/if}
 
 <style>
-  .selector {
-    width: 175px;
-    margin: 0 auto;
-    margin-top: 10px;
-  }
-
-  .buttons {
-    margin-top: 10px;
-  }
-
   .overlay {
     z-index: 2147483647;
-    width: 250px;
-    height: 200px;
+    width: 260px;
     position: fixed;
-    bottom: 16px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 20px;
-    border: 1px solid black;
-    padding: 4px;
+    bottom: 24px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s ease;
   }
 
   .overlay.popup {
@@ -116,14 +108,35 @@
     border-radius: 0;
     border: none;
     background-color: transparent;
+    box-shadow: none;
+    padding: 0;
     z-index: auto;
   }
 
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .right {
-    right: 16px;
+    right: 24px;
   }
 
   .left {
-    left: 16px;
+    left: 24px;
+  }
+
+  .selector-wrapper {
+    margin-bottom: 12px;
+  }
+
+  /* Dark mode support for overlay if needed, though usually overlays might stick to one theme or detect system */
+  @media (prefers-color-scheme: dark) {
+    .overlay:not(.popup) {
+      background-color: rgba(37, 38, 43, 0.95);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
   }
 </style>

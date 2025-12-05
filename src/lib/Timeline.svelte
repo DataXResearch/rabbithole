@@ -9,10 +9,11 @@
     TextInput,
     Tooltip,
     Loader,
+    Stack,
   } from "@svelteuidev/core";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
-  import { Pencil1, Moon, Sun } from "radix-icons-svelte";
+  import { Pencil1, Moon, Sun, MagnifyingGlass } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -41,6 +42,7 @@
     dispatch("projectRename", {
       newActiveProjectName: activeProject.name,
     });
+    nameClicked = false;
   }
 
   async function deleteWebsite(event) {
@@ -87,43 +89,44 @@
 </script>
 
 <div class="timeline">
-  <Group position="center">
+  <div class="header-section">
     <div class="logo-container">
       <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png" />
     </div>
-    <div class="input-div">
-      <Tooltip {isHovering} label="Click to rename project">
-        <Input
-          id="project-name"
-          icon={Pencil1}
-          variant="unstyled"
-          size="lg"
-          on:click={() => {
-            nameClicked = true;
-          }}
-          on:mouseenter={() => {
-            isHovering = true;
-          }}
-          on:mouseleave={() => {
-            isHovering = false;
-          }}
-          bind:value={activeProject.name}
-        />
-      </Tooltip>
-    </div>
-    {#if nameClicked}
-      <Button on:click={renameProject} variant="light" color="blue">
-        Rename
+    
+    <Group position="center" spacing="xs" class="project-controls">
+      <div class="input-div">
+        <Tooltip {isHovering} label="Click to rename project" withArrow>
+          <Input
+            id="project-name"
+            icon={Pencil1}
+            variant="unstyled"
+            size="xl"
+            class="project-name-input"
+            on:click={() => {
+              nameClicked = true;
+            }}
+            on:mouseenter={() => {
+              isHovering = true;
+            }}
+            on:mouseleave={() => {
+              isHovering = false;
+            }}
+            bind:value={activeProject.name}
+            on:blur={renameProject}
+            on:keydown={(e) => e.key === 'Enter' && renameProject()}
+          />
+        </Tooltip>
+      </div>
+      <Button on:click={toggleDarkMode} variant="subtle" color="gray" size="sm">
+        {#if isDark}
+          <Sun size="20" />
+        {:else}
+          <Moon size="20" />
+        {/if}
       </Button>
-    {/if}
-    <Button on:click={toggleDarkMode} variant="light" color="gray">
-      {#if isDark}
-        <Sun size="16" />
-      {:else}
-        <Moon size="16" />
-      {/if}
-    </Button>
-  </Group>
+    </Group>
+  </div>
 
   <!-- FIXME: make this functional-->
   <!-- <TimelineSlider -->
@@ -136,51 +139,78 @@
   <div class="feed">
     {#if isLoading}
       <div class="loading-container">
-        <Loader size="lg" />
-        <Text size="lg" color="dimmed">Loading websites...</Text>
+        <Loader size="lg" variant="dots" />
+        <Text size="md" color="dimmed" style="margin-top: 1rem;">Loading websites...</Text>
       </div>
     {:else}
       <div class="search-bar">
         <TextInput
-          placeholder="Search"
+          placeholder="Search your rabbithole..."
+          icon={MagnifyingGlass}
+          size="md"
+          radius="md"
           bind:value={searchQuery}
           on:input={applySearchQuery}
         />
       </div>
-      {#each websitesToDisplay as site}
-        <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
-      {/each}
+      <Stack spacing="md">
+        {#each websitesToDisplay as site}
+          <TimelineCard website={site} on:websiteDelete={deleteWebsite} />
+        {/each}
+      </Stack>
+      {#if websitesToDisplay.length === 0 && searchQuery.length > 0}
+         <Text align="center" color="dimmed" size="sm" style="margin-top: 2rem;">No results found.</Text>
+      {/if}
     {/if}
   </div>
 </div>
 
 <style>
   .timeline {
-    width: 40vw;
+    width: 100%;
+    max-width: 800px;
     margin: 0 auto;
-    margin-top: 50px;
-    transition:
-      background-color 0.3s ease,
-      color 0.3s ease;
+    padding: 40px 20px;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  .input-div {
-    max-width: 400px;
+  .header-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
   }
 
   .logo-container {
-    display: flex;
-    justify-content: center;
+    margin-bottom: 20px;
   }
 
   .logo {
-    width: 150px;
+    width: 80px;
     height: auto;
+    opacity: 0.9;
+  }
+
+  .project-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .input-div {
+    max-width: 500px;
+    text-align: center;
+  }
+
+  :global(.project-name-input input) {
+    text-align: center;
+    font-weight: 700;
+    font-size: 2rem !important;
+    height: auto !important;
+    padding: 0 !important;
   }
 
   .search-bar {
-    width: inherit;
-    margin-x: 20px;
+    margin-bottom: 30px;
   }
 
   .loading-container {
@@ -188,20 +218,24 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
     padding: 60px 20px;
   }
 
   :global(body.dark-mode .feed) {
-    background-color: #1a1a1a;
+    background-color: transparent;
   }
 
   :global(body.dark-mode .search-bar .mantine-TextInput-input) {
-    background-color: #2c2c2c;
-    border-color: #444;
+    background-color: #25262b;
+    border-color: #373a40;
+    color: #c1c2c5;
+  }
+  
+  :global(body.dark-mode .search-bar .mantine-TextInput-input::placeholder) {
+    color: #5c5f66;
   }
 
   :global(body.dark-mode .loading-container .mantine-Text-root) {
-    color: white;
+    color: #c1c2c5;
   }
 </style>
