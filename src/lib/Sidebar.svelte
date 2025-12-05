@@ -9,6 +9,7 @@
     ActionIcon,
   } from "@svelteuidev/core";
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
+  import Auth from "src/lib/Auth.svelte";
   import { NotificationDuration } from "../utils";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
   import {
@@ -118,6 +119,21 @@
   {#if opened}
     <div class="sidebar-content">
       <Stack spacing={40}>
+        <!-- Profile Section -->
+        <div class="section">
+          <Text
+            align="center"
+            weight="bold"
+            size="xs"
+            transform="uppercase"
+            color="dimmed"
+            style="margin-bottom: 20px; letter-spacing: 0.5px;"
+          >
+            Profile
+          </Text>
+          <Auth />
+        </div>
+
         <!-- Current Project Section -->
         <div class="section">
           <Text
@@ -149,7 +165,6 @@
                   on:click={saveAllTabsToActiveProject}
                   on:mouseenter={() => (isHoveringOverSync = true)}
                   on:mouseleave={() => (isHoveringOverSync = false)}
-                  variant="light"
                   color="blue"
                   fullWidth
                   class="sidebar-btn"
@@ -177,7 +192,6 @@
                 on:click={deleteProject}
                 on:mouseenter={() => (isHoveringOverDelete = true)}
                 on:mouseleave={() => (isHoveringOverDelete = false)}
-                variant="light"
                 color="red"
                 fullWidth
                 class="sidebar-btn"
@@ -212,7 +226,6 @@
 
             <Button
               on:click={createNewProject}
-              variant="light"
               color="blue"
               fullWidth
               class="sidebar-btn"
@@ -220,7 +233,7 @@
             >
               Create Empty
             </Button>
-            
+
             <Tooltip
               {isHoveringOverCreateSync}
               label="Create project and save all tabs"
@@ -233,7 +246,6 @@
                   on:click={saveAllTabsToNewProject}
                   on:mouseenter={() => (isHoveringOverCreateSync = true)}
                   on:mouseleave={() => (isHoveringOverCreateSync = false)}
-                  variant="light"
                   color="blue"
                   fullWidth
                   class="sidebar-btn"
@@ -284,7 +296,6 @@
           <Stack spacing={20} align="center">
             <Button
               on:click={exportRabbitholes}
-              variant="light"
               color="blue"
               fullWidth
               class="sidebar-btn"
