@@ -64,8 +64,10 @@
   }
 
   async function handleProjectChange(event) {
+    // Handle both CustomEvent (Select) and native Event (NativeSelect fallback)
+    const newProjectId = event.detail || event.target?.value;
     dispatch("projectChange", {
-      newProjectId: event.target.value,
+      newProjectId,
     });
   }
 
