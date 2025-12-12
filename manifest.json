@@ -9,10 +9,7 @@
     "48": "src/assets/icons/logo48.png",
     "128": "src/assets/icons/logo128.png"
   },
-  "oauth2": {
-    "client_id": "YOUR_EXTENSION_ID.chromiumapp.org",
-    "scopes": ["atproto", "transition:generic"]
-  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnvpJ8y9KLfyS1BZ5QqWSAz8lxts6UDrWSQ9qfn9DRDhjOnw4XJjPTJBIvx7lCbGyxYPZWEseB7lwpjD96bD1NJCKL8z09R64dZr7sNvNkslP6b13p4OLkaTBZqXH7TJ5BJTCj4lzxZ+EuxikrAcSM8QHDZdzk5cDMnGlGVsF6DhNN/ZSlvzSzigKH/qt1qfFeaY+0V6XaWWkiwQF98gUzHaW8EqYJMjCbtlJaSlQIWjldkxsmvZ6M/znKRxKJuKi4dS1TpgVio7PkeCx8/BptbgTNxW6po2opRT3jFQWg8fDziq7/BDTIRKP00pHtcCgxvb2YjOGDgch65O2lSnRSwIDAQAB",
   "web_accessible_resources": [
     {
       "resources": [
@@ -55,7 +52,6 @@
   "host_permissions": [
     "https://*.bsky.social/*",
     "https://public.api.bsky.app/*",
-    "https://plc.directory/*",
-    "https://*.chromiumapp.org/*"
+    "https://plc.directory/*"
   ]
 }
