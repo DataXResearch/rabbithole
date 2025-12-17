@@ -381,6 +381,93 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+    case "IMPORT_DATA":
+      if (!("projects" in request)) {
+        sendResponse({ error: "projects required" });
+        break;
+      }
+      const projectsToImport = request.projects;
+
+      (async () => {
+        try {
+          const existingProjects = await db.getAllProjects();
+          const allWebsites = await db.getAllWebsites();
+
+          const existingUrls = new Set(allWebsites.map((w) => w.url));
+          const existingProjectMap = new Map(existingProjects.map((p) => [p.name, p]));
+
+          for (const project of projectsToImport) {
+            const websitesToSave = [];
+            if (project.savedWebsites) {
+              for (const url of project.savedWebsites) {
+                if (!existingUrls.has(url)) {
+                  websitesToSave.push({
+                    url,
+                    name: url,
+                    savedAt: Date.now(),
+                    faviconUrl: "",
+                    description: "Imported",
+                  });
+                  existingUrls.add(url);
+                }
+              }
+            }
+
+            if (websitesToSave.length > 0) {
+              console.log("saving", websitesToSave);
+              await db.saveWebsiteToProject(websitesToSave);
+            }
+
+            let projectName = project.name;
+            const existingProject = existingProjectMap.get(projectName);
+
+            if (existingProject) {
+              // Check consistency
+              const existingWebsites = new Set(existingProject.savedWebsites);
+              const newWebsites = new Set(project.savedWebsites || []);
+
+              let isConsistent = existingWebsites.size === newWebsites.size;
+              if (isConsistent) {
+                for (const w of newWebsites) {
+                  if (!existingWebsites.has(w)) {
+                    isConsistent = false;
+                    break;
+                  }
+                }
+              }
+
+              if (isConsistent) {
+                console.log(`Project ${projectName} already exists and is consistent. Skipping creation.`);
+                continue;
+              } else {
+                // Disparate state: rename to allow import
+                let counter = 1;
+                while (existingProjectMap.has(projectName)) {
+                  projectName = `${project.name} (${counter})`;
+                  counter++;
+                }
+              }
+            }
+
+            console.log("saving rh", projectName);
+            // Create project (this creates a new project with a new ID but same name/content)
+            await db.createNewActiveProject(projectName, project.savedWebsites || []);
+
+            // Update map to handle subsequent collisions in the same import batch
+            existingProjectMap.set(projectName, {
+              id: "temp",
+              createdAt: Date.now(),
+              name: projectName,
+              savedWebsites: project.savedWebsites || []
+            });
+          }
+          sendResponse({ success: true });
+        } catch (err) {
+          console.error(err);
+          sendResponse({ error: err.message });
+        }
+      })();
+      break;
 
     default:
   }
