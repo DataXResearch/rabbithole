@@ -47,7 +47,7 @@
   <Button
     on:click={changeAlignment}
     color="blue"
-    class="sidebar-btn"
+    class="sidebar-btn custom-blue-btn"
     leftIcon={Move}
   >
     {settings.alignment === "right" ? "Move Left" : "Move Right"}
@@ -58,7 +58,7 @@
     on:mouseenter={() => isHovering = true}
     on:mouseleave={() => isHovering = false}
     color="blue"
-    class="sidebar-btn"
+    class="sidebar-btn custom-blue-btn"
     leftIcon={settings.show ? EyeNone : EyeOpen}
   >
     {settings.show ? "Hide" : "Show"}
@@ -69,5 +69,14 @@
   :global(.sidebar-btn .mantine-Button-inner) {
     justify-content: center !important;
     width: 100%;
+  }
+
+  :global(.sidebar-btn.custom-blue-btn) {
+    background-color: #1185fe !important;
+    color: white !important;
+  }
+
+  :global(.sidebar-btn.custom-blue-btn:hover) {
+    background-color: #0070e0 !important;
   }
 </style>
