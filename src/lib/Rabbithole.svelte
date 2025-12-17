@@ -155,6 +155,23 @@
     link.click();
   }
 
+  async function importRabbitholes(event) {
+    const projectsToImport = event.detail.projects;
+    if (!Array.isArray(projectsToImport)) return;
+
+    await chrome.runtime.sendMessage({
+      type: "IMPORT_DATA",
+      projects: projectsToImport,
+    });
+
+    // Refresh state
+    projects = await getOrderedProjects();
+    activeProject = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ACTIVE_PROJECT,
+    });
+    updateWebsites();
+  }
+
   async function toggleTheme() {
     isDark = !isDark;
     document.body.classList.toggle("dark-mode", isDark);
@@ -200,6 +217,7 @@
             on:newProjectSync={createNewProjectFromWindow}
             on:projectSync={saveWindowToActiveProject}
             on:exportRabbitholes={exportRabbitholes}
+            on:importRabbitholes={importRabbitholes}
             on:toggleSidebar={handleToggleSidebar}
           />
         </Navbar>

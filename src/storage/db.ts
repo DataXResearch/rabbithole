@@ -85,7 +85,7 @@ export class WebsiteStore {
 
         // This event is only implemented in recent browsers
         request.onupgradeneeded = (event) => {
-          const db = event.target.result;
+          const db = (event.target as IDBOpenDBRequest).result;
           if (event.oldVersion < 1) {
             const objectStore = db.createObjectStore("savedWebsites", {
               keyPath: "url",
@@ -119,6 +119,7 @@ export class WebsiteStore {
               settings: {
                 show: true,
                 alignment: "right",
+                darkMode: false,
               },
               currentProject: null,
             };
@@ -148,25 +149,20 @@ export class WebsiteStore {
   async saveWebsiteToProject(
     items: Website[],
   ): Promise<Website | { alreadySaved: boolean }[]> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
 
-      // update website list of active project
-      let currentProject = await this.getActiveProject();
-      for (let item of items) {
-        if (!currentProject.savedWebsites.includes(item.url)) {
-          currentProject.savedWebsites.push(item.url);
-          item.alreadySaved = false;
-        } else {
-          item.alreadySaved = true;
-        }
+    // update website list of active project
+    let currentProject = await this.getActiveProject();
+    for (let item of items) {
+      if (!currentProject.savedWebsites.includes(item.url)) {
+        currentProject.savedWebsites.push(item.url);
+        item.alreadySaved = false;
+      } else {
+        item.alreadySaved = true;
       }
+    }
 
+    return new Promise((resolve, reject) => {
       const projectRequest = db
         .transaction(["projects"], "readwrite")
         .objectStore("projects")
@@ -183,21 +179,18 @@ export class WebsiteStore {
 
         tx.onerror = (event) => {
           // ignore error if website is stored already
-          if (!event.target.error.message.indexOf("exists")) {
-            reject(new Error(event.target.error));
+          if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
+            reject(new Error((event.target as IDBRequest).error.message));
           }
         };
-
-        console.log(`store item success`);
-        resolve(items);
       };
 
       projectRequest.onerror = (event) => {
         // ignore error if website is stored already
-        if (!event.target.error.message.indexOf("exists")) {
+        if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
           console.log(`store item error`);
           console.log(event.target);
-          reject(new Error(event.target.error));
+          reject(new Error((event.target as IDBRequest).error.message));
         }
       };
     });
@@ -207,21 +200,16 @@ export class WebsiteStore {
     projectId: string,
     url: string,
   ): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
 
-      // update website list of active project
-      let project = await this.getProject(projectId);
+    // update website list of active project
+    let project = await this.getProject(projectId);
 
-      project.savedWebsites = project.savedWebsites.filter((w) => {
-        return w !== url;
-      });
+    project.savedWebsites = project.savedWebsites.filter((w) => {
+      return w !== url;
+    });
 
+    return new Promise((resolve, reject) => {
       const projectRequest = db
         .transaction(["projects"], "readwrite")
         .objectStore("projects")
@@ -234,23 +222,18 @@ export class WebsiteStore {
 
       projectRequest.onerror = (event) => {
         // ignore error if website is stored already
-        if (!event.target.error.message.indexOf("exists")) {
+        if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
           console.log(`store item error`);
           console.log(event.target);
-          reject(new Error(event.target.error));
+          reject(new Error((event.target as IDBRequest).error.message));
         }
       };
     });
   }
 
   async getWebsite(url: string): Promise<Website> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const request = db
         .transaction(["savedWebsites"])
         .objectStore("savedWebsites")
@@ -269,13 +252,8 @@ export class WebsiteStore {
   }
 
   async getAllWebsites(): Promise<Website[]> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const request = db
         .transaction(["savedWebsites"])
         .objectStore("savedWebsites")
@@ -287,25 +265,20 @@ export class WebsiteStore {
       };
 
       request.onerror = (event) => {
-        console.log(`getAll error: ${event.target}`);
+        console.log(`getAll error:`, (event.target as IDBRequest).error);
         reject(new Error("Failed to retrieve items"));
       };
     });
   }
 
   async renameProject(projectId: string, newName: string): Promise<Project> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
 
-      // update website list of active project
-      let project = await this.getProject(projectId);
-      project.name = newName;
+    // update website list of active project
+    let project = await this.getProject(projectId);
+    project.name = newName;
 
+    return new Promise((resolve, reject) => {
       const projectRequest = db
         .transaction(["projects"], "readwrite")
         .objectStore("projects")
@@ -319,21 +292,16 @@ export class WebsiteStore {
       projectRequest.onerror = (event) => {
         console.log(`rename project error`);
         console.log(event.target);
-        reject(new Error(event.target.error));
+        reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }
 
   // returns new active project
   async deleteProject(projectId: string): Promise<Project> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
 
+    return new Promise((resolve, reject) => {
       const projectRequest = db
         .transaction(["projects"], "readwrite")
         .objectStore("projects")
@@ -350,23 +318,17 @@ export class WebsiteStore {
       projectRequest.onerror = (event) => {
         console.log(`rename project error`);
         console.log(event.target);
-        reject(new Error(event.target.error));
+        reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }
 
   async updateSettings(settings: Settings): Promise<Settings> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    let user = await this.getUser();
+    user.settings = settings;
 
-      let user = await this.getUser();
-      user.settings = settings;
-
+    return new Promise((resolve, reject) => {
       const request = db
         .transaction(["user"], "readwrite")
         .objectStore("user")
@@ -379,19 +341,14 @@ export class WebsiteStore {
 
       request.onerror = (event) => {
         console.log(`update settings error`);
-        reject(new Error(event.target.error));
+        reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }
 
   async getSettings(): Promise<Settings> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const request = db.transaction(["user"]).objectStore("user").getAll();
 
       request.onsuccess = (_) => {
@@ -408,13 +365,8 @@ export class WebsiteStore {
   }
 
   async getUser(): Promise<User> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const request = db.transaction(["user"]).objectStore("user").getAll();
 
       request.onsuccess = (_) => {
@@ -431,13 +383,8 @@ export class WebsiteStore {
   }
 
   async getActiveProject(): Promise<Project> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = (_) => {
@@ -467,13 +414,8 @@ export class WebsiteStore {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const request = db
         .transaction(["projects"])
         .objectStore("projects")
@@ -492,13 +434,8 @@ export class WebsiteStore {
   }
 
   async getProject(projectId: string): Promise<Project> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const request = db
         .transaction(["projects"])
         .objectStore("projects")
@@ -517,26 +454,26 @@ export class WebsiteStore {
   }
 
   async getAllWebsitesForProject(projectId: string): Promise<Website[]> {
+    // This method uses other async methods, so it's fine as is
     return new Promise(async (resolve, reject) => {
-      let websites: Website[] = [];
-      const project = await this.getProject(projectId);
-      for (const url of project.savedWebsites) {
-        const website = await this.getWebsite(url);
-        websites.push(website);
+      try {
+        let websites: Website[] = [];
+        const project = await this.getProject(projectId);
+        for (const url of project.savedWebsites) {
+          const website = await this.getWebsite(url);
+          websites.push(website);
+        }
+        console.log("getAllWebsitesForProject successful");
+        resolve(websites);
+      } catch (err) {
+        reject(err);
       }
-      console.log("getAllWebsitesForProject successful");
-      resolve(websites);
     });
   }
 
   async changeActiveProject(projectId: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      let db: IDBDatabase;
-      try {
-        db = await this.getDb();
-      } catch (err) {
-        reject(err);
-      }
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = async () => {
@@ -571,15 +508,16 @@ export class WebsiteStore {
     projectName: string,
     savedWebsites?: string[],
   ): Promise<Project> {
-    return new Promise(async (resolve, reject) => {
-      const db = await this.getDb();
-      const user = await this.getUser();
-      const project: Project = {
-        id: uuid(),
-        createdAt: Date.now(),
-        name: projectName,
-        savedWebsites: [...new Set(savedWebsites)],
-      };
+    const db = await this.getDb();
+    const user = await this.getUser();
+    const project: Project = {
+      id: uuid(),
+      createdAt: Date.now(),
+      name: projectName,
+      savedWebsites: [...new Set(savedWebsites)],
+    };
+
+    return new Promise((resolve, reject) => {
       // FIXME: when rabbithole is installed, the first time a session is saved
       // the website list is duplicated, so dedup here for now
       // Also see how else this can be repro'd

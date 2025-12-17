@@ -7,6 +7,7 @@
     Tooltip,
     Stack,
     ActionIcon,
+    Group,
   } from "@svelteuidev/core";
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
   import Auth from "src/lib/Auth.svelte";
@@ -16,6 +17,7 @@
     HamburgerMenu,
     Plus,
     Download,
+    Upload,
     Trash,
     Reload,
     FilePlus,
@@ -38,6 +40,7 @@
   let isHoveringOverSync = false;
   let isHoveringOverDelete = false;
   let isHoveringOverCreateSync = false;
+  let fileInput;
 
   function validateProjectName() {
     let valid = true;
@@ -99,6 +102,23 @@
 
   async function exportRabbitholes() {
     dispatch("exportRabbitholes");
+  }
+
+  async function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const projects = JSON.parse(e.target.result);
+        dispatch("importRabbitholes", { projects });
+      } catch (err) {
+        console.error("Failed to parse import file", err);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
   }
 
   function toggleSidebar() {
@@ -169,7 +189,7 @@
                   on:mouseleave={() => (isHoveringOverSync = false)}
                   color="blue"
                   fullWidth
-                  class="sidebar-btn"
+                  class="sidebar-btn custom-blue-btn"
                   leftIcon={Reload}
                   loading={isSyncingWindow}
                 >
@@ -230,7 +250,7 @@
               on:click={createNewProject}
               color="blue"
               fullWidth
-              class="sidebar-btn"
+              class="sidebar-btn custom-blue-btn"
               leftIcon={FilePlus}
             >
               Create Empty
@@ -250,7 +270,7 @@
                   on:mouseleave={() => (isHoveringOverCreateSync = false)}
                   color="blue"
                   fullWidth
-                  class="sidebar-btn"
+                  class="sidebar-btn custom-blue-btn"
                   leftIcon={Reload}
                   loading={isCreatingAndSyncing}
                 >
@@ -283,7 +303,7 @@
           </Stack>
         </div>
 
-        <!-- Export Section -->
+        <!-- Data Section -->
         <div class="section">
           <Text
             align="center"
@@ -293,18 +313,34 @@
             color="dimmed"
             style="margin-bottom: 20px; letter-spacing: 0.5px;"
           >
-            Export
+            Data
           </Text>
           <Stack spacing={20} align="center">
-            <Button
-              on:click={exportRabbitholes}
-              color="blue"
-              fullWidth
-              class="sidebar-btn"
-              leftIcon={Download}
-            >
-              Export Data
-            </Button>
+            <Group grow spacing="xs" style="width: 100%">
+              <Button
+                on:click={() => fileInput.click()}
+                color="blue"
+                class="sidebar-btn custom-blue-btn"
+                leftIcon={Upload}
+              >
+                Import
+              </Button>
+              <Button
+                on:click={exportRabbitholes}
+                color="blue"
+                class="sidebar-btn custom-blue-btn"
+                leftIcon={Download}
+              >
+                Export
+              </Button>
+            </Group>
+            <input
+              type="file"
+              accept=".json"
+              style="display: none;"
+              bind:this={fileInput}
+              on:change={handleImport}
+            />
           </Stack>
         </div>
       </Stack>
@@ -362,6 +398,15 @@
   :global(.sidebar-btn .mantine-Button-inner) {
     justify-content: center !important;
     width: 100%;
+  }
+
+  :global(.sidebar-btn.custom-blue-btn) {
+    background-color: #1185fe !important;
+    color: white !important;
+  }
+
+  :global(.sidebar-btn.custom-blue-btn:hover) {
+    background-color: #0070e0 !important;
   }
 
   .button-wrapper {
