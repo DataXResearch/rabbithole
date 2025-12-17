@@ -7,6 +7,7 @@
   let isAuthenticated = false;
   let userDisplayName = null;
   let userHandle = null;
+  let userAvatar = null;
   let showHandleInput = false;
   let handleInput = "";
   let inputElement;
@@ -46,6 +47,7 @@
     isAuthenticated = true;
     userDisplayName = response.data.displayName || response.data.handle;
     userHandle = response.data.handle;
+    userAvatar = response.data.avatar;
     console.log(response)
   }
 
@@ -347,13 +349,19 @@
     isAuthenticated = false;
     userDisplayName = null;
     userHandle = null;
+    userAvatar = null;
   }
 </script>
 
 <div class="auth-container">
   {#if isAuthenticated}
     <div class="auth-status">
-      <span class="user-handle" title={userHandle}>{userDisplayName}</span>
+      <div class="user-info">
+        {#if userAvatar}
+          <img src={userAvatar} alt={userDisplayName} class="user-avatar" />
+        {/if}
+        <span class="user-handle" title={userHandle}>{userDisplayName}</span>
+      </div>
       <button class="auth-button logout" on:click={handleLogout}>
         Logout
       </button>
@@ -407,8 +415,24 @@
 
   .auth-status {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 12px;
+    width: 100%;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #eee;
   }
 
   .user-handle {
@@ -468,22 +492,22 @@
     cursor: not-allowed;
   }
 
-  .auth-button.login {
+  .auth-button.login,
+  .auth-button.logout {
     background-color: #1185fe;
     color: white;
   }
 
-  .auth-button.login:hover:not(:disabled) {
+  .auth-button.login:hover:not(:disabled),
+  .auth-button.logout:hover {
     background-color: #0070e0;
   }
 
-  .auth-button.logout,
   .auth-button.cancel {
     background-color: #e4e6eb;
     color: #333;
   }
 
-  .auth-button.logout:hover,
   .auth-button.cancel:hover {
     background-color: #d4d6db;
   }
@@ -497,6 +521,10 @@
   /* Dark mode */
   :global(body.dark-mode) .user-handle {
     color: #a0a0a0;
+  }
+
+  :global(body.dark-mode) .user-avatar {
+    border-color: #3a3b3c;
   }
 
   :global(body.dark-mode) .handle-input {
@@ -513,13 +541,11 @@
     color: #666;
   }
 
-  :global(body.dark-mode) .auth-button.logout,
   :global(body.dark-mode) .auth-button.cancel {
     background-color: #3a3b3c;
     color: #e4e6eb;
   }
 
-  :global(body.dark-mode) .auth-button.logout:hover,
   :global(body.dark-mode) .auth-button.cancel:hover {
     background-color: #4a4b4c;
   }
