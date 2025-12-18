@@ -2,7 +2,6 @@
   import Fuse from "fuse.js";
   import { createEventDispatcher } from "svelte";
   import {
-    Button,
     Group,
     Input,
     Text,
@@ -13,13 +12,12 @@
   } from "@svelteuidev/core";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
-  import { Pencil1, Moon, Sun, MagnifyingGlass } from "radix-icons-svelte";
+  import { Pencil1, MagnifyingGlass } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
 
   export let activeProject = {};
   export let websites = [];
-  export let isDark = false;
   export let isLoading = false;
 
   let searchResults = [];
@@ -30,10 +28,6 @@
   let startDate = null;
   let endDate = null;
   let previousWebsitesLength = 0;
-
-  function toggleDarkMode() {
-    dispatch("toggleTheme");
-  }
 
   async function renameProject() {
     if (activeProject.name === "") {
@@ -118,13 +112,6 @@
           />
         </Tooltip>
       </div>
-      <Button on:click={toggleDarkMode} variant="subtle" color="gray" size="sm">
-        {#if isDark}
-          <Sun size="20" />
-        {:else}
-          <Moon size="20" />
-        {/if}
-      </Button>
     </Group>
   </div>
 

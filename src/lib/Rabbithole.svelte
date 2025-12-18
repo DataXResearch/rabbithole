@@ -7,8 +7,8 @@
     getOrderedProjects,
     NotificationDuration,
   } from "../utils";
-  import { SvelteUIProvider, AppShell, Navbar, ActionIcon } from "@svelteuidev/core";
-  import { HamburgerMenu } from "radix-icons-svelte";
+  import { SvelteUIProvider, AppShell, Navbar, ActionIcon, Button } from "@svelteuidev/core";
+  import { HamburgerMenu, Sun, Moon } from "radix-icons-svelte";
 
   let activeProject = {};
   let websites = [];
@@ -188,6 +188,16 @@
 </script>
 
 <SvelteUIProvider>
+  <div class="theme-toggle">
+    <Button on:click={toggleTheme} variant="subtle" color="gray" size="sm" style="transform: scale(1.1);">
+      {#if isDark}
+        <Sun size="22" />
+      {:else}
+        <Moon size="22" />
+      {/if}
+    </Button>
+  </div>
+
   <AppShell class={!opened ? 'sidebar-closed-shell' : ''}>
     <div class="main-content" class:sidebar-closed={!opened}>
       {#if opened}
@@ -233,14 +243,13 @@
           </ActionIcon>
         </div>
       {/if}
+      
       <div class="timeline-wrapper">
         <Timeline
           on:websiteDelete={deleteWebsite}
           on:projectRename={renameActiveProject}
-          on:toggleTheme={toggleTheme}
           {activeProject}
           {websites}
-          {isDark}
           isLoading={isLoadingWebsites}
         />
       </div>
@@ -295,6 +304,25 @@
     background: transparent !important;
     width: auto !important;
     padding: 20px !important;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+
+  /* Theme Toggle Hover Effects */
+  /* Using 'button' selector to be more robust than class names */
+  :global(body:not(.dark-mode) .theme-toggle button:hover) {
+    background-color: #141517 !important;
+    color: #c1c2c5 !important;
+  }
+
+  :global(body.dark-mode .theme-toggle button:hover) {
+    background-color: #f8f9fa !important;
+    color: #141517 !important;
   }
 
   /* Dark Mode Global Overrides */
