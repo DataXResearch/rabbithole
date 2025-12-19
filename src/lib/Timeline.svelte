@@ -14,10 +14,12 @@
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
   import { Pencil1, MagnifyingGlass, Share1 } from "radix-icons-svelte";
+  import { getSession } from "../atproto/client";
   import {
-    createRecord,
-    getSession
-  } from "../atproto/client";
+    createCollection,
+    createUrlCard,
+    createCollectionLink
+  } from "../atproto/cosmik";
 
   const dispatch = createEventDispatcher();
 
@@ -98,81 +100,20 @@
       const did = session.did;
 
       // Create Collection
-      const collectionRecord = {
-        name: activeProject.name,
-        accessType: "CLOSED",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        $type: "network.cosmik.collection",
-      };
-
-      const collectionData = await createRecord(
-        did,
-        "network.cosmik.collection",
-        collectionRecord
-      );
+      const collectionData = await createCollection(did, activeProject.name);
       console.log("Created collection", collectionData);
 
       // Create Cards and Links
       let successCount = 0;
       for (const site of websites) {
-        // Construct metadata object
-        const metadata = {
-          type: "link",
-          $type: "network.cosmik.card#urlMetadata",
-          title: site.name,
-          description: site.description || undefined,
-          imageUrl:
-            site.openGraphImageUrl &&
-            site.openGraphImageUrl.startsWith("http")
-              ? site.openGraphImageUrl
-              : undefined,
-          retrievedAt: new Date(site.savedAt).toISOString(),
-        };
-
-        const cardRecord = {
-          type: "URL",
-          $type: "network.cosmik.card",
-          url: site.url,
-          content: {
-            $type: "network.cosmik.card#urlContent",
-            url: site.url,
-            metadata: metadata,
-          },
-          createdAt: new Date(site.savedAt).toISOString(),
-        };
-
         try {
-          console.log("Creating card record:", cardRecord);
+          console.log("Creating card for:", site.url);
           // 1. Create the Card
-          const cardData = await createRecord(
-            did,
-            "network.cosmik.card",
-            cardRecord
-          );
+          const cardData = await createUrlCard(did, site);
 
           // 2. Create the Collection Link
-          const linkRecord = {
-            $type: "network.cosmik.collectionLink",
-            collection: {
-              uri: collectionData.uri,
-              cid: collectionData.cid,
-            },
-            card: {
-              uri: cardData.uri,
-              cid: cardData.cid,
-            },
-            addedBy: did,
-            addedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-          };
-
-          console.log("Creating link record:", linkRecord);
-          await createRecord(
-            did,
-            "network.cosmik.collectionLink",
-            linkRecord
-          );
+          console.log("Creating link for card:", cardData);
+          await createCollectionLink(did, collectionData, cardData);
 
           successCount++;
         } catch (err) {
