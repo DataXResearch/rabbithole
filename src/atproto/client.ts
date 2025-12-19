@@ -2,6 +2,7 @@ import { Agent } from "@atproto/api";
 
 export const ClientMetadataUrl = "https://rabbithole.to/oauth/client-metadata.json";
 const SessionStorageKey = "rabbithole_bsky_session";
+const DpopKeyStorageKey = "rabbithole_dpop_key";
 
 /* Session Manager */
 
@@ -15,10 +16,45 @@ export async function saveSession(session: any) {
 }
 
 export async function clearSession() {
-  await chrome.storage.local.remove(SessionStorageKey);
+  await chrome.storage.local.remove([SessionStorageKey, DpopKeyStorageKey]);
 }
 
 /* DPoP utils */
+
+export async function saveDpopKey(keyPair: CryptoKeyPair) {
+  const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  await chrome.storage.local.set({ [DpopKeyStorageKey]: { private: privateJwk, public: publicJwk } });
+}
+
+export async function getDpopKey(): Promise<CryptoKeyPair | null> {
+  const stored = await chrome.storage.local.get(DpopKeyStorageKey);
+  const keys = stored[DpopKeyStorageKey];
+  if (!keys) return null;
+
+  try {
+    const privateKey = await crypto.subtle.importKey(
+      "jwk",
+      keys.private,
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["sign"]
+    );
+    const publicKey = await crypto.subtle.importKey(
+      "jwk",
+      keys.public,
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["verify"]
+    );
+
+    return { privateKey, publicKey };
+  } catch (e) {
+    console.error("Invalid DPoP keys in storage, clearing...", e);
+    await chrome.storage.local.remove(DpopKeyStorageKey);
+    return null;
+  }
+}
 
 export function base64UrlEncode(buffer: Uint8Array): string {
   let binary = "";
@@ -203,6 +239,66 @@ export async function exchangeCodeForTokens(
     const errText = await response.text();
     console.error("Token exchange failed:", response.status, errText);
     throw new Error("Failed to exchange code for tokens");
+  }
+
+  return await response.json();
+}
+
+/* Record operations */
+
+export async function createRecord(
+  repo: string,
+  collection: string,
+  record: any
+): Promise<{ uri: string; cid: string }> {
+  const session = await getSession();
+  if (!session) throw new Error("No session found");
+
+  const keyPair = await getDpopKey();
+  if (!keyPair) throw new Error("No DPoP key found");
+
+  const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
+  const url = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
+
+  const body = {
+    repo,
+    collection,
+    record,
+  };
+
+  const accessTokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(session.accessToken));
+  const ath = base64UrlEncode(new Uint8Array(accessTokenHash));
+
+  let proof = await createDpopProof("POST", url, keyPair, null, ath);
+
+  let response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `DPoP ${session.accessToken}`,
+      "DPoP": proof
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (response.status === 401) {
+    const nonce = response.headers.get("DPoP-Nonce");
+    if (nonce) {
+      proof = await createDpopProof("POST", url, keyPair, nonce, ath);
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `DPoP ${session.accessToken}`,
+          "DPoP": proof
+        },
+        body: JSON.stringify(body)
+      });
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Create record failed: ${response.status} ${await response.text()}`);
   }
 
   return await response.json();
