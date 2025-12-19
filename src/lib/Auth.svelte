@@ -1,6 +1,18 @@
 <script>
   import { onMount } from "svelte";
   import { Agent } from "@atproto/api";
+  import {
+    ClientMetadataUrl,
+    generateRandomString,
+    generateCodeChallenge,
+    generateDpopKeyPair,
+    resolveHandleAndPds,
+    getAuthServerMetadata,
+    exchangeCodeForTokens,
+    getSession,
+    saveSession,
+    clearSession
+  } from "../atproto/client";
 
   let isLoading = false;
   let error = null;
@@ -13,26 +25,22 @@
   let inputElement;
   let dpopKeyPair = null;
 
-  const CLIENT_ID = "https://rabbithole.to/oauth/client-metadata.json";
-  const REDIRECT_URI = chrome.identity.getRedirectURL("callback");
-  const STORAGE_KEY = "rabbithole_bsky_session";
-  const DPOP_KEY_STORAGE = "rabbithole_dpop_key";
+  const RedirectUri = chrome.identity.getRedirectURL("callback");
 
   onMount(async () => {
-    console.log("Redirect URI:", REDIRECT_URI);
+    console.log("Redirect URI:", RedirectUri);
     await restoreSession();
   });
 
   async function restoreSession() {
     try {
-      const result = await chrome.storage.local.get(STORAGE_KEY);
-      const stored = result[STORAGE_KEY];
+      const stored = await getSession();
       if (stored) {
         await fetchProfile(stored);
       }
     } catch (err) {
       console.error("Failed to restore session:", err);
-      await chrome.storage.local.remove(STORAGE_KEY);
+      await clearSession();
     }
   }
 
@@ -61,179 +69,6 @@
     showHandleInput = false;
     handleInput = "";
     error = null;
-  }
-
-  function generateRandomString(length) {
-    const array = new Uint8Array(length);
-    crypto.getRandomValues(array);
-    return base64UrlEncode(array);
-  }
-
-  function base64UrlEncode(buffer) {
-    let binary = "";
-    for (let i = 0; i < buffer.length; i++) {
-      binary += String.fromCharCode(buffer[i]);
-    }
-    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  }
-
-  async function generateCodeChallenge(verifier) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    return base64UrlEncode(new Uint8Array(digest));
-  }
-
-  async function generateDpopKeyPair() {
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: "ECDSA",
-        namedCurve: "P-256",
-      },
-      true,
-      ["sign", "verify"]
-    );
-    return keyPair;
-  }
-
-  async function exportPublicKeyJwk(publicKey) {
-    const jwk = await crypto.subtle.exportKey("jwk", publicKey);
-    return {
-      kty: jwk.kty,
-      crv: jwk.crv,
-      x: jwk.x,
-      y: jwk.y,
-    };
-  }
-
-  async function createDpopProof(httpMethod, httpUri, keyPair, nonce = null, ath = null) {
-    const publicJwk = await exportPublicKeyJwk(keyPair.publicKey);
-
-    const header = {
-      alg: "ES256",
-      typ: "dpop+jwt",
-      jwk: publicJwk,
-    };
-
-    const payload = {
-      jti: generateRandomString(16),
-      htm: httpMethod,
-      htu: httpUri,
-      iat: Math.floor(Date.now() / 1000),
-    };
-
-    if (nonce) {
-      payload.nonce = nonce;
-    }
-
-    if (ath) {
-      payload.ath = ath;
-    }
-
-    const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
-    const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
-    const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-    const signature = await crypto.subtle.sign(
-      { name: "ECDSA", hash: "SHA-256" },
-      keyPair.privateKey,
-      new TextEncoder().encode(signingInput)
-    );
-
-    // Convert signature from DER to raw format (r || s)
-    const signatureArray = new Uint8Array(signature);
-    const encodedSignature = base64UrlEncode(signatureArray);
-
-    return `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
-  }
-
-  async function resolveHandleAndPds(handle) {
-    const agent = new Agent("https://bsky.social");
-    const resolved = await agent.resolveHandle({ handle });
-
-    if (!resolved.success) {
-      throw new Error("Failed to resolve handle");
-    }
-
-    const did = resolved.data.did;
-
-    let pdsUrl = "https://bsky.social";
-    try {
-      const plcResponse = await fetch(`https://plc.directory/${did}`);
-      if (plcResponse.ok) {
-        const didDoc = await plcResponse.json();
-        const pdsService = didDoc.service?.find(
-          (s) => s.id === "#atproto_pds" || s.type === "AtprotoPersonalDataServer"
-        );
-        if (pdsService) {
-          pdsUrl = pdsService.serviceEndpoint;
-        }
-      }
-    } catch (err) {
-      console.warn("Failed to resolve PDS, using default:", err);
-    }
-
-    return { did, pdsUrl, handle };
-  }
-
-  async function getAuthServerMetadata(pdsUrl) {
-    const response = await fetch(`${pdsUrl}/.well-known/oauth-authorization-server`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch authorization server metadata");
-    }
-    return await response.json();
-  }
-
-  async function exchangeCodeForTokens(code, codeVerifier, tokenEndpoint, keyPair) {
-    // First attempt without nonce
-    let dpopProof = await createDpopProof("POST", tokenEndpoint, keyPair);
-
-    let response = await fetch(tokenEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "DPoP": dpopProof,
-      },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code: code,
-        redirect_uri: REDIRECT_URI,
-        client_id: CLIENT_ID,
-        code_verifier: codeVerifier,
-      }),
-    });
-
-    // If we get a use_dpop_nonce error, retry with the nonce
-    if (response.status === 400 || response.status === 401) {
-      const dpopNonce = response.headers.get("DPoP-Nonce");
-      if (dpopNonce) {
-        console.log("Retrying with DPoP nonce:", dpopNonce);
-        dpopProof = await createDpopProof("POST", tokenEndpoint, keyPair, dpopNonce);
-
-        response = await fetch(tokenEndpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "DPoP": dpopProof,
-          },
-          body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code: code,
-            redirect_uri: REDIRECT_URI,
-            client_id: CLIENT_ID,
-            code_verifier: codeVerifier,
-          }),
-        });
-      }
-    }
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Token exchange failed:", response.status, errText);
-      throw new Error("Failed to exchange code for tokens");
-    }
-
-    return await response.json();
   }
 
   async function submitHandle() {
@@ -270,8 +105,8 @@
 
       const authUrl = new URL(authServer.authorization_endpoint);
       authUrl.searchParams.set("response_type", "code");
-      authUrl.searchParams.set("client_id", CLIENT_ID);
-      authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+      authUrl.searchParams.set("client_id", ClientMetadataUrl);
+      authUrl.searchParams.set("redirect_uri", RedirectUri);
       authUrl.searchParams.set("scope", "atproto");
       authUrl.searchParams.set("state", state);
       authUrl.searchParams.set("code_challenge", codeChallenge);
@@ -312,7 +147,14 @@
       }
 
       console.log("Exchanging code for tokens...");
-      const tokenResponse = await exchangeCodeForTokens(code, codeVerifier, authServer.token_endpoint, dpopKeyPair);
+      const tokenResponse = await exchangeCodeForTokens(
+        code,
+        codeVerifier,
+        authServer.token_endpoint,
+        dpopKeyPair,
+        RedirectUri,
+        ClientMetadataUrl
+      );
       console.log("Token response received");
 
       const session = {
@@ -323,7 +165,7 @@
         tokenEndpoint: authServer.token_endpoint,
       };
 
-      await chrome.storage.local.set({ [STORAGE_KEY]: session });
+      await saveSession(session);
 
       await fetchProfile(session);
       error = null;
@@ -345,7 +187,7 @@
   }
 
   async function handleLogout() {
-    await chrome.storage.local.remove(STORAGE_KEY);
+    await clearSession();
     isAuthenticated = false;
     userDisplayName = null;
     userHandle = null;
