@@ -9,10 +9,15 @@
     Tooltip,
     Loader,
     Stack,
+    ActionIcon,
   } from "@svelteuidev/core";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
-  import { Pencil1, MagnifyingGlass } from "radix-icons-svelte";
+  import { Pencil1, MagnifyingGlass, Share1 } from "radix-icons-svelte";
+  import {
+    createRecord,
+    getSession
+  } from "../atproto/client";
 
   const dispatch = createEventDispatcher();
 
@@ -28,6 +33,7 @@
   let startDate = null;
   let endDate = null;
   let previousWebsitesLength = 0;
+  let isPublishing = false;
 
   async function renameProject() {
     if (activeProject.name === "") {
@@ -71,6 +77,129 @@
     });
   }
 
+  async function publishRabbithole() {
+    if (websites.length === 0) {
+      alert("Rabbithole is empty!");
+      return;
+    }
+
+    isPublishing = true;
+    let lastError = null;
+
+    try {
+      // Get session
+      const session = await getSession();
+
+      if (!session) {
+        alert("Please log in via the sidebar first.");
+        return;
+      }
+
+      const did = session.did;
+
+      // Create Collection
+      const collectionRecord = {
+        name: activeProject.name,
+        accessType: "CLOSED",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        $type: "network.cosmik.collection",
+      };
+
+      const collectionData = await createRecord(
+        did,
+        "network.cosmik.collection",
+        collectionRecord
+      );
+      console.log("Created collection", collectionData);
+
+      // Create Cards and Links
+      let successCount = 0;
+      for (const site of websites) {
+        // Construct metadata object
+        const metadata = {
+          type: "link",
+          $type: "network.cosmik.card#urlMetadata",
+          title: site.name,
+          description: site.description || undefined,
+          imageUrl:
+            site.openGraphImageUrl &&
+            site.openGraphImageUrl.startsWith("http")
+              ? site.openGraphImageUrl
+              : undefined,
+          retrievedAt: new Date(site.savedAt).toISOString(),
+        };
+
+        const cardRecord = {
+          type: "URL",
+          $type: "network.cosmik.card",
+          url: site.url,
+          content: {
+            $type: "network.cosmik.card#urlContent",
+            url: site.url,
+            metadata: metadata,
+          },
+          createdAt: new Date(site.savedAt).toISOString(),
+        };
+
+        try {
+          console.log("Creating card record:", cardRecord);
+          // 1. Create the Card
+          const cardData = await createRecord(
+            did,
+            "network.cosmik.card",
+            cardRecord
+          );
+
+          // 2. Create the Collection Link
+          const linkRecord = {
+            $type: "network.cosmik.collectionLink",
+            collection: {
+              uri: collectionData.uri,
+              cid: collectionData.cid,
+            },
+            card: {
+              uri: cardData.uri,
+              cid: cardData.cid,
+            },
+            addedBy: did,
+            addedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+          };
+
+          console.log("Creating link record:", linkRecord);
+          await createRecord(
+            did,
+            "network.cosmik.collectionLink",
+            linkRecord
+          );
+
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to create card/link for ${site.url}`, err);
+          lastError = err;
+        }
+      }
+
+      if (successCount === 0 && websites.length > 0) {
+        alert(`Failed to publish any cards. Last error: ${lastError?.message || "Unknown error"}`);
+      } else {
+        alert(
+          `Rabbithole published successfully! Created collection and ${successCount} cards.`
+        );
+      }
+    } catch (e) {
+      console.error(e);
+      if (e.message.includes("ScopeMissingError")) {
+        alert("Permission denied. Please log out and log back in to grant the necessary permissions.");
+      } else {
+        alert("Error publishing rabbithole: " + e.message);
+      }
+    } finally {
+      isPublishing = false;
+    }
+  }
+
   $: if (websites.length !== previousWebsitesLength) {
     filteredWebsites = websites;
     searchResults = [];
@@ -87,8 +216,20 @@
     <div class="logo-container">
       <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png" />
     </div>
-    
+
     <Group position="center" spacing="xs" class="project-controls">
+      <Tooltip label="Publish to Cosmik" withArrow>
+        <ActionIcon
+          variant="subtle"
+          size="xl"
+          on:click={publishRabbithole}
+          loading={isPublishing}
+          disabled={isPublishing}
+        >
+          <Share1 />
+        </ActionIcon>
+      </Tooltip>
+
       <div class="input-div">
         <Tooltip {isHovering} label="Click to rename project" withArrow>
           <Input
@@ -108,7 +249,7 @@
             }}
             bind:value={activeProject.name}
             on:blur={renameProject}
-            on:keydown={(e) => e.key === 'Enter' && renameProject()}
+            on:keydown={(e) => e.key === "Enter" && renameProject()}
           />
         </Tooltip>
       </div>
@@ -127,7 +268,9 @@
     {#if isLoading}
       <div class="loading-container">
         <Loader size="lg" variant="dots" />
-        <Text size="md" color="dimmed" style="margin-top: 1rem;">Loading websites...</Text>
+        <Text size="md" color="dimmed" style="margin-top: 1rem;"
+          >Loading websites...</Text
+        >
       </div>
     {:else}
       <div class="search-bar">
@@ -146,7 +289,9 @@
         {/each}
       </Stack>
       {#if websitesToDisplay.length === 0 && searchQuery.length > 0}
-         <Text align="center" color="dimmed" size="sm" style="margin-top: 2rem;">No results found.</Text>
+        <Text align="center" color="dimmed" size="sm" style="margin-top: 2rem;"
+          >No results found.</Text
+        >
       {/if}
     {/if}
   </div>
@@ -217,7 +362,7 @@
     border-color: #373a40;
     color: #c1c2c5;
   }
-  
+
   :global(body.dark-mode .search-bar .mantine-TextInput-input::placeholder) {
     color: #5c5f66;
   }
