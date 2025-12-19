@@ -11,7 +11,9 @@
     exchangeCodeForTokens,
     getSession,
     saveSession,
-    clearSession
+    clearSession,
+    saveDpopKey,
+    getDpopKey
   } from "../atproto/client";
 
   let isLoading = false;
@@ -36,6 +38,13 @@
     try {
       const stored = await getSession();
       if (stored) {
+        // Verify we have valid DPoP keys
+        const keys = await getDpopKey();
+        if (!keys) {
+          console.warn("Session exists but DPoP keys are missing or invalid. Clearing session.");
+          await clearSession();
+          return;
+        }
         await fetchProfile(stored);
       }
     } catch (err) {
@@ -95,7 +104,8 @@
 
       // Generate DPoP key pair
       dpopKeyPair = await generateDpopKeyPair();
-      console.log("Generated DPoP key pair");
+      await saveDpopKey(dpopKeyPair);
+      console.log("Generated and saved DPoP key pair");
 
       const codeVerifier = generateRandomString(32);
       const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -107,7 +117,10 @@
       authUrl.searchParams.set("response_type", "code");
       authUrl.searchParams.set("client_id", ClientMetadataUrl);
       authUrl.searchParams.set("redirect_uri", RedirectUri);
-      authUrl.searchParams.set("scope", "atproto");
+      // Request specific scopes for the custom collections
+      authUrl.searchParams.set("scope", "atproto repo:network.cosmik.collection repo:network.cosmik.card repo:network.cosmik.collectionLink");
+      // Force consent to ensure new scopes are granted
+      authUrl.searchParams.set("prompt", "consent");
       authUrl.searchParams.set("state", state);
       authUrl.searchParams.set("code_challenge", codeChallenge);
       authUrl.searchParams.set("code_challenge_method", "S256");
@@ -160,6 +173,7 @@
       const session = {
         did,
         handle,
+        pdsUrl,
         accessToken: tokenResponse.access_token,
         refreshToken: tokenResponse.refresh_token,
         tokenEndpoint: authServer.token_endpoint,
