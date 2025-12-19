@@ -6,7 +6,6 @@
 
   let searchValue = "";
   let isOpen = false;
-  let inputElement;
 
   $: selectedProject = projects.length > 0 ? projects[0] : null;
   $: displayValue = isOpen ? searchValue : (selectedProject?.name || "");
@@ -37,24 +36,28 @@
     searchValue = "";
     // Create a synthetic event similar to what Select would dispatch
     handleProjectChange({ detail: project.id });
+    
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   }
 
   function handleKeydown(event) {
     if (event.key === "Escape") {
       isOpen = false;
       searchValue = "";
-      inputElement?.blur();
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
     }
     if (event.key === "Enter" && filteredProjects.length > 0) {
       selectProject(filteredProjects[0]);
-      inputElement?.blur();
     }
   }
 </script>
 
 <div class="project-selector-container">
   <TextInput
-    bind:element={inputElement}
     value={displayValue}
     on:focus={handleFocus}
     on:blur={handleBlur}
