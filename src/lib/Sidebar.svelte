@@ -111,8 +111,8 @@
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const projects = JSON.parse(e.target.result);
-        dispatch("importRabbitholes", { projects });
+        const data = JSON.parse(e.target.result);
+        dispatch("importRabbitholes", { data });
       } catch (err) {
         console.error("Failed to parse import file", err);
       }

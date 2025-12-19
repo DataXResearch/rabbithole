@@ -196,6 +196,30 @@ export class WebsiteStore {
     });
   }
 
+  // Saves websites directly to the store without adding to the active project
+  async saveWebsites(items: Website[]): Promise<void> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["savedWebsites"], "readwrite");
+      const store = tx.objectStore("savedWebsites");
+
+      items.forEach((item) => {
+        // Use put to upsert (overwrite if exists)
+        store.put(item);
+      });
+
+      tx.oncomplete = () => {
+        console.log(`saveWebsites success`);
+        resolve();
+      };
+
+      tx.onerror = (event) => {
+        console.log(`saveWebsites error`);
+        reject(new Error((event.target as IDBRequest).error.message));
+      };
+    });
+  }
+
   async deleteWebsiteFromProject(
     projectId: string,
     url: string,

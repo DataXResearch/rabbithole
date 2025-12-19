@@ -145,7 +145,16 @@
     const projects = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_PROJECTS,
     });
-    const blob = new Blob([JSON.stringify(projects)], {
+    const savedWebsites = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ALL_ITEMS,
+    });
+
+    const exportData = {
+      projects,
+      savedWebsites
+    };
+
+    const blob = new Blob([JSON.stringify(exportData)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
@@ -156,12 +165,22 @@
   }
 
   async function importRabbitholes(event) {
-    const projectsToImport = event.detail.projects;
-    if (!Array.isArray(projectsToImport)) return;
+    const importData = event.detail.data;
+    
+    let projectsToImport = [];
+    let websitesToImport = [];
+
+    if (Array.isArray(importData)) {
+      projectsToImport = importData;
+    } else if (importData && typeof importData === 'object') {
+      projectsToImport = importData.projects || [];
+      websitesToImport = importData.savedWebsites || [];
+    }
 
     await chrome.runtime.sendMessage({
       type: "IMPORT_DATA",
       projects: projectsToImport,
+      savedWebsites: websitesToImport,
     });
 
     // Refresh state
