@@ -387,9 +387,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
       const projectsToImport = request.projects;
+      const websitesToImport = request.savedWebsites || [];
 
       (async () => {
         try {
+          // Save full website details first
+          if (websitesToImport.length > 0) {
+            await db.saveWebsites(websitesToImport);
+          }
+
           const existingProjects = await db.getAllProjects();
           const allWebsites = await db.getAllWebsites();
 
@@ -397,11 +403,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const existingProjectMap = new Map(existingProjects.map((p) => [p.name, p]));
 
           for (const project of projectsToImport) {
-            const websitesToSave = [];
+            const missingWebsites = [];
             if (project.savedWebsites) {
               for (const url of project.savedWebsites) {
                 if (!existingUrls.has(url)) {
-                  websitesToSave.push({
+                  missingWebsites.push({
                     url,
                     name: url,
                     savedAt: Date.now(),
@@ -413,9 +419,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             }
 
-            if (websitesToSave.length > 0) {
-              console.log("saving", websitesToSave);
-              await db.saveWebsiteToProject(websitesToSave);
+            if (missingWebsites.length > 0) {
+              console.log("saving missing websites", missingWebsites);
+              await db.saveWebsites(missingWebsites);
             }
 
             let projectName = project.name;
