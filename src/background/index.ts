@@ -381,6 +381,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+    case MessageRequest.PUBLISH_RABBITHOLE:
+      if (!("projectId" in request) || !("uri" in request) || !("timestamp" in request)) {
+        sendResponse({
+          error: "projectId, uri, and timestamp required",
+        });
+        break;
+      }
+      db.updateProjectSembleInfo(request.projectId, request.uri, request.timestamp)
+        .then(() => sendResponse({ success: true }))
+        .catch((err) => {
+          console.log(err);
+          sendResponse({ error: err.message });
+        });
+      break;
     case "IMPORT_DATA":
       if (!("projects" in request)) {
         sendResponse({ error: "projects required" });

@@ -20,6 +20,7 @@
     createUrlCard,
     createCollectionLink
   } from "../atproto/cosmik";
+  import { MessageRequest } from "../utils";
 
   const dispatch = createEventDispatcher();
 
@@ -125,9 +126,27 @@
       if (successCount === 0 && websites.length > 0) {
         alert(`Failed to publish any cards. Last error: ${lastError?.message || "Unknown error"}`);
       } else {
-        alert(
-          `Rabbithole published successfully! Created collection and ${successCount} cards.`
-        );
+        // Save to DB
+        const timestamp = Date.now();
+        const response = await chrome.runtime.sendMessage({
+          type: MessageRequest.PUBLISH_RABBITHOLE,
+          projectId: activeProject.id,
+          uri: collectionData.uri,
+          timestamp: timestamp,
+        });
+
+        if (response && response.error) {
+          console.error("Failed to save publish info:", response.error);
+          alert("Published to Cosmik, but failed to save sync status locally: " + response.error);
+        } else {
+          // Update local activeProject to reflect changes immediately in UI if needed
+          activeProject.sembleCollectionUri = collectionData.uri;
+          activeProject.lastSembleSync = timestamp;
+
+          alert(
+            `Rabbithole published successfully! Created collection and ${successCount} cards.`
+          );
+        }
       }
     } catch (e) {
       console.error(e);
