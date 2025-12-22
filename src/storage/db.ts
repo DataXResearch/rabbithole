@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 
-const version = 3;
+const version = 4;
 
 export interface Settings {
   alignment: string;
@@ -22,6 +22,8 @@ export interface Project {
   createdAt: number;
   savedWebsites: string[]; // url/"foreign" key
   name: string;
+  sembleCollectionUri?: string;
+  lastSembleSync?: number;
 }
 
 export interface User {
@@ -565,6 +567,42 @@ export class WebsiteStore {
       projectReq.onerror = (event) => {
         console.log(`getAll error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
+      };
+    });
+  }
+
+  async updateProjectSembleInfo(projectId: string, uri: string, syncTime: number): Promise<void> {
+    const db = await this.getDb();
+    
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["projects"], "readwrite");
+      const store = tx.objectStore("projects");
+      const getRequest = store.get(projectId);
+
+      getRequest.onsuccess = () => {
+        const project = getRequest.result;
+        if (!project) {
+          reject(new Error(`Project not found: ${projectId}`));
+          return;
+        }
+
+        project.sembleCollectionUri = uri;
+        project.lastSembleSync = syncTime;
+
+        const putRequest = store.put(project);
+        
+        putRequest.onsuccess = () => {
+          console.log("updateProjectSembleInfo success");
+          resolve();
+        };
+        
+        putRequest.onerror = (event) => {
+           reject(new Error((event.target as IDBRequest).error.message));
+        };
+      };
+
+      getRequest.onerror = (event) => {
+        reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }

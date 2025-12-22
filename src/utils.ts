@@ -19,6 +19,7 @@ export enum MessageRequest {
   RENAME_PROJECT,
   DELETE_PROJECT,
   DELETE_WEBSITE,
+  PUBLISH_RABBITHOLE,
 }
 
 export const NotificationDuration = 1500;
