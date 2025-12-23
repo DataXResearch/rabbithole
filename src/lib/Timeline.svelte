@@ -13,12 +13,20 @@
   } from "@svelteuidev/core";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
-  import { Pencil1, MagnifyingGlass, Share1 } from "radix-icons-svelte";
+  import Modal from "src/lib/Modal.svelte";
+  import {
+    Pencil1,
+    MagnifyingGlass,
+    Globe,
+    Rocket,
+    Reload,
+    InfoCircled,
+  } from "radix-icons-svelte";
   import { getSession } from "../atproto/client";
   import {
     createCollection,
     createUrlCard,
-    createCollectionLink
+    createCollectionLink,
   } from "../atproto/cosmik";
   import { MessageRequest } from "../utils";
 
@@ -37,6 +45,7 @@
   let endDate = null;
   let previousWebsitesLength = 0;
   let isPublishing = false;
+  let showInfoModal = false;
 
   async function renameProject() {
     if (activeProject.name === "") {
@@ -124,7 +133,11 @@
       }
 
       if (successCount === 0 && websites.length > 0) {
-        alert(`Failed to publish any cards. Last error: ${lastError?.message || "Unknown error"}`);
+        alert(
+          `Failed to publish any cards. Last error: ${
+            lastError?.message || "Unknown error"
+          }`
+        );
       } else {
         // Save to DB
         const timestamp = Date.now();
@@ -137,7 +150,10 @@
 
         if (response && response.error) {
           console.error("Failed to save publish info:", response.error);
-          alert("Published to Cosmik, but failed to save sync status locally: " + response.error);
+          alert(
+            "Published to Cosmik, but failed to save sync status locally: " +
+              response.error
+          );
         } else {
           // Update local activeProject to reflect changes immediately in UI if needed
           activeProject.sembleCollectionUri = collectionData.uri;
@@ -151,7 +167,9 @@
     } catch (e) {
       console.error(e);
       if (e.message.includes("ScopeMissingError")) {
-        alert("Permission denied. Please log out and log back in to grant the necessary permissions.");
+        alert(
+          "Permission denied. Please log out and log back in to grant the necessary permissions."
+        );
       } else {
         alert("Error publishing rabbithole: " + e.message);
       }
@@ -169,7 +187,65 @@
 
   $: websitesToDisplay =
     searchQuery.length < 3 ? filteredWebsites : searchResults;
+
+  $: sembleUrl = (() => {
+    if (!activeProject?.sembleCollectionUri) return null;
+    const uri = activeProject.sembleCollectionUri;
+    if (!uri.startsWith("at://")) return null;
+    const parts = uri.replace("at://", "").split("/");
+    // Expecting: did / collection / rkey
+    if (parts.length >= 3) {
+      const did = parts[0];
+      const rkey = parts[parts.length - 1];
+      return `https://semble.so/profile/${did}/collections/${rkey}`;
+    }
+    return null;
+  })();
+
+  function openSemble() {
+    if (sembleUrl) {
+      window.open(sembleUrl, "_blank");
+    }
+  }
 </script>
+
+<Modal
+  isOpen={showInfoModal}
+  title="About Semble"
+  on:close={() => (showInfoModal = false)}
+>
+  <p><strong>A social knowledge network for researchers.</strong></p>
+  <p>
+    Follow your peers' research trails. Surface and discover new connections.
+    Built on ATProto so you own your data.
+  </p>
+
+  <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;">
+    <li style="margin-bottom: 8px;">
+      <strong>Curate your research trails.</strong> Collect interesting links, add
+      notes, and organize them into shareable collections.
+    </li>
+    <li style="margin-bottom: 8px;">
+      <strong>Connect with peers.</strong> See what your peers are sharing and find
+      new collaborators with shared interests.
+    </li>
+    <li>
+      <strong>Own your data.</strong> Built on ATProto, new apps will come to you.
+      No more rebuilding your social graph and data when apps pivot and shut down.
+    </li>
+  </ul>
+
+  <div style="margin-top: 24px; text-align: center;">
+    <a
+      href="https://semble.so"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="semble-link"
+    >
+      Visit Semble.so &rarr;
+    </a>
+  </div>
+</Modal>
 
 <div class="timeline">
   <div class="header-section">
@@ -177,19 +253,7 @@
       <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png" />
     </div>
 
-    <Group position="center" spacing="xs" class="project-controls">
-      <Tooltip label="Publish to Cosmik" withArrow>
-        <ActionIcon
-          variant="subtle"
-          size="xl"
-          on:click={publishRabbithole}
-          loading={isPublishing}
-          disabled={isPublishing}
-        >
-          <Share1 />
-        </ActionIcon>
-      </Tooltip>
-
+    <Group position="center" spacing="md" class="project-controls">
       <div class="input-div">
         <Tooltip {isHovering} label="Click to rename project" withArrow>
           <Input
@@ -211,6 +275,62 @@
             on:blur={renameProject}
             on:keydown={(e) => e.key === "Enter" && renameProject()}
           />
+        </Tooltip>
+      </div>
+
+      <div class="semble-actions">
+        {#if sembleUrl}
+          <Tooltip label="View on Semble" withArrow>
+            <ActionIcon
+              variant="light"
+              color="cyan"
+              size={42}
+              radius="md"
+              on:click={openSemble}
+            >
+              <Globe size={24} />
+            </ActionIcon>
+          </Tooltip>
+
+          <Tooltip label="Update on Semble" withArrow>
+            <ActionIcon
+              variant="light"
+              color="orange"
+              size={42}
+              radius="md"
+              on:click={publishRabbithole}
+              loading={isPublishing}
+              disabled={isPublishing}
+            >
+              <Reload size={24} />
+            </ActionIcon>
+          </Tooltip>
+        {:else}
+          <Tooltip label="Publish to Semble" withArrow>
+            <ActionIcon
+              variant="filled"
+              color="grape"
+              size={42}
+              radius="md"
+              on:click={publishRabbithole}
+              loading={isPublishing}
+              disabled={isPublishing}
+            >
+              <Rocket size={24} />
+            </ActionIcon>
+          </Tooltip>
+        {/if}
+
+        <Tooltip label="About Semble" withArrow>
+          <ActionIcon
+            variant="transparent"
+            color="gray"
+            size="lg"
+            radius="xl"
+            on:click={() => (showInfoModal = true)}
+          >
+            <InfoCircled />
+          </ActionIcon>
         </Tooltip>
       </div>
     </Group>
@@ -286,6 +406,14 @@
   .project-controls {
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .semble-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 12px;
   }
 
   .input-div {
@@ -313,6 +441,20 @@
     padding: 60px 20px;
   }
 
+  .semble-link {
+    color: #228be6;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 4px;
+    background-color: rgba(34, 139, 230, 0.1);
+    transition: background-color 0.2s;
+  }
+
+  .semble-link:hover {
+    background-color: rgba(34, 139, 230, 0.2);
+  }
+
   :global(body.dark-mode .feed) {
     background-color: transparent;
   }
@@ -329,5 +471,14 @@
 
   :global(body.dark-mode .loading-container .mantine-Text-root) {
     color: #c1c2c5;
+  }
+
+  :global(body.dark-mode) .semble-link {
+    color: #4dabf7;
+    background-color: rgba(77, 171, 247, 0.15);
+  }
+
+  :global(body.dark-mode) .semble-link:hover {
+    background-color: rgba(77, 171, 247, 0.25);
   }
 </style>
