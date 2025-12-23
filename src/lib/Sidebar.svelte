@@ -11,6 +11,7 @@
   } from "@svelteuidev/core";
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
   import Auth from "src/lib/Auth.svelte";
+  import CollapsibleSection from "src/lib/CollapsibleSection.svelte";
   import { NotificationDuration } from "../utils";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
   import {
@@ -41,6 +42,14 @@
   let isHoveringOverDelete = false;
   let isHoveringOverCreateSync = false;
   let fileInput;
+
+  let sectionStates = {
+    profile: true,
+    activeProject: true,
+    newProject: true,
+    settings: false,
+    data: false,
+  };
 
   function validateProjectName() {
     let valid = true;
@@ -140,34 +149,17 @@
 
   {#if opened}
     <div class="sidebar-content">
-      <Stack spacing={40}>
+      <Stack spacing={16}>
         <!-- Profile Section -->
-        <div class="section">
-          <Text
-            align="center"
-            weight="bold"
-            size="xs"
-            transform="uppercase"
-            color="dimmed"
-            style="margin-bottom: 20px; letter-spacing: 0.5px;"
-          >
-            Profile
-          </Text>
+        <CollapsibleSection title="Profile" bind:open={sectionStates.profile}>
           <Auth />
-        </div>
+        </CollapsibleSection>
 
         <!-- Current Project Section -->
-        <div class="section">
-          <Text
-            align="center"
-            weight="bold"
-            size="xs"
-            transform="uppercase"
-            color="dimmed"
-            style="margin-bottom: 20px; letter-spacing: 0.5px;"
-          >
-            Active Project
-          </Text>
+        <CollapsibleSection
+          title="Active Project"
+          bind:open={sectionStates.activeProject}
+        >
           <Stack spacing={20} align="center">
             <ProjectSelector
               id="project-selector"
@@ -223,20 +215,13 @@
               </Button>
             </Tooltip>
           </Stack>
-        </div>
+        </CollapsibleSection>
 
         <!-- Create Section -->
-        <div class="section">
-          <Text
-            align="center"
-            weight="bold"
-            size="xs"
-            transform="uppercase"
-            color="dimmed"
-            style="margin-bottom: 20px; letter-spacing: 0.5px;"
-          >
-            New Project
-          </Text>
+        <CollapsibleSection
+          title="New Project"
+          bind:open={sectionStates.newProject}
+        >
           <Stack spacing={20} align="center">
             <TextInput
               placeholder="Project Name"
@@ -284,37 +269,20 @@
               </div>
             </Tooltip>
           </Stack>
-        </div>
+        </CollapsibleSection>
 
         <!-- Settings Section -->
-        <div class="section">
-          <Text
-            align="center"
-            weight="bold"
-            size="xs"
-            transform="uppercase"
-            color="dimmed"
-            style="margin-bottom: 20px; letter-spacing: 0.5px;"
-          >
-            Settings
-          </Text>
+        <CollapsibleSection
+          title="Settings"
+          bind:open={sectionStates.settings}
+        >
           <Stack spacing={20}>
             <SettingsButtons />
           </Stack>
-        </div>
+        </CollapsibleSection>
 
         <!-- Data Section -->
-        <div class="section">
-          <Text
-            align="center"
-            weight="bold"
-            size="xs"
-            transform="uppercase"
-            color="dimmed"
-            style="margin-bottom: 20px; letter-spacing: 0.5px;"
-          >
-            Data
-          </Text>
+        <CollapsibleSection title="Data" bind:open={sectionStates.data}>
           <Stack spacing={20} align="center">
             <Group grow spacing="xs" style="width: 100%">
               <Button
@@ -342,7 +310,7 @@
               on:change={handleImport}
             />
           </Stack>
-        </div>
+        </CollapsibleSection>
       </Stack>
     </div>
   {/if}
@@ -368,10 +336,6 @@
     overflow-y: auto;
     padding-right: 30px; /* Increased to make room for checkmarks */
     animation: fadeIn 0.2s ease-in-out;
-  }
-
-  .section {
-    width: 100%;
   }
 
   @keyframes fadeIn {

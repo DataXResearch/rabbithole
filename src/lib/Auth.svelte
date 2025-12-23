@@ -1,6 +1,8 @@
 <script>
   import { onMount } from "svelte";
   import { Agent } from "@atproto/api";
+  import { InfoCircled } from "radix-icons-svelte";
+  import Modal from "./Modal.svelte";
   import {
     ClientMetadataUrl,
     generateRandomString,
@@ -26,6 +28,7 @@
   let handleInput = "";
   let inputElement;
   let dpopKeyPair = null;
+  let showWhyBlueskyModal = false;
 
   const RedirectUri = chrome.identity.getRedirectURL("callback");
 
@@ -209,6 +212,32 @@
   }
 </script>
 
+<Modal
+  isOpen={showWhyBlueskyModal}
+  title="Why Bluesky?"
+  on:close={() => (showWhyBlueskyModal = false)}
+>
+  <p><strong>Semble is built on the AT Protocol.</strong></p>
+  <p>
+    The AT Protocol is the same open technology that powers Bluesky. By
+    connecting your Bluesky account, you can:
+  </p>
+  <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;">
+    <li style="margin-bottom: 8px;">
+      <strong>Publish to Semble.</strong> Share your rabbitholes as curated collections
+      on the Semble network.
+    </li>
+    <li style="margin-bottom: 8px;">
+      <strong>Own your identity.</strong> Use your existing Bluesky handle and profile
+      instead of creating a new account.
+    </li>
+    <li>
+      <strong>Control your data.</strong> Your collections are stored in your personal
+      data repository, not locked in a walled garden.
+    </li>
+  </ul>
+</Modal>
+
 <div class="auth-container">
   {#if isAuthenticated}
     <div class="auth-status">
@@ -242,17 +271,34 @@
       </div>
     </div>
   {:else}
-    <button
-      class="auth-button login"
-      on:click={openHandleInput}
-      disabled={isLoading}
-    >
-      {#if isLoading}
-        Connecting...
-      {:else}
-        Connect Bluesky
-      {/if}
-    </button>
+    <div class="connect-wrapper">
+      <button
+        class="auth-button login"
+        on:click={openHandleInput}
+        disabled={isLoading}
+      >
+        <svg
+          viewBox="0 0 568 500"
+          style="width: 18px; height: 18px; margin-right: 8px; fill: currentColor;"
+        >
+          <path
+            d="M123.121 33.664C186.071 80.918 253.774 176.746 278.631 228.165C303.488 176.746 371.19 80.918 434.141 33.664C479.563 -0.436 553.163 -26.817 553.163 57.146C553.163 73.915 543.548 198.012 537.909 218.158C518.31 288.193 446.889 306.058 383.356 295.245C494.411 314.146 522.663 376.754 461.65 439.362C345.772 558.273 295.101 409.542 282.112 371.426C279.732 364.44 278.618 361.171 278.602 363.951C278.585 361.171 277.472 364.44 275.092 371.426C262.102 409.542 211.431 558.273 95.553 439.362C34.54 376.754 62.792 314.146 173.847 295.245C110.314 306.058 38.893 288.193 19.294 218.158C13.655 198.012 4.04 73.915 4.04 57.146C4.04 -26.817 77.64 -0.436 123.121 33.664Z"
+          />
+        </svg>
+        {#if isLoading}
+          Connecting...
+        {:else}
+          Connect Bluesky
+        {/if}
+      </button>
+      <button
+        class="info-icon-btn"
+        on:click={() => (showWhyBlueskyModal = true)}
+        title="Why Bluesky?"
+      >
+        <InfoCircled />
+      </button>
+    </div>
   {/if}
 
   {#if error}
@@ -340,7 +386,9 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s, opacity 0.2s;
+    transition:
+      background-color 0.2s,
+      opacity 0.2s;
   }
 
   .auth-button:disabled {
@@ -352,6 +400,12 @@
   .auth-button.logout {
     background-color: #1185fe;
     color: white;
+  }
+
+  .auth-button.login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .auth-button.login:hover:not(:disabled),
@@ -366,6 +420,30 @@
 
   .auth-button.cancel:hover {
     background-color: #d4d6db;
+  }
+
+  .connect-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .info-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+
+  .info-icon-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #333;
   }
 
   .error-message {
@@ -404,5 +482,14 @@
 
   :global(body.dark-mode) .auth-button.cancel:hover {
     background-color: #4a4b4c;
+  }
+
+  :global(body.dark-mode) .info-icon-btn {
+    color: #a0a0a0;
+  }
+
+  :global(body.dark-mode) .info-icon-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e4e6eb;
   }
 </style>
