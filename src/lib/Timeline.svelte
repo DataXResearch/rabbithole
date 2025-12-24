@@ -10,10 +10,12 @@
     Loader,
     Stack,
     ActionIcon,
+    Button,
   } from "@svelteuidev/core";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
   import Modal from "src/lib/Modal.svelte";
+  import ActiveTabs from "src/lib/ActiveTabs.svelte";
   import {
     Pencil1,
     MagnifyingGlass,
@@ -363,6 +365,11 @@
           on:input={applySearchQuery}
         />
       </div>
+
+      {#if !searchQuery}
+        <ActiveTabs bind:activeProject {websites} />
+      {/if}
+
       <Stack spacing="md">
         {#each websitesToDisplay as site}
           <TimelineCard website={site} on:websiteDelete={deleteWebsite} />

@@ -15,7 +15,7 @@
   let projects = [];
   let isDark = false;
   let opened = true;
-  
+
   // Split state for buttons
   let syncWindowSuccess = false;
   let isSyncingWindow = false;
@@ -54,19 +54,26 @@
   async function createNewProjectFromWindow(event) {
     isCreatingAndSyncing = true;
     isLoadingWebsites = true;
-    activeProject = await chrome.runtime.sendMessage({
+    
+    await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
       newProjectName: event.detail.newProjectName,
     });
-    projects = await getOrderedProjects();
+    
     // Wait for websites to be stored in the background
     await new Promise(resolve => setTimeout(resolve, 1500));
-    updateWebsites();
     
+    // Fetch fresh state from DB to ensure we have the correct active project and list
+    activeProject = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ACTIVE_PROJECT,
+    });
+    projects = await getOrderedProjects();
+    updateWebsites();
+
     createAndSyncSuccess = true;
     isCreatingAndSyncing = false;
     isLoadingWebsites = false;
-    
+
     setTimeout(() => {
       createAndSyncSuccess = false;
     }, NotificationDuration);
@@ -91,13 +98,21 @@
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
     });
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    updateWebsites();
     
+    // Wait for websites to be stored in the background
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Fetch fresh state
+    activeProject = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ACTIVE_PROJECT,
+    });
+    projects = await getOrderedProjects();
+    updateWebsites();
+
     syncWindowSuccess = true;
     isSyncingWindow = false;
     isLoadingWebsites = false;
-    
+
     setTimeout(() => {
       syncWindowSuccess = false;
     }, NotificationDuration);
@@ -166,7 +181,7 @@
 
   async function importRabbitholes(event) {
     const importData = event.detail.data;
-    
+
     let projectsToImport = [];
     let websitesToImport = [];
 
@@ -262,7 +277,7 @@
           </ActionIcon>
         </div>
       {/if}
-      
+
       <div class="timeline-wrapper">
         <Timeline
           on:websiteDelete={deleteWebsite}

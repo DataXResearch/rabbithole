@@ -1,5 +1,5 @@
 import { MessageRequest } from "../utils";
-import { WebsiteStore } from "../storage/db";
+import { WebsiteStore, Website } from "../storage/db";
 
 function sendOverlayUpdate(tabId: number) {
   // ignore errors; receiving end won't exist if it's the newtab page

@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 
-const version = 4;
+const version = 5;
 
 export interface Settings {
   alignment: string;
@@ -24,6 +24,7 @@ export interface Project {
   name: string;
   sembleCollectionUri?: string;
   lastSembleSync?: number;
+  activeTabs?: string[];
 }
 
 export interface User {
@@ -172,7 +173,7 @@ export class WebsiteStore {
 
       projectRequest.onsuccess = (event) => {
         const tx = db.transaction(["savedWebsites"], "readwrite");
-        items.forEach((item) => tx.objectStore("savedWebsites").add(item));
+        items.forEach((item) => tx.objectStore("savedWebsites").put(item));
 
         tx.oncomplete = async () => {
           console.log(`store item success`);
@@ -180,20 +181,16 @@ export class WebsiteStore {
         };
 
         tx.onerror = (event) => {
-          // ignore error if website is stored already
-          if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
-            reject(new Error((event.target as IDBRequest).error.message));
-          }
+          console.error(`store item error`);
+          console.error(event.target);
+          reject(new Error((event.target as IDBRequest).error.message));
         };
       };
 
       projectRequest.onerror = (event) => {
-        // ignore error if website is stored already
-        if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
-          console.log(`store item error`);
-          console.log(event.target);
-          reject(new Error((event.target as IDBRequest).error.message));
-        }
+        console.error(`store item error`);
+        console.error(event.target);
+        reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }
@@ -541,6 +538,7 @@ export class WebsiteStore {
       createdAt: Date.now(),
       name: projectName,
       savedWebsites: [...new Set(savedWebsites)],
+      activeTabs: [],
     };
 
     return new Promise((resolve, reject) => {
@@ -552,16 +550,28 @@ export class WebsiteStore {
         .objectStore("projects")
         .put(project);
 
+      console.log("dkfb")
+      console.log(project)
+      console.log(projectReq)
+
       projectReq.onsuccess = () => {
+        console.log("hiiiiiii")
         // add default store to user.currentProject
-        db.transaction(["user"], "readwrite")
+        const userReq = db.transaction(["user"], "readwrite")
           .objectStore("user")
           .put({
             ...user,
             currentProject: project.id,
           });
 
-        resolve(project);
+        userReq.onsuccess = () => {
+          console.log("heyyyy")
+          resolve(project);
+        };
+
+        userReq.onerror = (event) => {
+          reject(new Error((event.target as IDBRequest).error.message));
+        };
       };
 
       projectReq.onerror = (event) => {
@@ -573,7 +583,7 @@ export class WebsiteStore {
 
   async updateProjectSembleInfo(projectId: string, uri: string, syncTime: number): Promise<void> {
     const db = await this.getDb();
-    
+
     return new Promise((resolve, reject) => {
       const tx = db.transaction(["projects"], "readwrite");
       const store = tx.objectStore("projects");
@@ -590,14 +600,14 @@ export class WebsiteStore {
         project.lastSembleSync = syncTime;
 
         const putRequest = store.put(project);
-        
+
         putRequest.onsuccess = () => {
           console.log("updateProjectSembleInfo success");
           resolve();
         };
-        
+
         putRequest.onerror = (event) => {
-           reject(new Error((event.target as IDBRequest).error.message));
+          reject(new Error((event.target as IDBRequest).error.message));
         };
       };
 
@@ -605,5 +615,52 @@ export class WebsiteStore {
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
+  }
+
+  async updateProjectActiveTabs(projectId: string, urls: string[]): Promise<void> {
+    const db = await this.getDb();
+    const project = await this.getProject(projectId);
+    project.activeTabs = urls;
+
+    return new Promise((resolve, reject) => {
+      const projectRequest = db
+        .transaction(["projects"], "readwrite")
+        .objectStore("projects")
+        .put(project);
+
+      projectRequest.onsuccess = (event) => {
+        resolve();
+      };
+
+      projectRequest.onerror = (event) => {
+        console.error(`update active tabs error`);
+        reject(new Error((event.target as IDBRequest).error.message));
+      };
+    });
+  }
+
+  async removeWebsiteFromActiveTabs(projectId: string, url: string): Promise<void> {
+    const db = await this.getDb();
+    const project = await this.getProject(projectId);
+
+    if (project.activeTabs) {
+      project.activeTabs = project.activeTabs.filter(u => u !== url);
+
+      return new Promise((resolve, reject) => {
+        const projectRequest = db
+          .transaction(["projects"], "readwrite")
+          .objectStore("projects")
+          .put(project);
+
+        projectRequest.onsuccess = (event) => {
+          resolve();
+        };
+
+        projectRequest.onerror = (event) => {
+          console.error(`remove from active tabs error`);
+          reject(new Error((event.target as IDBRequest).error.message));
+        };
+      });
+    }
   }
 }
