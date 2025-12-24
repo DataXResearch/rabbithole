@@ -1,7 +1,7 @@
 {
   "name": "Rabbithole",
   "description": "Track your internet rabbitholes!",
-  "version": "2.1",
+  "version": "3.0",
   "manifest_version": 3,
   "icons": {
     "16": "src/assets/icons/logo16.png",
