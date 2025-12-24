@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { Agent } from "@atproto/api";
   import { InfoCircled } from "radix-icons-svelte";
+  import { Tooltip } from "@svelteuidev/core";
   import Modal from "./Modal.svelte";
   import {
     ClientMetadataUrl,
@@ -217,25 +218,33 @@
   title="Why Bluesky?"
   on:close={() => (showWhyBlueskyModal = false)}
 >
-  <p><strong>Semble is built on the AT Protocol.</strong></p>
+  <p><strong>Bluesky is built on the AT Protocol, the foundation of the new open web.</strong></p>
   <p>
-    The AT Protocol is the same open technology that powers Bluesky. By
-    connecting your Bluesky account, you can:
+    By connecting your Bluesky account, you can:
   </p>
   <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;">
     <li style="margin-bottom: 8px;">
-      <strong>Publish to Semble.</strong> Share your rabbitholes as curated collections
-      on the Semble network.
+      <strong>Own your Rabbitholes.</strong> We do not store any of your information (nor do we want to).
+      All your data is tied to your AT Protocol handle and stored in your personal
+      data repository.
     </li>
     <li style="margin-bottom: 8px;">
-      <strong>Own your identity.</strong> Use your existing Bluesky handle and profile
-      instead of creating a new account.
+      <strong>Share your rabbithole info with other apps.</strong> For e.g. share your
+      rabbitholes as curated collections on the Semble network.
     </li>
     <li>
       <strong>Control your data.</strong> Your collections are stored in your personal
       data repository, not locked in a walled garden.
     </li>
   </ul>
+  <p>👀 Coming soon:</p>
+  <ul style="padding-left: 20px;">
+    <li>Create a <a href="https://sidetrail.app" target="_blank" rel="noopener noreferrer">Sidetrail</a></li>
+    <li>Add annotations with <a href="https://seams.so/" target="_blank" rel="noopener noreferrer">Seams</a></li>
+  </ul>
+  <p style="margin-top: 20px;">
+    <a href="https://overreacted.io/open-social/" target="_blank" rel="noopener noreferrer">Learn more</a>
+  </p>
 </Modal>
 
 <div class="auth-container">
@@ -291,13 +300,14 @@
           Connect Bluesky
         {/if}
       </button>
-      <button
-        class="info-icon-btn"
-        on:click={() => (showWhyBlueskyModal = true)}
-        title="Why Bluesky?"
-      >
-        <InfoCircled />
-      </button>
+      <Tooltip label="Why Bluesky?" withArrow>
+        <button
+          class="info-icon-btn"
+          on:click={() => (showWhyBlueskyModal = true)}
+        >
+          <InfoCircled />
+        </button>
+      </Tooltip>
     </div>
   {/if}
 
@@ -307,6 +317,15 @@
 </div>
 
 <style>
+  a {
+    color: #1185fe;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
   .auth-container {
     display: flex;
     flex-direction: column;
