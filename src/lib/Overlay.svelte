@@ -51,10 +51,10 @@
 {#if settings.show || isPopup}
   <div id="rabbithole-overlay-container" class="rabbithole-overlay rabbithole-{settings.alignment}" class:rabbithole-popup={isPopup}>
     <div class="rabbithole-header">
-      <Text size="sm" weight="bold" color="dimmed">Rabbithole</Text>
+      <Text size="sm" weight="bold" class="rabbithole-icon">Rabbithole</Text>
       <Group spacing="xs">
         <Tooltip label="Move Position" withArrow>
-          <ActionIcon on:click={changeAlignment} variant="subtle" size="sm">
+          <ActionIcon on:click={changeAlignment} variant="subtle" size="sm" class="rabbithole-icon">
             <Move />
           </ActionIcon>
         </Tooltip>
@@ -65,6 +65,7 @@
             on:mouseleave={() => isHovering = false}
             variant="subtle"
             size="sm"
+            class="rabbithole-icon"
           >
             <EyeNone />
           </ActionIcon>
@@ -133,6 +134,14 @@
 
   .rabbithole-selector-wrapper {
     margin-bottom: 12px;
+  }
+
+  :global(.rabbithole-icon) {
+    color: white !important;
+  }
+
+  :global(.rabbithole-icon svg) {
+    color: white !important;
   }
 
   /* Dark mode support for overlay if needed, though usually overlays might stick to one theme or detect system */
