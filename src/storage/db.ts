@@ -643,24 +643,27 @@ export class WebsiteStore {
     const db = await this.getDb();
     const project = await this.getProject(projectId);
 
-    if (project.activeTabs) {
-      project.activeTabs = project.activeTabs.filter(u => u !== url);
-
-      return new Promise((resolve, reject) => {
-        const projectRequest = db
-          .transaction(["projects"], "readwrite")
-          .objectStore("projects")
-          .put(project);
-
-        projectRequest.onsuccess = (event) => {
-          resolve();
-        };
-
-        projectRequest.onerror = (event) => {
-          console.error(`remove from active tabs error`);
-          reject(new Error((event.target as IDBRequest).error.message));
-        };
-      });
+    if (!project.activeTabs) {
+      project.activeTabs = [];
     }
+
+    project.activeTabs = project.activeTabs.filter(u => u !== url);
+
+    return new Promise((resolve, reject) => {
+      const projectRequest = db
+        .transaction(["projects"], "readwrite")
+        .objectStore("projects")
+        .put(project);
+
+      projectRequest.onsuccess = (event) => {
+        console.log(`remove from active tabs success`);
+        resolve();
+      };
+
+      projectRequest.onerror = (event) => {
+        console.error(`remove from active tabs error`);
+        reject(new Error((event.target as IDBRequest).error.message));
+      };
+    });
   }
 }

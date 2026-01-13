@@ -25,17 +25,13 @@
   }
 
   async function removeFromActiveTabs(url) {
-    // Optimistic update
-    activeProject.activeTabs = activeProject.activeTabs.filter(u => u !== url);
-    // Trigger reactivity
-    activeProject = activeProject;
-
-    // Persist
     await chrome.runtime.sendMessage({
       type: "REMOVE_FROM_ACTIVE_TABS",
       projectId: activeProject.id,
       url: url
     });
+
+    activeProject.activeTabs = activeProject.activeTabs.filter(u => u !== url);
   }
 </script>
 

@@ -209,6 +209,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         storeWebsites(tabs, db, sendResponse),
       );
       break;
+
     case MessageRequest.GET_ALL_ITEMS:
       db.getAllWebsites()
         .then((res) => sendResponse(res))
@@ -217,6 +218,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.GET_SETTINGS:
       db.getSettings()
         .then((res) => sendResponse(res))
@@ -225,6 +227,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.UPDATE_SETTINGS:
       if (!("settings" in request)) {
         sendResponse({
@@ -239,6 +242,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.GET_ALL_PROJECTS:
       db.getAllProjects()
         .then((res) => sendResponse(res))
@@ -247,6 +251,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.GET_PROJECT_SAVED_WEBSITES:
       if (!("projectId" in request)) {
         sendResponse({
@@ -261,6 +266,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.CREATE_NEW_PROJECT:
       if (!("newProjectName" in request)) {
         sendResponse({
@@ -275,6 +281,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.CHANGE_ACTIVE_PROJECT:
       if (!("projectId" in request)) {
         sendResponse({
@@ -289,6 +296,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.GET_ACTIVE_PROJECT:
       db.getActiveProject()
         .then((res) => sendResponse(res))
@@ -297,6 +305,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.GET_PROJECT:
       if (!("projectId" in request)) {
         sendResponse({
@@ -311,6 +320,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT:
       chrome.tabs.query({ windowId: sender.tab.windowId }).then((tabs) => {
         let websites: string[] = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
@@ -324,7 +334,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         // FIXME: remove websites to see if that fixes double website store
         db.createNewActiveProject(request.newProjectName, websites)
-          .then((res) => sendResponse(res))
+          .then(async (project) => {
+            await db.updateProjectActiveTabs(project.id, websites);
+            sendResponse(project);
+          })
           .catch((err) => {
             console.log(err);
             sendResponse(err);
@@ -332,13 +345,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
 
       break;
+
     case MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT:
-      chrome.tabs.query({ windowId: sender.tab.windowId }).then((tabs) => {
+      chrome.tabs.query({ windowId: sender.tab.windowId }).then(async (tabs) => {
+        const websites = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
+        const activeProject = await db.getActiveProject();
+        await db.updateProjectActiveTabs(activeProject.id, websites);
+
         // store websites async
         storeWebsites(tabs, db, sendResponse);
       });
 
       break;
+
     case MessageRequest.RENAME_PROJECT:
       if (!("newName" in request) || !("projectId" in request)) {
         sendResponse({
@@ -353,6 +372,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.DELETE_PROJECT:
       if (!("projectId" in request)) {
         sendResponse({
@@ -367,6 +387,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.DELETE_WEBSITE:
       if (!("url" in request) || !("projectId" in request)) {
         sendResponse({
@@ -381,6 +402,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse(err);
         });
       break;
+
     case MessageRequest.PUBLISH_RABBITHOLE:
       if (!("projectId" in request) || !("uri" in request) || !("timestamp" in request)) {
         sendResponse({
@@ -395,6 +417,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ error: err.message });
         });
       break;
+
+    case "OPEN_TABS":
+      if (!("urls" in request)) {
+        sendResponse({ error: "urls required" });
+        break;
+      }
+      request.urls.forEach((url) => {
+        chrome.tabs.create({ url });
+      });
+      sendResponse({ success: true });
+      break;
+
+    case "REMOVE_FROM_ACTIVE_TABS":
+      if (!("projectId" in request) || !("url" in request)) {
+        sendResponse({ error: "projectId and url required" });
+        break;
+      }
+      db.removeWebsiteFromActiveTabs(request.projectId, request.url)
+        .then(() => sendResponse({ success: true }))
+        .catch((err) => {
+          console.log(err);
+          sendResponse({ error: err.message });
+        });
+      break;
+
     case "IMPORT_DATA":
       if (!("projects" in request)) {
         sendResponse({ error: "projects required" });
