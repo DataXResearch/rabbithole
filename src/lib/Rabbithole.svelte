@@ -19,6 +19,8 @@
   // Split state for buttons
   let syncWindowSuccess = false;
   let isSyncingWindow = false;
+  let updateActiveTabsSuccess = false;
+  let isUpdatingActiveTabs = false;
   let createAndSyncSuccess = false;
   let isCreatingAndSyncing = false;
 
@@ -54,15 +56,15 @@
   async function createNewProjectFromWindow(event) {
     isCreatingAndSyncing = true;
     isLoadingWebsites = true;
-    
+
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
       newProjectName: event.detail.newProjectName,
     });
-    
+
     // Wait for websites to be stored in the background
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Fetch fresh state from DB to ensure we have the correct active project and list
     activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_PROJECT,
@@ -98,10 +100,10 @@
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
     });
-    
+
     // Wait for websites to be stored in the background
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Fetch fresh state
     activeProject = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_PROJECT,
@@ -115,6 +117,32 @@
 
     setTimeout(() => {
       syncWindowSuccess = false;
+    }, NotificationDuration);
+  }
+
+  async function updateActiveTabs(event) {
+    isUpdatingActiveTabs = true;
+    isLoadingWebsites = true;
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_ACTIVE_TABS,
+    });
+
+    // Wait for websites to be stored in the background
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Fetch fresh state
+    activeProject = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ACTIVE_PROJECT,
+    });
+    projects = await getOrderedProjects();
+    updateWebsites();
+
+    updateActiveTabsSuccess = true;
+    isUpdatingActiveTabs = false;
+    isLoadingWebsites = false;
+
+    setTimeout(() => {
+      updateActiveTabsSuccess = false;
     }, NotificationDuration);
   }
 
@@ -251,6 +279,8 @@
           <Sidebar
             {syncWindowSuccess}
             {isSyncingWindow}
+            {updateActiveTabsSuccess}
+            {isUpdatingActiveTabs}
             {createAndSyncSuccess}
             {isCreatingAndSyncing}
             {projects}
@@ -260,6 +290,7 @@
             on:newProject={createNewProject}
             on:newProjectSync={createNewProjectFromWindow}
             on:projectSync={saveWindowToActiveProject}
+            on:updateActiveTabs={updateActiveTabs}
             on:exportRabbitholes={exportRabbitholes}
             on:importRabbitholes={importRabbitholes}
             on:toggleSidebar={handleToggleSidebar}

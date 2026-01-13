@@ -23,6 +23,7 @@
     Reload,
     FilePlus,
     Check,
+    Update,
   } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
@@ -30,6 +31,8 @@
   export let projects;
   export let syncWindowSuccess = false;
   export let isSyncingWindow = false;
+  export let updateActiveTabsSuccess = false;
+  export let isUpdatingActiveTabs = false;
   export let createAndSyncSuccess = false;
   export let isCreatingAndSyncing = false;
   export let opened;
@@ -39,6 +42,7 @@
 
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
+  let isHoveringOverUpdateActiveTabs = false;
   let isHoveringOverDelete = false;
   let isHoveringOverCreateSync = false;
   let fileInput;
@@ -103,6 +107,10 @@
 
   async function saveAllTabsToActiveProject() {
     dispatch("projectSync");
+  }
+
+  async function updateActiveTabs() {
+    dispatch("updateActiveTabs");
   }
 
   async function deleteProject() {
@@ -196,6 +204,34 @@
             </Tooltip>
 
             <Tooltip
+              {isHoveringOverUpdateActiveTabs}
+              label="Save all tabs and update active tabs list"
+              withArrow
+              position="bottom"
+              color="dark"
+            >
+              <div class="button-wrapper">
+                <Button
+                  on:click={updateActiveTabs}
+                  on:mouseenter={() => (isHoveringOverUpdateActiveTabs = true)}
+                  on:mouseleave={() => (isHoveringOverUpdateActiveTabs = false)}
+                  color="blue"
+                  fullWidth
+                  class="sidebar-btn custom-blue-btn"
+                  leftIcon={Update}
+                  loading={isUpdatingActiveTabs}
+                >
+                  Update Active Tabs
+                </Button>
+                {#if updateActiveTabsSuccess}
+                  <div class="success-check-outside">
+                    <Check />
+                  </div>
+                {/if}
+              </div>
+            </Tooltip>
+
+            <Tooltip
               {isHoveringOverDelete}
               label="Irreversible!"
               withArrow
@@ -243,7 +279,7 @@
 
             <Tooltip
               {isHoveringOverCreateSync}
-              label="Create project and save all tabs"
+              label="Create project and update active tabs"
               withArrow
               position="bottom"
               color="dark"
@@ -256,10 +292,10 @@
                   color="blue"
                   fullWidth
                   class="sidebar-btn custom-blue-btn"
-                  leftIcon={Reload}
+                  leftIcon={Update}
                   loading={isCreatingAndSyncing}
                 >
-                  Create & Sync Tabs
+                  Create & Update Active Tabs
                 </Button>
                 {#if createAndSyncSuccess}
                   <div class="success-check-outside">

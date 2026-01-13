@@ -348,6 +348,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT:
       chrome.tabs.query({ windowId: sender.tab.windowId }).then(async (tabs) => {
+        storeWebsites(tabs, db, sendResponse);
+      });
+
+      break;
+
+    case MessageRequest.UPDATE_ACTIVE_TABS:
+      chrome.tabs.query({ windowId: sender.tab.windowId }).then(async (tabs) => {
         const websites = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
         const activeProject = await db.getActiveProject();
         await db.updateProjectActiveTabs(activeProject.id, websites);

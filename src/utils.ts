@@ -15,14 +15,12 @@ export enum MessageRequest {
   GET_PROJECT,
   SAVE_WINDOW_TO_NEW_PROJECT,
   SAVE_WINDOW_TO_ACTIVE_PROJECT,
-  PING,
+  UPDATE_ACTIVE_TABS,
   RENAME_PROJECT,
   DELETE_PROJECT,
   DELETE_WEBSITE,
   PUBLISH_RABBITHOLE,
 }
-
-export const NotificationDuration = 1500;
 
 export async function getOrderedProjects(): Promise<Project[]> {
   let projects = await chrome.runtime.sendMessage({
@@ -34,10 +32,24 @@ export async function getOrderedProjects(): Promise<Project[]> {
 
   for (let i = 0; i < projects.length; i++) {
     if (projects[i].name === activeProject.name) {
-      projects.splice(i, 1);
+      const temp = projects[0];
+      projects[0] = projects[i];
+      projects[i] = temp;
+      break;
     }
   }
-  projects.sort((a, b) => a.name.localeCompare(b.name));
-  projects.unshift(activeProject);
+
   return projects;
 }
+
+export interface Project {
+  id: string;
+  createdAt: number;
+  savedWebsites: string[];
+  name: string;
+  sembleCollectionUri?: string;
+  lastSembleSync?: number;
+  activeTabs?: string[];
+}
+
+export const NotificationDuration = 2000;
