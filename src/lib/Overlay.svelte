@@ -52,25 +52,27 @@
   <div id="rabbithole-overlay-container" class="rabbithole-overlay rabbithole-{settings.alignment}" class:rabbithole-popup={isPopup}>
     <div class="rabbithole-header">
       <Text size="sm" weight="bold" class="rabbithole-icon">Rabbithole</Text>
-      <Group spacing="xs">
-        <Tooltip label="Move Position" withArrow>
-          <ActionIcon on:click={changeAlignment} variant="subtle" size="sm" class="rabbithole-icon">
-            <Move />
-          </ActionIcon>
-        </Tooltip>
-        <Tooltip {isHovering} label="Hide Overlay" withArrow>
-          <ActionIcon
-            on:click={hideOverlay}
-            on:mouseenter={() => isHovering = true}
-            on:mouseleave={() => isHovering = false}
-            variant="subtle"
-            size="sm"
-            class="rabbithole-icon"
-          >
-            <EyeNone />
-          </ActionIcon>
-        </Tooltip>
-      </Group>
+      {#if !isPopup}
+        <Group spacing="xs">
+          <Tooltip label="Move Position" withArrow>
+            <ActionIcon on:click={changeAlignment} variant="subtle" size="sm" class="rabbithole-icon">
+              <Move />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip {isHovering} label="Hide Overlay" withArrow>
+            <ActionIcon
+              on:click={hideOverlay}
+              on:mouseenter={() => isHovering = true}
+              on:mouseleave={() => isHovering = false}
+              variant="subtle"
+              size="sm"
+              class="rabbithole-icon"
+            >
+              <EyeNone />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      {/if}
     </div>
 
     <div class="rabbithole-content">
@@ -112,10 +114,32 @@
     height: 100%;
     border-radius: 0;
     border: none;
-    background-color: transparent;
+    background-color: white;
     box-shadow: none;
     padding: 0;
     z-index: auto;
+    gap: 16px;
+    outline: none;
+  }
+
+  .rabbithole-overlay.rabbithole-popup:hover {
+    background-color: white;
+  }
+
+  .rabbithole-overlay.rabbithole-popup .rabbithole-header {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .rabbithole-overlay.rabbithole-popup .rabbithole-icon {
+    color: #212529 !important;
+  }
+
+  .rabbithole-overlay.rabbithole-popup .rabbithole-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .rabbithole-header {
@@ -136,6 +160,10 @@
     margin-bottom: 12px;
   }
 
+  .rabbithole-overlay.rabbithole-popup .rabbithole-selector-wrapper {
+    margin-bottom: 0;
+  }
+
   :global(.rabbithole-icon) {
     color: white !important;
   }
@@ -153,6 +181,22 @@
     }
     .rabbithole-overlay:not(.rabbithole-popup):hover {
       background-color: rgba(37, 38, 43, 0.95);
+    }
+
+    .rabbithole-overlay.rabbithole-popup {
+      background-color: #1a1b1e;
+    }
+
+    .rabbithole-overlay.rabbithole-popup:hover {
+      background-color: #1a1b1e;
+    }
+
+    .rabbithole-overlay.rabbithole-popup .rabbithole-header {
+      border-bottom-color: #373a40;
+    }
+
+    .rabbithole-overlay.rabbithole-popup .rabbithole-icon {
+      color: #c1c2c5 !important;
     }
   }
 </style>
