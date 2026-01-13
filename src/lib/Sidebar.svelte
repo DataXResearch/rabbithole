@@ -205,7 +205,7 @@
 
             <Tooltip
               {isHoveringOverUpdateActiveTabs}
-              label="Save all tabs and update active tabs list"
+              label="Update active tabs list"
               withArrow
               position="bottom"
               color="dark"
