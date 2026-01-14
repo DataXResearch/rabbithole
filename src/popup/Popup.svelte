@@ -61,6 +61,7 @@
     padding: 0;
     border: none;
     outline: none;
+    overflow: visible;
   }
 
   .popup-wrapper {
@@ -72,6 +73,7 @@
     box-sizing: border-box;
     border: none;
     gap: 16px;
+    overflow: visible;
   }
 
   .popup-header {
