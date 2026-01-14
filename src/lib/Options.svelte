@@ -19,16 +19,16 @@
 </script>
 
 <div class="rabbithole-container">
-  <Button 
-    on:click={save} 
-    size="sm" 
-    color="blue" 
+  <Button
+    on:click={save}
+    size="sm"
+    color="blue"
     leftIcon={Bookmark}
   >
     Save Website
   </Button>
   {#if successMessage}
-    <Text size="xs" color="green" align="center" weight="bold" style="margin-top: 8px;">
+    <Text size="xs" color="white" align="center" weight="bold" style="margin-top: 8px;">
       {successMessage}
     </Text>
   {/if}

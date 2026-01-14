@@ -1,11 +1,11 @@
 <script lang="ts">
   import Overlay from "src/lib/Overlay.svelte";
-  import { Button } from "@svelteuidev/core";
-  import { EyeOpen, EyeNone } from "radix-icons-svelte";
+  import { Tooltip } from "@svelteuidev/core";
   import { onMount } from "svelte";
   import { MessageRequest } from "../utils";
   import type { Settings } from "../storage/db";
 
+  let isHovering = false;
   let settings: Settings = {
     show: false,
     alignment: "right",
@@ -24,22 +24,31 @@
       type: MessageRequest.UPDATE_SETTINGS,
       settings,
     });
+    
+    // Reload the active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.reload(tab.id);
+    }
   }
 </script>
 
 <div class="popup-container">
   <div class="popup-wrapper">
-    <Overlay isPopup={true} />
-    <div class="toggle-button-wrapper">
-      <Button
-        on:click={toggleOverlay}
-        color={settings.show ? "red" : "blue"}
-        fullWidth
-        leftIcon={settings.show ? EyeNone : EyeOpen}
-      >
-        {settings.show ? "Hide" : "Show"} Overlay
-      </Button>
+    <div class="popup-header">
+      <span class="popup-title">Rabbithole</span>
+      <Tooltip {isHovering} label="This will refresh the page" withArrow>
+        <button
+          class="link-button"
+          on:click={toggleOverlay}
+          on:mouseenter={() => isHovering = true}
+          on:mouseleave={() => isHovering = false}
+        >
+          {settings.show ? "Hide" : "Show"} Overlay
+        </button>
+      </Tooltip>
     </div>
+    <Overlay isPopup={true} />
   </div>
 </div>
 
@@ -65,13 +74,54 @@
     gap: 16px;
   }
 
-  .toggle-button-wrapper {
-    margin-top: auto;
+  .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .popup-title {
+    font-weight: bold;
+    font-size: 14px;
+    color: #212529;
+  }
+
+  .link-button {
+    background: none;
+    border: none;
+    color: #1185fe;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    font-family: inherit;
+  }
+
+  .link-button:hover {
+    color: #0070e0;
   }
 
   @media (prefers-color-scheme: dark) {
     .popup-container {
       background-color: #1a1b1e;
+    }
+
+    .popup-header {
+      border-bottom-color: #373a40;
+    }
+
+    .popup-title {
+      color: #c1c2c5;
+    }
+
+    .link-button {
+      color: #4dabf7;
+    }
+
+    .link-button:hover {
+      color: #74c0fc;
     }
   }
 </style>
