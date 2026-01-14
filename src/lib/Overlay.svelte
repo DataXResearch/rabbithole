@@ -50,9 +50,9 @@
 
 {#if settings.show || isPopup}
   <div id="rabbithole-overlay-container" class="rabbithole-overlay rabbithole-{settings.alignment}" class:rabbithole-popup={isPopup}>
-    <div class="rabbithole-header">
-      <Text size="sm" weight="bold" class="rabbithole-icon">Rabbithole</Text>
-      {#if !isPopup}
+    {#if !isPopup}
+      <div class="rabbithole-header">
+        <Text size="sm" weight="bold" class="rabbithole-icon">Rabbithole</Text>
         <Group spacing="xs">
           <Tooltip label="Move Position" withArrow>
             <ActionIcon on:click={changeAlignment} variant="subtle" size="sm" class="rabbithole-icon">
@@ -72,8 +72,8 @@
             </ActionIcon>
           </Tooltip>
         </Group>
-      {/if}
-    </div>
+      </div>
+    {/if}
 
     <div class="rabbithole-content">
       <div class="rabbithole-selector-wrapper">
@@ -114,7 +114,7 @@
     height: 100%;
     border-radius: 0;
     border: none;
-    background-color: white;
+    background-color: transparent;
     box-shadow: none;
     padding: 0;
     z-index: auto;
@@ -123,16 +123,7 @@
   }
 
   .rabbithole-overlay.rabbithole-popup:hover {
-    background-color: white;
-  }
-
-  .rabbithole-overlay.rabbithole-popup .rabbithole-header {
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e9ecef;
-  }
-
-  .rabbithole-overlay.rabbithole-popup .rabbithole-icon {
-    color: #212529 !important;
+    background-color: transparent;
   }
 
   .rabbithole-overlay.rabbithole-popup .rabbithole-content {
@@ -184,19 +175,11 @@
     }
 
     .rabbithole-overlay.rabbithole-popup {
-      background-color: #1a1b1e;
+      background-color: transparent;
     }
 
     .rabbithole-overlay.rabbithole-popup:hover {
-      background-color: #1a1b1e;
-    }
-
-    .rabbithole-overlay.rabbithole-popup .rabbithole-header {
-      border-bottom-color: #373a40;
-    }
-
-    .rabbithole-overlay.rabbithole-popup .rabbithole-icon {
-      color: #c1c2c5 !important;
+      background-color: transparent;
     }
   }
 </style>
