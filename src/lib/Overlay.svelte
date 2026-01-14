@@ -80,7 +80,7 @@
 
     <div class="rabbithole-content">
       <div class="rabbithole-selector-wrapper">
-        <ProjectSelector {projects} {handleProjectChange} />
+        <ProjectSelector {projects} {handleProjectChange} dropdownDirection={isPopup ? "down" : "up"} />
       </div>
       <div class="rabbithole-options-wrapper">
         <Options />

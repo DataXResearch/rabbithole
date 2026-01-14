@@ -3,6 +3,8 @@
 
   export let handleProjectChange;
   export let projects = [];
+  // "down" or "up"
+  export let dropdownDirection = "down";
 
   let searchValue = "";
   let isOpen = false;
@@ -36,7 +38,7 @@
     searchValue = "";
     // Create a synthetic event similar to what Select would dispatch
     handleProjectChange({ detail: project.id });
-    
+
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
@@ -70,7 +72,7 @@
   />
 
   {#if isOpen}
-    <Paper class="project-dropdown" shadow="md" radius="md" padding="xs">
+    <Paper class="project-dropdown {dropdownDirection === 'up' ? 'dropdown-up' : 'dropdown-down'}" shadow="md" radius="md" padding="xs">
       {#if filteredProjects.length > 0}
         {#each filteredProjects as project}
           <button
@@ -106,14 +108,22 @@
 
   :global(.project-dropdown) {
     position: absolute;
-    top: 100%;
     left: 0;
     right: 0;
     z-index: 1000;
-    margin-top: 4px;
     max-height: 200px;
     overflow-y: auto;
     background: white;
+  }
+
+  :global(.project-dropdown.dropdown-down) {
+    top: 100%;
+    margin-top: 4px;
+  }
+
+  :global(.project-dropdown.dropdown-up) {
+    bottom: 100%;
+    margin-bottom: 4px;
   }
 
   .project-option {
