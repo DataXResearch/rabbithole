@@ -7,24 +7,26 @@
 
 html {
   width: 400px;
-  height: 190;
+  height: 190px;
   margin: 0;
   padding: 0;
   border: none;
   outline: none;
   box-sizing: border-box;
+  background-color: white;
 }
 
 body {
   width: 400px;
-  height: 190;
+  height: 190px;
   margin: 0;
   padding: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  overflow: hidden;
+  overflow: visible;
   border: none;
   outline: none;
   box-sizing: border-box;
+  background-color: white;
 }
 
 #app {
@@ -34,4 +36,13 @@ body {
   outline: none;
   margin: 0;
   padding: 0;
+  background-color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #app {
+    background-color: #1a1b1e;
+  }
 }
