@@ -279,7 +279,7 @@
 
             <Tooltip
               {isHoveringOverCreateSync}
-              label="Create project and update active tabs"
+              label="Create a new project and add all tabs in this window to it"
               withArrow
               position="bottom"
               color="dark"
@@ -295,7 +295,7 @@
                   leftIcon={Update}
                   loading={isCreatingAndSyncing}
                 >
-                  Create & Update Active Tabs
+                  Create and Sync Window
                 </Button>
                 {#if createAndSyncSuccess}
                   <div class="success-check-outside">
