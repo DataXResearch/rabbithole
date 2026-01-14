@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import {
     Button,
     Text,
@@ -12,6 +12,7 @@
   import SettingsButtons from "src/lib/SettingsButtons.svelte";
   import Auth from "src/lib/Auth.svelte";
   import CollapsibleSection from "src/lib/CollapsibleSection.svelte";
+  import SearchEverywhereModal from "src/lib/SearchEverywhereModal.svelte";
   import { NotificationDuration } from "../utils";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
   import {
@@ -24,6 +25,7 @@
     FilePlus,
     Check,
     Update,
+    MagnifyingGlass,
   } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
@@ -46,6 +48,8 @@
   let isHoveringOverDelete = false;
   let isHoveringOverCreateSync = false;
   let fileInput;
+  let showSearchModal = false;
+  let isMac = false;
 
   let sectionStates = {
     profile: true,
@@ -54,6 +58,22 @@
     settings: false,
     data: false,
   };
+
+  onMount(() => {
+    isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+    function handleKeydown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openSearchModal();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  });
 
   function validateProjectName() {
     let valid = true;
@@ -141,7 +161,13 @@
   function toggleSidebar() {
     dispatch("toggleSidebar");
   }
+
+  function openSearchModal() {
+    showSearchModal = true;
+  }
 </script>
+
+<SearchEverywhereModal bind:isOpen={showSearchModal} />
 
 <div class="sidebar-wrapper">
   <div class="sidebar-header">
@@ -158,6 +184,15 @@
   {#if opened}
     <div class="sidebar-content">
       <Stack spacing={16}>
+        <!-- Search Everywhere Button -->
+        <div class="search-button-wrapper">
+          <button class="search-button" on:click={openSearchModal}>
+            <MagnifyingGlass size={16} />
+            <span class="search-text">Search everywhere...</span>
+            <span class="search-shortcut">{isMac ? '⌘K' : 'Ctrl+K'}</span>
+          </button>
+        </div>
+
         <!-- Profile Section -->
         <CollapsibleSection title="Profile" bind:open={sectionStates.profile}>
           <Auth />
@@ -385,6 +420,49 @@
     }
   }
 
+  /* Search Button Styling */
+  .search-button-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .search-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: #868e96;
+  }
+
+  .search-button:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+  }
+
+  .search-text {
+    flex: 1;
+    text-align: left;
+  }
+
+  .search-shortcut {
+    font-size: 12px;
+    padding: 2px 6px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    color: #495057;
+    font-family: monospace;
+  }
+
   /* --- Button Standardization --- */
 
   /* Base Sidebar Button */
@@ -452,5 +530,23 @@
   }
   :global(body.dark-mode .mantine-TextInput-input:focus) {
     border-color: #339af0;
+  }
+
+  /* Dark mode search button */
+  :global(body.dark-mode) .search-button {
+    background-color: #25262b;
+    border-color: #373a40;
+    color: #909296;
+  }
+
+  :global(body.dark-mode) .search-button:hover {
+    background-color: #2c2e33;
+    border-color: #495057;
+  }
+
+  :global(body.dark-mode) .search-shortcut {
+    background-color: #1a1b1e;
+    border-color: #373a40;
+    color: #c1c2c5;
   }
 </style>
