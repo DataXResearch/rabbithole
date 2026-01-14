@@ -41,10 +41,13 @@
   }
 
   async function handleProjectChange(event) {
+    const newProjectId = event.detail || event.target?.value;
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_PROJECT,
-      projectId: event.target.value,
+      projectId: newProjectId,
     });
+    // Refresh the projects list to reflect the new active project
+    projects = await getOrderedProjects();
   }
 </script>
 
