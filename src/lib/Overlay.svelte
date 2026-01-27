@@ -136,7 +136,7 @@
 
     <div class="rabbithole-content">
       <div class="rabbithole-selector-wrapper">
-        <ProjectSelector {projects} {handleProjectChange} dropdownDirection={isPopup ? "down" : "up"} />
+        <ProjectSelector {projects} {handleProjectChange} dropdownDirection={isPopup ? "down" : "up"} allowCreate={true} />
       </div>
       <div class="rabbithole-options-wrapper">
         <Options />

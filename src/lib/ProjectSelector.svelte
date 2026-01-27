@@ -1,10 +1,13 @@
 <script>
-  import { TextInput, Paper } from "@svelteuidev/core";
+  import { TextInput, Paper, Button } from "@svelteuidev/core";
+  import { MessageRequest } from "../utils";
 
   export let handleProjectChange;
   export let projects = [];
   // "down" or "up"
   export let dropdownDirection = "down";
+  // Allow creating new projects when no results found
+  export let allowCreate = false;
 
   let searchValue = "";
   let isOpen = false;
@@ -44,6 +47,29 @@
     }
   }
 
+  async function createNewProject() {
+    const projectName = searchValue.trim();
+    if (!projectName) return;
+
+    try {
+      const newProject = await chrome.runtime.sendMessage({
+        type: MessageRequest.CREATE_NEW_PROJECT,
+        newProjectName: projectName,
+      });
+
+      // Refresh projects list
+      const allProjects = await chrome.runtime.sendMessage({
+        type: MessageRequest.GET_ALL_PROJECTS,
+      });
+      projects = allProjects;
+
+      // Select the new project
+      selectProject(newProject);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    }
+  }
+
   function handleKeydown(event) {
     if (event.key === "Escape") {
       isOpen = false;
@@ -52,8 +78,12 @@
         document.activeElement.blur();
       }
     }
-    if (event.key === "Enter" && filteredProjects.length > 0) {
-      selectProject(filteredProjects[0]);
+    if (event.key === "Enter") {
+      if (filteredProjects.length > 0) {
+        selectProject(filteredProjects[0]);
+      } else if (allowCreate && searchValue.trim()) {
+        createNewProject();
+      }
     }
   }
 </script>
@@ -84,6 +114,14 @@
             {project.name}
           </button>
         {/each}
+      {:else if allowCreate && searchValue.trim()}
+        <button
+          type="button"
+          class="create-project-button"
+          on:mousedown|preventDefault={createNewProject}
+        >
+          Create "{searchValue.trim()}"
+        </button>
       {:else}
         <div class="no-results">No projects found</div>
       {/if}
@@ -148,6 +186,24 @@
     color: #1c7ed6;
   }
 
+  .create-project-button {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 4px;
+    color: #1185fe;
+    font-weight: 500;
+  }
+
+  .create-project-button:hover {
+    background-color: #e7f5ff;
+  }
+
   .no-results {
     padding: 8px 12px;
     text-align: center;
@@ -172,6 +228,14 @@
   :global(body.dark-mode) .project-option.selected {
     background-color: #1c3a5e;
     color: #74c0fc;
+  }
+
+  :global(body.dark-mode) .create-project-button {
+    color: #4dabf7;
+  }
+
+  :global(body.dark-mode) .create-project-button:hover {
+    background-color: #1c3a5e;
   }
 
   :global(body.dark-mode) .no-results {
