@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Button, Group, Tooltip, ActionIcon, Text } from "@svelteuidev/core";
+  import { Group, Tooltip, ActionIcon, Text } from "@svelteuidev/core";
   import Options from "./Options.svelte";
   import ProjectSelector from "src/lib/ProjectSelector.svelte";
-  import { MessageRequest, getOrderedProjects } from "../utils.ts";
+  import { MessageRequest, getOrderedProjects, NotificationDuration } from "../utils.ts";
   import type { Settings } from "../storage/db";
-  import { Move, EyeNone } from "radix-icons-svelte";
+  import { Move, EyeNone, Update, Check } from "radix-icons-svelte";
 
   export let isPopup = false;
 
@@ -16,6 +16,10 @@
   };
   let projects = [];
   let isHovering = false;
+  let isSyncingWindow = false;
+  let syncWindowSuccess = false;
+  let isHoveringOverSync = false;
+  let isHoveringOverMove = false;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
@@ -49,6 +53,23 @@
     // Refresh the projects list to reflect the new active project
     projects = await getOrderedProjects();
   }
+
+  async function saveAllTabsToActiveProject() {
+    isSyncingWindow = true;
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
+      });
+      syncWindowSuccess = true;
+      setTimeout(() => {
+        syncWindowSuccess = false;
+      }, NotificationDuration);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isSyncingWindow = false;
+    }
+  }
 </script>
 
 {#if settings.show || isPopup}
@@ -57,8 +78,43 @@
       <div class="rabbithole-header">
         <Text size="sm" weight="bold" class="rabbithole-icon">Rabbithole</Text>
         <Group spacing="xs">
-          <Tooltip label="Move Position" withArrow>
-            <ActionIcon on:click={changeAlignment} variant="subtle" size="sm" class="rabbithole-icon">
+          <Tooltip
+            {isHoveringOverSync}
+            label="Save all tabs in window to current project"
+            withArrow
+          >
+            <div class="icon-wrapper">
+              <ActionIcon
+                on:click={saveAllTabsToActiveProject}
+                on:mouseenter={() => isHoveringOverSync = true}
+                on:mouseleave={() => isHoveringOverSync = false}
+                variant="subtle"
+                size="sm"
+                class="rabbithole-icon header-icon"
+                disabled={isSyncingWindow}
+              >
+                <Update />
+              </ActionIcon>
+              {#if syncWindowSuccess}
+                <div class="success-check-icon">
+                  <Check size={12} />
+                </div>
+              {/if}
+            </div>
+          </Tooltip>
+          <Tooltip
+            {isHoveringOverMove}
+            label="Move Position"
+            withArrow
+          >
+            <ActionIcon
+              on:click={changeAlignment}
+              on:mouseenter={() => isHoveringOverMove = true}
+              on:mouseleave={() => isHoveringOverMove = false}
+              variant="subtle"
+              size="sm"
+              class="rabbithole-icon header-icon"
+            >
               <Move />
             </ActionIcon>
           </Tooltip>
@@ -69,7 +125,7 @@
               on:mouseleave={() => isHovering = false}
               variant="subtle"
               size="sm"
-              class="rabbithole-icon"
+              class="rabbithole-icon header-icon"
             >
               <EyeNone />
             </ActionIcon>
@@ -151,11 +207,25 @@
   }
 
   .rabbithole-selector-wrapper {
-    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
   }
 
   .rabbithole-overlay.rabbithole-popup .rabbithole-selector-wrapper {
     margin-bottom: 0;
+  }
+
+  .rabbithole-options-wrapper {
+    width: 100%;
+  }
+
+  .rabbithole-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
   }
 
   :global(.rabbithole-icon) {
@@ -166,7 +236,32 @@
     color: white !important;
   }
 
-  /* Dark mode support for overlay if needed, though usually overlays might stick to one theme or detect system */
+  :global(.rabbithole-icon.header-icon:hover) {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .icon-wrapper {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .success-check-icon {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background-color: rgba(64, 192, 87, 0.9);
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Dark mode support for overlay */
   @media (prefers-color-scheme: dark) {
     .rabbithole-overlay:not(.rabbithole-popup) {
       background-color: rgba(37, 38, 43, 0.4);
@@ -183,6 +278,10 @@
 
     .rabbithole-overlay.rabbithole-popup:hover {
       background-color: transparent;
+    }
+
+    :global(.rabbithole-icon.header-icon:hover) {
+      background-color: rgba(255, 255, 255, 0.1) !important;
     }
   }
 </style>
