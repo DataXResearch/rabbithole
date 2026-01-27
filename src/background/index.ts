@@ -347,10 +347,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT:
-      chrome.tabs.query({ windowId: sender.tab.windowId }).then(async (tabs) => {
-        storeWebsites(tabs, db, sendResponse);
+      chrome.windows.getCurrent().then((window) => {
+        chrome.tabs.query({ windowId: window.id }).then(async (tabs) => {
+          storeWebsites(tabs, db, sendResponse);
+        });
       });
-
       break;
 
     case MessageRequest.UPDATE_ACTIVE_TABS:

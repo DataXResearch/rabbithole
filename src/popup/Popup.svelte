@@ -2,10 +2,13 @@
   import Overlay from "src/lib/Overlay.svelte";
   import { Tooltip } from "@svelteuidev/core";
   import { onMount } from "svelte";
-  import { MessageRequest } from "../utils";
+  import { MessageRequest, NotificationDuration } from "../utils";
   import type { Settings } from "../storage/db";
 
   let isHovering = false;
+  let isHoveringOverSync = false;
+  let isSyncingWindow = false;
+  let syncWindowSuccess = false;
   let settings: Settings = {
     show: false,
     alignment: "right",
@@ -31,22 +34,52 @@
       await chrome.tabs.reload(tab.id);
     }
   }
+
+  async function saveAllTabsToActiveProject() {
+    isSyncingWindow = true;
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
+      });
+      syncWindowSuccess = true;
+      setTimeout(() => {
+        syncWindowSuccess = false;
+      }, NotificationDuration);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      isSyncingWindow = false;
+    }
+  }
 </script>
 
 <div class="popup-container">
   <div class="popup-wrapper">
     <div class="popup-header">
       <span class="popup-title">Rabbithole</span>
-      <Tooltip {isHovering} label="This will refresh the page" withArrow>
-        <button
-          class="link-button"
-          on:click={toggleOverlay}
-          on:mouseenter={() => isHovering = true}
-          on:mouseleave={() => isHovering = false}
-        >
-          {settings.show ? "Hide" : "Show"} Overlay
-        </button>
-      </Tooltip>
+      <div class="header-actions">
+        <Tooltip {isHoveringOverSync} label="Save all tabs in window to current project" withArrow>
+          <button
+            class="link-button"
+            on:click={saveAllTabsToActiveProject}
+            on:mouseenter={() => isHoveringOverSync = true}
+            on:mouseleave={() => isHoveringOverSync = false}
+            disabled={isSyncingWindow}
+          >
+            {syncWindowSuccess ? "Synced!" : "Sync Window"}
+          </button>
+        </Tooltip>
+        <Tooltip {isHovering} label="This will refresh the page" withArrow>
+          <button
+            class="link-button"
+            on:click={toggleOverlay}
+            on:mouseenter={() => isHovering = true}
+            on:mouseleave={() => isHovering = false}
+          >
+            {settings.show ? "Hide" : "Show"} Overlay
+          </button>
+        </Tooltip>
+      </div>
     </div>
     <Overlay isPopup={true} />
   </div>
@@ -90,6 +123,12 @@
     color: #212529;
   }
 
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
   .link-button {
     background: none;
     border: none;
@@ -103,6 +142,11 @@
 
   .link-button:hover {
     color: #0070e0;
+  }
+
+  .link-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   @media (prefers-color-scheme: dark) {
