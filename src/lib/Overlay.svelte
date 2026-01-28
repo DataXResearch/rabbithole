@@ -2,8 +2,8 @@
   import { onMount } from "svelte";
   import { Group, Tooltip, ActionIcon, Text } from "@svelteuidev/core";
   import Options from "./Options.svelte";
-  import ProjectSelector from "src/lib/ProjectSelector.svelte";
-  import { MessageRequest, getOrderedProjects, NotificationDuration } from "../utils.ts";
+  import BurrowSelector from "src/lib/BurrowSelector.svelte";
+  import { MessageRequest, getOrderedBurrows, NotificationDuration } from "../utils.ts";
   import type { Settings } from "../storage/db";
   import { Move, EyeNone, Update, Check } from "radix-icons-svelte";
 
@@ -14,7 +14,7 @@
     alignment: "right",
     darkMode: false,
   };
-  let projects = [];
+  let burrows = [];
   let isHovering = false;
   let isSyncingWindow = false;
   let syncWindowSuccess = false;
@@ -25,7 +25,7 @@
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
   });
 
   function changeAlignment(event) {
@@ -44,17 +44,17 @@
     });
   }
 
-  async function handleProjectChange(event) {
-    const newProjectId = event.detail || event.target?.value;
+  async function handleBurrowChange(event) {
+    const newBurrowId = event.detail || event.target?.value;
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
-      projectId: newProjectId,
+      burrowId: newBurrowId,
     });
-    // Refresh the projects list to reflect the new active project
-    projects = await getOrderedProjects();
+    // Refresh the burrows list to reflect the new active burrow
+    burrows = await getOrderedBurrows();
   }
 
-  async function saveAllTabsToActiveProject() {
+  async function saveAllTabsToActiveBurrow() {
     isSyncingWindow = true;
     try {
       await chrome.runtime.sendMessage({
@@ -80,12 +80,12 @@
         <Group spacing="xs">
           <Tooltip
             {isHoveringOverSync}
-            label="Save all tabs in window to current project"
+            label="Save all tabs in window to current burrow"
             withArrow
           >
             <div class="icon-wrapper">
               <ActionIcon
-                on:click={saveAllTabsToActiveProject}
+                on:click={saveAllTabsToActiveBurrow}
                 on:mouseenter={() => isHoveringOverSync = true}
                 on:mouseleave={() => isHoveringOverSync = false}
                 variant="subtle"
@@ -136,7 +136,7 @@
 
     <div class="rabbithole-content">
       <div class="rabbithole-selector-wrapper">
-        <ProjectSelector {projects} {handleProjectChange} dropdownDirection={isPopup ? "down" : "up"} allowCreate={true} />
+        <BurrowSelector {burrows} {handleBurrowChange} dropdownDirection={isPopup ? "down" : "up"} allowCreate={true} />
       </div>
       <div class="rabbithole-options-wrapper">
         <Options />

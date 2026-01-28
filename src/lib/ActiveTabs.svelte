@@ -3,23 +3,25 @@
   import { OpenInNewWindow } from "radix-icons-svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
 
-  export let activeProject = {};
+  export let activeBurrow = {};
   export let websites = [];
 
   $: activeTabWebsites = (() => {
-    if (!activeProject?.activeTabs || activeProject.activeTabs.length === 0) return [];
+    if (!activeBurrow?.activeTabs || activeBurrow.activeTabs.length === 0) {
+      return [];
+    }
     // Map URLs to website objects from the main list
     // Note: This assumes all active tabs are also in the main saved list, which they should be after sync
-    return activeProject.activeTabs
+    return activeBurrow.activeTabs
       .map(url => websites.find(w => w.url === url))
       .filter(Boolean);
   })();
 
   async function openAllActiveTabs() {
-    if (activeProject.activeTabs && activeProject.activeTabs.length > 0) {
+    if (activeBurrow.activeTabs && activeBurrow.activeTabs.length > 0) {
       await chrome.runtime.sendMessage({
         type: "OPEN_TABS",
-        urls: activeProject.activeTabs
+        urls: activeBurrow.activeTabs
       });
     }
   }
@@ -27,11 +29,11 @@
   async function removeFromActiveTabs(url) {
     await chrome.runtime.sendMessage({
       type: "REMOVE_FROM_ACTIVE_TABS",
-      projectId: activeProject.id,
+      burrowId: activeBurrow.id,
       url: url
     });
 
-    activeProject.activeTabs = activeProject.activeTabs.filter(u => u !== url);
+    activeBurrow.activeTabs = activeBurrow.activeTabs.filter(u => u !== url);
   }
 </script>
 

@@ -2,20 +2,20 @@
   import { TextInput, Paper, Button } from "@svelteuidev/core";
   import { MessageRequest } from "../utils";
 
-  export let handleProjectChange;
-  export let projects = [];
+  export let handleBurrowChange;
+  export let burrows = [];
   // "down" or "up"
   export let dropdownDirection = "down";
-  // Allow creating new projects when no results found
+  // Allow creating new burrows when no results found
   export let allowCreate = false;
 
   let searchValue = "";
   let isOpen = false;
 
-  $: selectedProject = projects.length > 0 ? projects[0] : null;
-  $: displayValue = isOpen ? searchValue : (selectedProject?.name || "");
-  $: filteredProjects = projects.filter((p) =>
-    p.name.toLowerCase().includes(searchValue.toLowerCase().trim())
+  $: selectedBurrow = burrows.length > 0 ? burrows[0] : null;
+  $: displayValue = isOpen ? searchValue : (selectedBurrow?.name || "");
+  $: filteredBurrows = burrows.filter((b) =>
+    b.name.toLowerCase().includes(searchValue.toLowerCase().trim())
   );
 
   function handleFocus() {
@@ -35,38 +35,38 @@
     searchValue = event.target.value;
   }
 
-  function selectProject(project) {
-    selectedProject = project;
+  function selectBurrow(burrow) {
+    selectedBurrow = burrow;
     isOpen = false;
     searchValue = "";
     // Create a synthetic event similar to what Select would dispatch
-    handleProjectChange({ detail: project.id });
+    handleBurrowChange({ detail: burrow.id });
 
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
   }
 
-  async function createNewProject() {
-    const projectName = searchValue.trim();
-    if (!projectName) return;
+  async function createNewBurrow() {
+    const burrowName = searchValue.trim();
+    if (!burrowName) return;
 
     try {
-      const newProject = await chrome.runtime.sendMessage({
+      const newBurrow = await chrome.runtime.sendMessage({
         type: MessageRequest.CREATE_NEW_BURROW,
-        newProjectName: projectName,
+        newBurrowName: burrowName,
       });
 
-      // Refresh projects list
-      const allProjects = await chrome.runtime.sendMessage({
+      // Refresh burrows list
+      const allBurrows = await chrome.runtime.sendMessage({
         type: MessageRequest.GET_ALL_BURROWS,
       });
-      projects = allProjects;
+      burrows = allBurrows;
 
-      // Select the new project
-      selectProject(newProject);
+      // Select the new burrow
+      selectBurrow(newBurrow);
     } catch (err) {
-      console.error("Failed to create project:", err);
+      console.error("Failed to create burrow:", err);
     }
   }
 
@@ -79,10 +79,10 @@
       }
     }
     if (event.key === "Enter") {
-      if (filteredProjects.length > 0) {
-        selectProject(filteredProjects[0]);
+      if (filteredBurrows.length > 0) {
+        selectBurrow(filteredBurrows[0]);
       } else if (allowCreate && searchValue.trim()) {
-        createNewProject();
+        createNewBurrow();
       }
     }
   }
@@ -95,7 +95,7 @@
     on:blur={handleBlur}
     on:input={handleInput}
     on:keydown={handleKeydown}
-    placeholder="Select or search project"
+    placeholder="Select or search burrow"
     radius="md"
     size="sm"
     class="project-selector-input"
@@ -103,27 +103,27 @@
 
   {#if isOpen}
     <Paper class="project-dropdown {dropdownDirection === 'up' ? 'dropdown-up' : 'dropdown-down'}" shadow="md" radius="md" padding="xs">
-      {#if filteredProjects.length > 0}
-        {#each filteredProjects as project}
+      {#if filteredBurrows.length > 0}
+        {#each filteredBurrows as burrow}
           <button
             type="button"
             class="project-option"
-            class:selected={selectedProject?.id === project.id}
-            on:mousedown|preventDefault={() => selectProject(project)}
+            class:selected={selectedBurrow?.id === burrow.id}
+            on:mousedown|preventDefault={() => selectBurrow(burrow)}
           >
-            {project.name}
+            {burrow.name}
           </button>
         {/each}
       {:else if allowCreate && searchValue.trim()}
         <button
           type="button"
           class="create-project-button"
-          on:mousedown|preventDefault={createNewProject}
+          on:mousedown|preventDefault={createNewBurrow}
         >
           Create "{searchValue.trim()}"
         </button>
       {:else}
-        <div class="no-results">No projects found</div>
+        <div class="no-results">No burrows found</div>
       {/if}
     </Paper>
   {/if}

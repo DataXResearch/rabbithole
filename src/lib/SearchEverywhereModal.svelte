@@ -74,16 +74,15 @@
   async function handleDeleteWebsite(event) {
     const urlToDelete = event.detail.url;
 
-    // Find which project(s) contain this website
-    const projects = await chrome.runtime.sendMessage({
+    const burrows = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_BURROWS,
     });
 
-    for (const project of projects) {
-      if (project.savedWebsites.includes(urlToDelete)) {
+    for (const burrow of burrows) {
+      if (burrow.websites.includes(urlToDelete)) {
         await chrome.runtime.sendMessage({
           type: MessageRequest.DELETE_WEBSITE,
-          projectId: project.id,
+          burrowId: burrow.id,
           url: urlToDelete,
         });
       }
@@ -114,7 +113,7 @@
       <div class="modal-body">
         <div class="search-input-wrapper" bind:this={inputRef}>
           <TextInput
-            placeholder="Search across all projects..."
+            placeholder="Search across all burrows..."
             icon={MagnifyingGlass}
             size="md"
             radius="md"

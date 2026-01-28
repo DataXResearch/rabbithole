@@ -1,4 +1,4 @@
-import type { Project } from "./storage/db";
+import type { Burrow } from "./storage/db";
 
 // Can these be reordered without breaking older versions?
 // seems like no because they are bound to ints
@@ -17,29 +17,29 @@ export enum MessageRequest {
   SAVE_WINDOW_TO_ACTIVE_BURROW,
   UPDATE_ACTIVE_TABS,
   RENAME_BURROW,
-  DELETE_PROJECT,
+  DELETE_BURROW,
   DELETE_WEBSITE,
   PUBLISH_RABBITHOLE,
 }
 
-export async function getOrderedProjects(): Promise<Project[]> {
-  let projects = await chrome.runtime.sendMessage({
+export async function getOrderedBurrows(): Promise<Burrow[]> {
+  let burrows = await chrome.runtime.sendMessage({
     type: MessageRequest.GET_ALL_BURROWS,
   });
-  const activeProject = await chrome.runtime.sendMessage({
+  const activeBurrow = await chrome.runtime.sendMessage({
     type: MessageRequest.GET_ACTIVE_BURROW,
   });
 
-  for (let i = 0; i < projects.length; i++) {
-    if (projects[i].name === activeProject.name) {
-      const temp = projects[0];
-      projects[0] = projects[i];
-      projects[i] = temp;
+  for (let i = 0; i < burrows.length; i++) {
+    if (burrows[i].name === activeBurrow.name) {
+      const temp = burrows[0];
+      burrows[0] = burrows[i];
+      burrows[i] = temp;
       break;
     }
   }
 
-  return projects;
+  return burrows;
 }
 
 export const NotificationDuration = 2000;
