@@ -144,7 +144,7 @@
         // Save to DB
         const timestamp = Date.now();
         const response = await chrome.runtime.sendMessage({
-          type: MessageRequest.PUBLISH_RABBITHOLE,
+          type: MessageRequest.PUBLISH_BURROW,
           projectId: activeProject.id,
           uri: collectionData.uri,
           timestamp: timestamp,

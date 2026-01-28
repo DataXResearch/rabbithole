@@ -7,16 +7,16 @@ export enum MessageRequest {
   GET_ALL_ITEMS,
   GET_SETTINGS,
   UPDATE_SETTINGS,
-  GET_ALL_PROJECTS,
-  GET_PROJECT_SAVED_WEBSITES,
-  CREATE_NEW_PROJECT,
-  CHANGE_ACTIVE_PROJECT,
-  GET_ACTIVE_PROJECT,
-  GET_PROJECT,
-  SAVE_WINDOW_TO_NEW_PROJECT,
-  SAVE_WINDOW_TO_ACTIVE_PROJECT,
+  GET_ALL_BURROWS,
+  GET_BURROW_WEBSITES,
+  CREATE_NEW_BURROW,
+  CHANGE_ACTIVE_BURROW,
+  GET_ACTIVE_BURROW,
+  GET_BURROW,
+  SAVE_WINDOW_TO_NEW_BURROW,
+  SAVE_WINDOW_TO_ACTIVE_BURROW,
   UPDATE_ACTIVE_TABS,
-  RENAME_PROJECT,
+  RENAME_BURROW,
   DELETE_PROJECT,
   DELETE_WEBSITE,
   PUBLISH_RABBITHOLE,
@@ -24,10 +24,10 @@ export enum MessageRequest {
 
 export async function getOrderedProjects(): Promise<Project[]> {
   let projects = await chrome.runtime.sendMessage({
-    type: MessageRequest.GET_ALL_PROJECTS,
+    type: MessageRequest.GET_ALL_BURROWS,
   });
   const activeProject = await chrome.runtime.sendMessage({
-    type: MessageRequest.GET_ACTIVE_PROJECT,
+    type: MessageRequest.GET_ACTIVE_BURROW,
   });
 
   for (let i = 0; i < projects.length; i++) {
@@ -40,16 +40,6 @@ export async function getOrderedProjects(): Promise<Project[]> {
   }
 
   return projects;
-}
-
-export interface Project {
-  id: string;
-  createdAt: number;
-  savedWebsites: string[];
-  name: string;
-  sembleCollectionUri?: string;
-  lastSembleSync?: number;
-  activeTabs?: string[];
 }
 
 export const NotificationDuration = 2000;

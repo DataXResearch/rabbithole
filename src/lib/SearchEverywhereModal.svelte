@@ -73,10 +73,10 @@
 
   async function handleDeleteWebsite(event) {
     const urlToDelete = event.detail.url;
-    
+
     // Find which project(s) contain this website
     const projects = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ALL_PROJECTS,
+      type: MessageRequest.GET_ALL_BURROWS,
     });
 
     for (const project of projects) {

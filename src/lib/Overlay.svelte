@@ -47,7 +47,7 @@
   async function handleProjectChange(event) {
     const newProjectId = event.detail || event.target?.value;
     await chrome.runtime.sendMessage({
-      type: MessageRequest.CHANGE_ACTIVE_PROJECT,
+      type: MessageRequest.CHANGE_ACTIVE_BURROW,
       projectId: newProjectId,
     });
     // Refresh the projects list to reflect the new active project
@@ -58,7 +58,7 @@
     isSyncingWindow = true;
     try {
       await chrome.runtime.sendMessage({
-        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
+        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
       });
       syncWindowSuccess = true;
       setTimeout(() => {

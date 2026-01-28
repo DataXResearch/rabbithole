@@ -27,7 +27,7 @@
       type: MessageRequest.UPDATE_SETTINGS,
       settings,
     });
-    
+
     // Reload the active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
@@ -39,7 +39,7 @@
     isSyncingWindow = true;
     try {
       await chrome.runtime.sendMessage({
-        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
+        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
       });
       syncWindowSuccess = true;
       setTimeout(() => {
