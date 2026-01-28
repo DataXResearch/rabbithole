@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 
-const version = 5;
+const version = 6;
 
 export interface Settings {
   alignment: string;
@@ -9,7 +9,7 @@ export interface Settings {
 }
 
 export interface Website {
-  url: string; // key
+  url: string;
   name: string;
   savedAt: number;
   faviconUrl: string;
@@ -17,10 +17,31 @@ export interface Website {
   description?: string;
 }
 
+// DEPRECATED, use Burrow
 export interface Project {
-  id: string; // key
+  id: string;
   createdAt: number;
-  savedWebsites: string[]; // url/"foreign" key
+  savedWebsites: string[]; // url
+  name: string;
+  sembleCollectionUri?: string;
+  lastSembleSync?: number;
+  activeTabs?: string[];
+}
+
+export interface Burrow {
+  id: string;
+  createdAt: number;
+  websites: string[]; // urls
+  name: string;
+  sembleCollectionUri?: string;
+  lastSembleSync?: number;
+  activeTabs?: string[];
+}
+
+export interface Rabbithole {
+  id: string;
+  createdAt: number;
+  burrows: string[]; // burrow IDs
   name: string;
   sembleCollectionUri?: string;
   lastSembleSync?: number;
@@ -28,13 +49,11 @@ export interface Project {
 }
 
 export interface User {
-  id: string; // key
-  currentProject: string;
+  id: string;
+  currentBurrow: string;
   settings: Settings;
 }
 
-// FIXME: is this an acceptable pattern? Specifically, opening the db in 2 different
-// functions seems a bit strange
 export class WebsiteStore {
   factory: IDBFactory;
   db: IDBDatabase = null;
@@ -70,7 +89,6 @@ export class WebsiteStore {
     });
   }
 
-  // Creates db schema
   static async init(factory: IDBFactory): Promise<void> {
     await new Promise((resolve, reject) => {
       if (factory === undefined) {
@@ -86,9 +104,9 @@ export class WebsiteStore {
           reject(new Error("Insufficient permissions"));
         };
 
-        // This event is only implemented in recent browsers
         request.onupgradeneeded = (event) => {
           const db = (event.target as IDBOpenDBRequest).result;
+
           if (event.oldVersion < 1) {
             const objectStore = db.createObjectStore("savedWebsites", {
               keyPath: "url",
@@ -105,6 +123,20 @@ export class WebsiteStore {
               keyPath: "id",
             });
             objectStore.createIndex("name", "name", { unique: true });
+          }
+
+          if (event.oldVersion < 6) {
+            const txn = (event.target as IDBOpenDBRequest).transaction;
+
+            if (txn.objectStoreNames.contains("projects")) {
+              const store = txn.objectStore("projects");
+              store.name = "burrows";
+            }
+
+            if (txn.objectStoreNames.contains("savedWebsites")) {
+              const store = txn.objectStore("savedWebsites");
+              store.name = "websites";
+            }
           }
 
           resolve(db);
@@ -124,24 +156,24 @@ export class WebsiteStore {
                 alignment: "right",
                 darkMode: false,
               },
-              currentProject: null,
+              currentBurrow: null,
             };
             const userRequest = db
               .transaction(["user"], "readwrite")
               .objectStore("user")
               .add(newUser);
             userRequest.onsuccess = async () => {
-              await store.createNewActiveProject("Default project");
+              await store.createNewActiveBurrow("Default burrow");
             };
             return;
           }
 
           if (
-            !("currentProject" in user) ||
-            user.currentProject === null ||
-            user.currentProject === undefined
+            !("currentBurrow" in user) ||
+            user.currentBurrow === null ||
+            user.currentBurrow === undefined
           ) {
-            await store.createNewActiveProject("Default project");
+            await store.createNewActiveBurrow("Default burrow");
           }
         };
       }
@@ -149,16 +181,15 @@ export class WebsiteStore {
   }
 
   // also adds website to savedWebsites if it isn't there already
-  async saveWebsiteToProject(
+  async saveWebsitesToBurrow(
     items: Website[],
   ): Promise<Website | { alreadySaved: boolean }[]> {
     const db = await this.getDb();
 
-    // update website list of active project
-    let currentProject = await this.getActiveProject();
+    let currentBurrow = await this.getActiveBurrow();
     for (let item of items) {
-      if (!currentProject.savedWebsites.includes(item.url)) {
-        currentProject.savedWebsites.push(item.url);
+      if (!currentBurrow.websites.includes(item.url)) {
+        currentBurrow.websites.push(item.url);
         item.alreadySaved = false;
       } else {
         item.alreadySaved = true;
@@ -166,14 +197,14 @@ export class WebsiteStore {
     }
 
     return new Promise((resolve, reject) => {
-      const projectRequest = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .put(currentProject);
+      const burrowRequest = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(currentBurrow);
 
-      projectRequest.onsuccess = (event) => {
-        const tx = db.transaction(["savedWebsites"], "readwrite");
-        items.forEach((item) => tx.objectStore("savedWebsites").put(item));
+      burrowRequest.onsuccess = (event) => {
+        const tx = db.transaction(["websites"], "readwrite");
+        items.forEach((item) => tx.objectStore("websites").put(item));
 
         tx.oncomplete = async () => {
           console.log(`store item success`);
@@ -187,7 +218,7 @@ export class WebsiteStore {
         };
       };
 
-      projectRequest.onerror = (event) => {
+      burrowRequest.onerror = (event) => {
         console.error(`store item error`);
         console.error(event.target);
         reject(new Error((event.target as IDBRequest).error.message));
@@ -195,12 +226,11 @@ export class WebsiteStore {
     });
   }
 
-  // Saves websites directly to the store without adding to the active project
   async saveWebsites(items: Website[]): Promise<void> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(["savedWebsites"], "readwrite");
-      const store = tx.objectStore("savedWebsites");
+      const tx = db.transaction(["websites"], "readwrite");
+      const store = tx.objectStore("websites");
 
       items.forEach((item) => {
         // Use put to upsert (overwrite if exists)
@@ -219,32 +249,27 @@ export class WebsiteStore {
     });
   }
 
-  async deleteWebsiteFromProject(
-    projectId: string,
-    url: string,
-  ): Promise<void> {
+  async deleteWebsiteFromBurrow(burrowId: string, url: string): Promise<void> {
     const db = await this.getDb();
 
-    // update website list of active project
-    let project = await this.getProject(projectId);
+    let burrow = await this.getBurrow(burrowId);
 
-    project.savedWebsites = project.savedWebsites.filter((w) => {
+    burrow.websites = burrow.websites.filter((w) => {
       return w !== url;
     });
 
     return new Promise((resolve, reject) => {
-      const projectRequest = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .put(project);
+      const burrowRequest = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(burrow);
 
-      projectRequest.onsuccess = (event) => {
+      burrowRequest.onsuccess = (event) => {
         console.log(`delete item success`);
         resolve();
       };
 
-      projectRequest.onerror = (event) => {
-        // ignore error if website is stored already
+      burrowRequest.onerror = (event) => {
         if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
           console.log(`store item error`);
           console.log(event.target);
@@ -257,10 +282,7 @@ export class WebsiteStore {
   async getWebsite(url: string): Promise<Website> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db
-        .transaction(["savedWebsites"])
-        .objectStore("savedWebsites")
-        .get(url);
+      const request = db.transaction(["websites"]).objectStore("websites").get(url);
 
       request.onsuccess = () => {
         console.log("getWebsite success");
@@ -277,10 +299,7 @@ export class WebsiteStore {
   async getAllWebsites(): Promise<Website[]> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db
-        .transaction(["savedWebsites"])
-        .objectStore("savedWebsites")
-        .getAll();
+      const request = db.transaction(["websites"]).objectStore("websites").getAll();
 
       request.onsuccess = (_) => {
         console.log("getAll success");
@@ -294,52 +313,49 @@ export class WebsiteStore {
     });
   }
 
-  async renameProject(projectId: string, newName: string): Promise<Project> {
+  async renameBurrow(burrowId: string, newName: string): Promise<Burrow> {
     const db = await this.getDb();
 
-    // update website list of active project
-    let project = await this.getProject(projectId);
-    project.name = newName;
+    let burrow = await this.getBurrow(burrowId);
+    burrow.name = newName;
 
     return new Promise((resolve, reject) => {
-      const projectRequest = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .put(project);
+      const burrowRequest = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(burrow);
 
-      projectRequest.onsuccess = (event) => {
-        console.log(`rename project success`);
-        resolve(project);
+      burrowRequest.onsuccess = (event) => {
+        console.log(`rename burrow success`);
+        resolve(burrow);
       };
 
-      projectRequest.onerror = (event) => {
-        console.log(`rename project error`);
+      burrowRequest.onerror = (event) => {
+        console.log(`rename burrow error`);
         console.log(event.target);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }
 
-  // returns new active project
-  async deleteProject(projectId: string): Promise<Project> {
+  async deleteBurrow(burrowId: string): Promise<Burrow> {
     const db = await this.getDb();
 
     return new Promise((resolve, reject) => {
-      const projectRequest = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .delete(projectId);
+      const burrowRequest = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .delete(burrowId);
 
-      projectRequest.onsuccess = async () => {
-        console.log(`delete project success`);
-        // replace active project
-        const projects = await this.getAllProjects();
-        await this.changeActiveProject(projects[0].id);
-        resolve(projects[0]);
+      burrowRequest.onsuccess = async () => {
+        console.log(`delete burrow success`);
+        const burrows = await this.getAllBurrows();
+        await this.changeActiveBurrow(burrows[0].id);
+        resolve(burrows[0]);
       };
 
-      projectRequest.onerror = (event) => {
-        console.log(`rename project error`);
+      burrowRequest.onerror = (event) => {
+        console.log(`delete burrow error`);
         console.log(event.target);
         reject(new Error((event.target as IDBRequest).error.message));
       };
@@ -405,44 +421,41 @@ export class WebsiteStore {
     });
   }
 
-  async getActiveProject(): Promise<Project> {
+  async getActiveBurrow(): Promise<Burrow> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = (_) => {
         const [user] = userRequest.result;
-        const projectRequest = db
-          .transaction(["projects"], "readwrite")
-          .objectStore("projects")
-          .get(user.currentProject);
+        const burrowRequest = db
+          .transaction(["burrows"], "readwrite")
+          .objectStore("burrows")
+          .get(user.currentBurrow);
 
-        projectRequest.onsuccess = () => {
-          const project = projectRequest.result;
-          console.log("getProject success");
-          resolve(project);
+        burrowRequest.onsuccess = () => {
+          const burrow = burrowRequest.result;
+          console.log("getBurrow success");
+          resolve(burrow);
         };
 
-        projectRequest.onerror = (event) => {
-          console.log(`getProject error: ${event.target}`);
+        burrowRequest.onerror = (event) => {
+          console.log(`getBurrow error: ${event.target}`);
           reject(new Error("Failed to retrieve settings"));
         };
       };
 
       userRequest.onerror = (event) => {
-        console.log(`getProject error: ${event.target}`);
+        console.log(`getBurrow error: ${event.target}`);
         reject(new Error("Failed to retrieve settings"));
       };
     });
   }
 
-  async getAllProjects(): Promise<Project[]> {
+  async getAllBurrows(): Promise<Burrow[]> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db
-        .transaction(["projects"])
-        .objectStore("projects")
-        .getAll();
+      const request = db.transaction(["burrows"]).objectStore("burrows").getAll();
 
       request.onsuccess = (_) => {
         console.log("getAll success");
@@ -456,37 +469,33 @@ export class WebsiteStore {
     });
   }
 
-  async getProject(projectId: string): Promise<Project> {
+  async getBurrow(burrowId: string): Promise<Burrow> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db
-        .transaction(["projects"])
-        .objectStore("projects")
-        .get(projectId);
+      const request = db.transaction(["burrows"]).objectStore("burrows").get(burrowId);
 
       request.onsuccess = () => {
-        console.log("getProject success");
+        console.log("getBurrow success");
         resolve(request.result);
       };
 
       request.onerror = (event) => {
-        console.log(`getProject error: ${event.target}`);
+        console.log(`getBurrow error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       };
     });
   }
 
-  async getAllWebsitesForProject(projectId: string): Promise<Website[]> {
-    // This method uses other async methods, so it's fine as is
+  async getAllWebsitesForBurrow(burrowId: string): Promise<Website[]> {
     return new Promise(async (resolve, reject) => {
       try {
         let websites: Website[] = [];
-        const project = await this.getProject(projectId);
-        for (const url of project.savedWebsites) {
+        const burrow = await this.getBurrow(burrowId);
+        for (const url of burrow.websites) {
           const website = await this.getWebsite(url);
           websites.push(website);
         }
-        console.log("getAllWebsitesForProject successful");
+        console.log("getAllWebsitesForBurrow successful");
         resolve(websites);
       } catch (err) {
         reject(err);
@@ -494,14 +503,14 @@ export class WebsiteStore {
     });
   }
 
-  async changeActiveProject(projectId: string): Promise<void> {
+  async changeActiveBurrow(burrowId: string): Promise<void> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = async () => {
         const [user] = userRequest.result;
-        user.currentProject = projectId;
+        user.currentBurrow = burrowId;
 
         const userPutRequest = db
           .transaction(["user"], "readwrite")
@@ -509,35 +518,34 @@ export class WebsiteStore {
           .put(user);
 
         userPutRequest.onsuccess = () => {
-          console.log("changeActiveProject success");
+          console.log("changeActiveBurrow success");
           resolve();
         };
 
         userPutRequest.onerror = (event) => {
-          console.log(`changeActiveProject error: ${event.target}`);
+          console.log(`changeActiveBurrow error: ${event.target}`);
           reject(new Error("Failed to retrieve settings"));
         };
       };
 
       userRequest.onerror = (event) => {
-        console.log(`getProject error: ${event.target}`);
+        console.log(`getBurrow error: ${event.target}`);
         reject(new Error("Failed to retrieve settings"));
       };
     });
   }
 
-  // create new project and set it as user's active project
-  async createNewActiveProject(
-    projectName: string,
-    savedWebsites?: string[],
-  ): Promise<Project> {
+  async createNewActiveBurrow(
+    burrowName: string,
+    websites?: string[],
+  ): Promise<Burrow> {
     const db = await this.getDb();
     const user = await this.getUser();
-    const project: Project = {
+    const burrow: Burrow = {
       id: uuid(),
       createdAt: Date.now(),
-      name: projectName,
-      savedWebsites: [...new Set(savedWebsites)],
+      name: burrowName,
+      websites: [...new Set(websites)],
       activeTabs: [],
     };
 
@@ -545,28 +553,22 @@ export class WebsiteStore {
       // FIXME: when rabbithole is installed, the first time a session is saved
       // the website list is duplicated, so dedup here for now
       // Also see how else this can be repro'd
-      const projectReq = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .put(project);
+      const burrowReq = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(burrow);
 
-      console.log("dkfb")
-      console.log(project)
-      console.log(projectReq)
-
-      projectReq.onsuccess = () => {
-        console.log("hiiiiiii")
-        // add default store to user.currentProject
-        const userReq = db.transaction(["user"], "readwrite")
+      burrowReq.onsuccess = () => {
+        const userReq = db
+          .transaction(["user"], "readwrite")
           .objectStore("user")
           .put({
             ...user,
-            currentProject: project.id,
+            currentBurrow: burrow.id,
           });
 
         userReq.onsuccess = () => {
-          console.log("heyyyy")
-          resolve(project);
+          resolve(burrow);
         };
 
         userReq.onerror = (event) => {
@@ -574,35 +576,39 @@ export class WebsiteStore {
         };
       };
 
-      projectReq.onerror = (event) => {
+      burrowReq.onerror = (event) => {
         console.log(`getAll error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       };
     });
   }
 
-  async updateProjectSembleInfo(projectId: string, uri: string, syncTime: number): Promise<void> {
+  async updateBurrowSembleInfo(
+    burrowId: string,
+    uri: string,
+    syncTime: number,
+  ): Promise<void> {
     const db = await this.getDb();
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(["projects"], "readwrite");
-      const store = tx.objectStore("projects");
-      const getRequest = store.get(projectId);
+      const tx = db.transaction(["burrows"], "readwrite");
+      const store = tx.objectStore("burrows");
+      const getRequest = store.get(burrowId);
 
       getRequest.onsuccess = () => {
-        const project = getRequest.result;
-        if (!project) {
-          reject(new Error(`Project not found: ${projectId}`));
+        const burrow = getRequest.result;
+        if (!burrow) {
+          reject(new Error(`Burrow not found: ${burrowId}`));
           return;
         }
 
-        project.sembleCollectionUri = uri;
-        project.lastSembleSync = syncTime;
+        burrow.sembleCollectionUri = uri;
+        burrow.lastSembleSync = syncTime;
 
-        const putRequest = store.put(project);
+        const putRequest = store.put(burrow);
 
         putRequest.onsuccess = () => {
-          console.log("updateProjectSembleInfo success");
+          console.log("updateBurrowSembleInfo success");
           resolve();
         };
 
@@ -617,50 +623,50 @@ export class WebsiteStore {
     });
   }
 
-  async updateProjectActiveTabs(projectId: string, urls: string[]): Promise<void> {
+  async updateBurrowActiveTabs(burrowId: string, urls: string[]): Promise<void> {
     const db = await this.getDb();
-    const project = await this.getProject(projectId);
-    project.activeTabs = urls;
+    const burrow = await this.getBurrow(burrowId);
+    burrow.activeTabs = urls;
 
     return new Promise((resolve, reject) => {
-      const projectRequest = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .put(project);
+      const burrowRequest = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(burrow);
 
-      projectRequest.onsuccess = (event) => {
+      burrowRequest.onsuccess = (event) => {
         resolve();
       };
 
-      projectRequest.onerror = (event) => {
+      burrowRequest.onerror = (event) => {
         console.error(`update active tabs error`);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
   }
 
-  async removeWebsiteFromActiveTabs(projectId: string, url: string): Promise<void> {
+  async removeWebsiteFromActiveTabs(burrowId: string, url: string): Promise<void> {
     const db = await this.getDb();
-    const project = await this.getProject(projectId);
+    const burrow = await this.getBurrow(burrowId);
 
-    if (!project.activeTabs) {
-      project.activeTabs = [];
+    if (!burrow.activeTabs) {
+      burrow.activeTabs = [];
     }
 
-    project.activeTabs = project.activeTabs.filter(u => u !== url);
+    burrow.activeTabs = burrow.activeTabs.filter((u) => u !== url);
 
     return new Promise((resolve, reject) => {
-      const projectRequest = db
-        .transaction(["projects"], "readwrite")
-        .objectStore("projects")
-        .put(project);
+      const burrowRequest = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(burrow);
 
-      projectRequest.onsuccess = (event) => {
+      burrowRequest.onsuccess = (event) => {
         console.log(`remove from active tabs success`);
         resolve();
       };
 
-      projectRequest.onerror = (event) => {
+      burrowRequest.onerror = (event) => {
         console.error(`remove from active tabs error`);
         reject(new Error((event.target as IDBRequest).error.message));
       };
