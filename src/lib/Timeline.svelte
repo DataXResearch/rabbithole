@@ -34,7 +34,7 @@
 
   const dispatch = createEventDispatcher();
 
-  export let activeProject = {};
+  export let activeBurrow = {};
   export let websites = [];
   export let isLoading = false;
 
@@ -49,12 +49,12 @@
   let isPublishing = false;
   let showInfoModal = false;
 
-  async function renameProject() {
-    if (activeProject.name === "") {
+  async function renameBurrow() {
+    if (activeBurrow.name === "") {
       return;
     }
-    dispatch("projectRename", {
-      newActiveProjectName: activeProject.name,
+    dispatch("burrowRename", {
+      newActiveBurrowName: activeBurrow.name,
     });
     nameClicked = false;
   }
@@ -112,7 +112,7 @@
       const did = session.did;
 
       // Create Collection
-      const collectionData = await createCollection(did, activeProject.name);
+      const collectionData = await createCollection(did, activeBurrow.name);
       console.log("Created collection", collectionData);
 
       // Create Cards and Links
@@ -145,7 +145,7 @@
         const timestamp = Date.now();
         const response = await chrome.runtime.sendMessage({
           type: MessageRequest.PUBLISH_BURROW,
-          projectId: activeProject.id,
+          burrowId: activeBurrow.id,
           uri: collectionData.uri,
           timestamp: timestamp,
         });
@@ -157,9 +157,9 @@
               response.error
           );
         } else {
-          // Update local activeProject to reflect changes immediately in UI if needed
-          activeProject.sembleCollectionUri = collectionData.uri;
-          activeProject.lastSembleSync = timestamp;
+          // Update local activeBurrow to reflect changes immediately in UI if needed
+          activeBurrow.sembleCollectionUri = collectionData.uri;
+          activeBurrow.lastSembleSync = timestamp;
 
           alert(
             `Rabbithole published successfully! Created collection and ${successCount} cards.`
@@ -191,8 +191,8 @@
     searchQuery.length < 3 ? filteredWebsites : searchResults;
 
   $: sembleUrl = (() => {
-    if (!activeProject?.sembleCollectionUri) return null;
-    const uri = activeProject.sembleCollectionUri;
+    if (!activeBurrow?.sembleCollectionUri) return null;
+    const uri = activeBurrow.sembleCollectionUri;
     if (!uri.startsWith("at://")) return null;
     const parts = uri.replace("at://", "").split("/");
     // Expecting: did / collection / rkey
@@ -257,7 +257,7 @@
 
     <Group position="center" spacing="md" class="project-controls">
       <div class="input-div">
-        <Tooltip {isHovering} label="Click to rename project" withArrow>
+        <Tooltip {isHovering} label="Click to rename burrow" withArrow>
           <Input
             id="project-name"
             icon={Pencil1}
@@ -273,9 +273,9 @@
             on:mouseleave={() => {
               isHovering = false;
             }}
-            bind:value={activeProject.name}
-            on:blur={renameProject}
-            on:keydown={(e) => e.key === "Enter" && renameProject()}
+            bind:value={activeBurrow.name}
+            on:blur={renameBurrow}
+            on:keydown={(e) => e.key === "Enter" && renameBurrow()}
           />
         </Tooltip>
       </div>
@@ -367,7 +367,7 @@
       </div>
 
       {#if !searchQuery}
-        <ActiveTabs bind:activeProject {websites} />
+        <ActiveTabs bind:activeBurrow {websites} />
       {/if}
 
       <Stack spacing="md">

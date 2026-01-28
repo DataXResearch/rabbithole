@@ -17,17 +17,6 @@ export interface Website {
   description?: string;
 }
 
-// DEPRECATED, use Burrow
-export interface Project {
-  id: string;
-  createdAt: number;
-  savedWebsites: string[]; // url
-  name: string;
-  sembleCollectionUri?: string;
-  lastSembleSync?: number;
-  activeTabs?: string[];
-}
-
 export interface Burrow {
   id: string;
   createdAt: number;

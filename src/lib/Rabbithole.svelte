@@ -4,15 +4,15 @@
   import Sidebar from "src/lib/Sidebar.svelte";
   import {
     MessageRequest,
-    getOrderedProjects,
+    getOrderedBurrows,
     NotificationDuration,
   } from "../utils";
   import { SvelteUIProvider, AppShell, Navbar, ActionIcon, Button } from "@svelteuidev/core";
   import { HamburgerMenu, Sun, Moon } from "radix-icons-svelte";
 
-  let activeProject = {};
+  let activeBurrow = {};
   let websites = [];
-  let projects = [];
+  let burrows = [];
   let isDark = false;
   let opened = true;
 
@@ -37,39 +37,39 @@
     });
     isDark = settings.darkMode;
     document.body.classList.toggle("dark-mode", isDark);
-    projects = await getOrderedProjects();
-    activeProject = await chrome.runtime.sendMessage({
+    burrows = await getOrderedBurrows();
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
     updateWebsites();
   });
 
-  async function createNewProject(event) {
-    activeProject = await chrome.runtime.sendMessage({
+  async function createNewBurrow(event) {
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_BURROW,
-      newProjectName: event.detail.newProjectName,
+      newBurrowName: event.detail.newBurrowName,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
     updateWebsites();
   }
 
-  async function createNewProjectFromWindow(event) {
+  async function createNewBurrowFromWindow(event) {
     isCreatingAndSyncing = true;
     isLoadingWebsites = true;
 
     await chrome.runtime.sendMessage({
       type: MessageRequest.SAVE_WINDOW_TO_NEW_BURROW,
-      newProjectName: event.detail.newProjectName,
+      newBurrowName: event.detail.newBurrowName,
     });
 
     // Wait for websites to be stored in the background
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Fetch fresh state from DB to ensure we have the correct active project and list
-    activeProject = await chrome.runtime.sendMessage({
+    // Fetch fresh state from DB to ensure we have the correct active burrow and list
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
     updateWebsites();
 
     createAndSyncSuccess = true;
@@ -81,20 +81,20 @@
     }, NotificationDuration);
   }
 
-  async function updateActiveProject(event) {
-    const newProjectId = event.detail.newProjectId;
+  async function updateActiveBurrow(event) {
+    const newBurrowId = event.detail.newBurrowId;
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
-      projectId: newProjectId,
+      burrowId: newBurrowId,
     });
-    activeProject = await chrome.runtime.sendMessage({
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_BURROW,
-      projectId: newProjectId,
+      burrowId: newBurrowId,
     });
     updateWebsites();
   }
 
-  async function saveWindowToActiveProject(event) {
+  async function saveWindowToActiveBurrow(event) {
     isSyncingWindow = true;
     isLoadingWebsites = true;
     await chrome.runtime.sendMessage({
@@ -105,10 +105,10 @@
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Fetch fresh state
-    activeProject = await chrome.runtime.sendMessage({
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
     updateWebsites();
 
     syncWindowSuccess = true;
@@ -131,10 +131,10 @@
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Fetch fresh state
-    activeProject = await chrome.runtime.sendMessage({
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
     updateWebsites();
 
     updateActiveTabsSuccess = true;
@@ -146,28 +146,28 @@
     }, NotificationDuration);
   }
 
-  async function renameActiveProject(event) {
-    activeProject = await chrome.runtime.sendMessage({
+  async function renameActiveBurrow(event) {
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.RENAME_BURROW,
-      newName: event.detail.newActiveProjectName,
-      projectId: activeProject.id,
+      newName: event.detail.newActiveBurrowName,
+      burrowId: activeBurrow.id,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
   }
 
-  async function deleteActiveProject(event) {
-    activeProject = await chrome.runtime.sendMessage({
+  async function deleteActiveBurrow(event) {
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.DELETE_BURROW,
-      projectId: activeProject.id,
+      burrowId: activeBurrow.id,
     });
-    projects = await getOrderedProjects();
+    burrows = await getOrderedBurrows();
     updateWebsites();
   }
 
   async function deleteWebsite(event) {
     await chrome.runtime.sendMessage({
       type: MessageRequest.DELETE_WEBSITE,
-      projectId: activeProject.id,
+      burrowId: activeBurrow.id,
       url: event.detail.url,
     });
     updateWebsites();
@@ -176,7 +176,7 @@
   async function updateWebsites() {
     const possiblyDuplicatedWebsites = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_BURROW_WEBSITES,
-      projectId: activeProject.id,
+      burrowId: activeBurrow.id,
     });
     websites = possiblyDuplicatedWebsites.filter(
       (value, index, self) =>
@@ -185,16 +185,16 @@
   }
 
   async function exportRabbitholes(event) {
-    const projects = await chrome.runtime.sendMessage({
+    const burrows = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_BURROWS,
     });
-    const savedWebsites = await chrome.runtime.sendMessage({
+    const websites = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_ITEMS,
     });
 
     const exportData = {
-      projects,
-      savedWebsites
+      burrows,
+      websites
     };
 
     const blob = new Blob([JSON.stringify(exportData)], {
@@ -216,25 +216,25 @@
   async function importRabbitholes(event) {
     const importData = event.detail.data;
 
-    let projectsToImport = [];
+    let burrowsToImport = [];
     let websitesToImport = [];
 
     if (Array.isArray(importData)) {
-      projectsToImport = importData;
+      burrowsToImport = importData;
     } else if (importData && typeof importData === 'object') {
-      projectsToImport = importData.projects || [];
-      websitesToImport = importData.savedWebsites || [];
+      burrowsToImport = importData.burrows || [];
+      websitesToImport = importData.websites || [];
     }
 
     await chrome.runtime.sendMessage({
       type: "IMPORT_DATA",
-      projects: projectsToImport,
-      savedWebsites: websitesToImport,
+      burrows: burrowsToImport,
+      websites: websitesToImport,
     });
 
     // Refresh state
-    projects = await getOrderedProjects();
-    activeProject = await chrome.runtime.sendMessage({
+    burrows = await getOrderedBurrows();
+    activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
     updateWebsites();
@@ -289,13 +289,13 @@
             {isUpdatingActiveTabs}
             {createAndSyncSuccess}
             {isCreatingAndSyncing}
-            {projects}
+            burrows={burrows}
             {opened}
-            on:projectDelete={deleteActiveProject}
-            on:projectChange={updateActiveProject}
-            on:newProject={createNewProject}
-            on:newProjectSync={createNewProjectFromWindow}
-            on:projectSync={saveWindowToActiveProject}
+            on:burrowDelete={deleteActiveBurrow}
+            on:burrowChange={updateActiveBurrow}
+            on:newBurrow={createNewBurrow}
+            on:newBurrowSync={createNewBurrowFromWindow}
+            on:burrowSync={saveWindowToActiveBurrow}
             on:updateActiveTabs={updateActiveTabs}
             on:exportRabbitholes={exportRabbitholes}
             on:importRabbitholes={importRabbitholes}
@@ -318,8 +318,8 @@
       <div class="timeline-wrapper">
         <Timeline
           on:websiteDelete={deleteWebsite}
-          on:projectRename={renameActiveProject}
-          {activeProject}
+          on:burrowRename={renameActiveBurrow}
+          activeBurrow={activeBurrow}
           {websites}
           isLoading={isLoadingWebsites}
         />
