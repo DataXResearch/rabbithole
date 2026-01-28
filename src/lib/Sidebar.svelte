@@ -14,7 +14,7 @@
   import CollapsibleSection from "src/lib/CollapsibleSection.svelte";
   import SearchEverywhereModal from "src/lib/SearchEverywhereModal.svelte";
   import { NotificationDuration } from "../utils";
-  import ProjectSelector from "src/lib/ProjectSelector.svelte";
+  import BurrowSelector from "src/lib/BurrowSelector.svelte";
   import {
     HamburgerMenu,
     Plus,
@@ -30,7 +30,7 @@
 
   const dispatch = createEventDispatcher();
 
-  export let projects;
+  export let burrows;
   export let syncWindowSuccess = false;
   export let isSyncingWindow = false;
   export let updateActiveTabsSuccess = false;
@@ -39,8 +39,8 @@
   export let isCreatingAndSyncing = false;
   export let opened;
 
-  let createProjectFail = false;
-  let createProjectFailMsg = "";
+  let createBurrowFail = false;
+  let createBurrowFailMsg = "";
 
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
@@ -53,8 +53,8 @@
 
   let sectionStates = {
     profile: true,
-    activeProject: true,
-    newProject: true,
+    activeBurrow: true,
+    newBurrow: true,
     settings: false,
     data: false,
   };
@@ -75,66 +75,66 @@
     };
   });
 
-  function validateProjectName() {
+  function validateBurrowName() {
     let valid = true;
     if (newRabbitholeName === "") {
-      createProjectFailMsg = "Required!";
+      createBurrowFailMsg = "Required!";
       valid = false;
     }
     if (
-      projects.filter(
-        (p) => p.name.toLowerCase() === newRabbitholeName.toLowerCase()
+      burrows.filter(
+        (b) => b.name.toLowerCase() === newRabbitholeName.toLowerCase()
       ).length > 0
     ) {
-      createProjectFailMsg = "Taken!";
+      createBurrowFailMsg = "Taken!";
       valid = false;
     }
     if (!valid) {
-      createProjectFail = true;
+      createBurrowFail = true;
       setTimeout(() => {
-        createProjectFail = false;
+        createBurrowFail = false;
       }, NotificationDuration);
       return false;
     }
     return true;
   }
 
-  async function handleProjectChange(event) {
+  async function handleBurrowChange(event) {
     // Handle both CustomEvent (Select) and native Event (NativeSelect fallback)
-    const newProjectId = event.detail || event.target?.value;
-    dispatch("projectChange", {
-      newProjectId,
+    const newBurrowId = event.detail || event.target?.value;
+    dispatch("burrowChange", {
+      newBurrowId,
     });
   }
 
-  async function createNewProject() {
-    if (validateProjectName()) {
-      dispatch("newProject", {
-        newProjectName: newRabbitholeName,
+  async function createNewBurrow() {
+    if (validateBurrowName()) {
+      dispatch("newBurrow", {
+        newBurrowName: newRabbitholeName,
       });
       newRabbitholeName = "";
     }
   }
 
-  async function saveAllTabsToNewProject() {
-    if (validateProjectName()) {
-      dispatch("newProjectSync", {
-        newProjectName: newRabbitholeName,
+  async function saveAllTabsToNewBurrow() {
+    if (validateBurrowName()) {
+      dispatch("newBurrowSync", {
+        newBurrowName: newRabbitholeName,
       });
       newRabbitholeName = "";
     }
   }
 
-  async function saveAllTabsToActiveProject() {
-    dispatch("projectSync");
+  async function saveAllTabsToActiveBurrow() {
+    dispatch("burrowSync");
   }
 
   async function updateActiveTabs() {
     dispatch("updateActiveTabs");
   }
 
-  async function deleteProject() {
-    dispatch("projectDelete");
+  async function deleteBurrow() {
+    dispatch("burrowDelete");
   }
 
   async function exportRabbitholes() {
@@ -198,28 +198,28 @@
           <Auth />
         </CollapsibleSection>
 
-        <!-- Current Project Section -->
+        <!-- Current Burrow Section -->
         <CollapsibleSection
-          title="Active Project"
-          bind:open={sectionStates.activeProject}
+          title="Active Burrow"
+          bind:open={sectionStates.activeBurrow}
         >
           <Stack spacing={20} align="center">
-            <ProjectSelector
-              id="project-selector"
-              {projects}
-              {handleProjectChange}
+            <BurrowSelector
+              id="burrow-selector"
+              {burrows}
+              {handleBurrowChange}
             />
 
             <Tooltip
               {isHoveringOverSync}
-              label="Save all tabs in window to current project"
+              label="Save all tabs in window to current burrow"
               withArrow
               position="bottom"
               color="dark"
             >
               <div class="button-wrapper">
                 <Button
-                  on:click={saveAllTabsToActiveProject}
+                  on:click={saveAllTabsToActiveBurrow}
                   on:mouseenter={() => (isHoveringOverSync = true)}
                   on:mouseleave={() => (isHoveringOverSync = false)}
                   color="blue"
@@ -274,7 +274,7 @@
               color="red"
             >
               <Button
-                on:click={deleteProject}
+                on:click={deleteBurrow}
                 on:mouseenter={() => (isHoveringOverDelete = true)}
                 on:mouseleave={() => (isHoveringOverDelete = false)}
                 color="red"
@@ -282,7 +282,7 @@
                 class="sidebar-btn"
                 leftIcon={Trash}
               >
-                Delete Project
+                Delete Burrow
               </Button>
             </Tooltip>
           </Stack>
@@ -290,20 +290,20 @@
 
         <!-- Create Section -->
         <CollapsibleSection
-          title="New Project"
-          bind:open={sectionStates.newProject}
+          title="New Burrow"
+          bind:open={sectionStates.newBurrow}
         >
           <Stack spacing={20} align="center">
             <TextInput
-              placeholder="Project Name"
+              placeholder="Burrow Name"
               bind:value={newRabbitholeName}
               variant="filled"
               radius="md"
-              error={createProjectFail ? createProjectFailMsg : false}
+              error={createBurrowFail ? createBurrowFailMsg : false}
             />
 
             <Button
-              on:click={createNewProject}
+              on:click={createNewBurrow}
               color="blue"
               fullWidth
               class="sidebar-btn custom-blue-btn"
@@ -314,14 +314,14 @@
 
             <Tooltip
               {isHoveringOverCreateSync}
-              label="Create a new project and add all tabs in this window to it"
+              label="Create a new burrow and add all tabs in this window to it"
               withArrow
               position="bottom"
               color="dark"
             >
               <div class="button-wrapper">
                 <Button
-                  on:click={saveAllTabsToNewProject}
+                  on:click={saveAllTabsToNewBurrow}
                   on:mouseenter={() => (isHoveringOverCreateSync = true)}
                   on:mouseleave={() => (isHoveringOverCreateSync = false)}
                   color="blue"
@@ -503,7 +503,7 @@
     justify-content: center;
   }
 
-  /* Center text in inputs (like Project Name) */
+  /* Center text in inputs (like Burrow Name) */
   :global(.sidebar-content input) {
     text-align: center !important;
   }
