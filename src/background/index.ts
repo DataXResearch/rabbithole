@@ -1,12 +1,5 @@
 import { MessageRequest } from "../utils";
-import { WebsiteStore, Website } from "../storage/db";
-
-function sendOverlayUpdate(tabId: number) {
-  // ignore errors; receiving end won't exist if it's the newtab page
-  try {
-    chrome.tabs.sendMessage(tabId, { type: MessageRequest.PING });
-  } catch (err) { }
-}
+import { WebsiteStore, type Burrow } from "../storage/db";
 
 function extractOpenGraphData(html: string): {
   title: string | null;
@@ -139,8 +132,6 @@ function storeWebsites(
     return Promise.resolve([]);
   }
 
-  // delegate this to db?
-  // FIXME: add some guarantees that this won't randomly crash
   const promiseArray = validTabs.map((tab) =>
     fetch(tab.url)
       .then((response) => response.text())
@@ -157,7 +148,7 @@ function storeWebsites(
         };
       })
       .then((website) => {
-        db.saveWebsiteToProject([website])
+        db.saveWebsitesToBurrow([website])
           .then((res) => sendResponse(res))
           .catch((err) => {
             console.log(err);
@@ -167,7 +158,7 @@ function storeWebsites(
       .catch((error) => {
         // just use info at hand if OG information cannot be retrieved
         // TODO: are there cases when it's preferable to do this?
-        db.saveWebsiteToProject([
+        db.saveWebsitesToBurrow([
           {
             url: tab.url,
             name: tab.title,
@@ -243,8 +234,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.GET_ALL_PROJECTS:
-      db.getAllProjects()
+    case MessageRequest.GET_ALL_BURROWS:
+      db.getAllBurrows()
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -252,14 +243,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.GET_PROJECT_SAVED_WEBSITES:
-      if (!("projectId" in request)) {
+    case MessageRequest.GET_BURROW_WEBSITES:
+      if (!("burrowId" in request)) {
         sendResponse({
-          error: "projectId required",
+          error: "burrowId required",
         });
         break;
       }
-      db.getAllWebsitesForProject(request.projectId)
+      db.getAllWebsitesForBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -267,14 +258,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.CREATE_NEW_PROJECT:
-      if (!("newProjectName" in request)) {
+    case MessageRequest.CREATE_NEW_BURROW:
+      if (!("newBurrowName" in request)) {
         sendResponse({
-          error: "newProjectName required",
+          error: "newBurrowName required",
         });
         break;
       }
-      db.createNewActiveProject(request.newProjectName)
+      db.createNewActiveBurrow(request.newBurrowName)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -282,14 +273,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.CHANGE_ACTIVE_PROJECT:
-      if (!("projectId" in request)) {
+    case MessageRequest.CHANGE_ACTIVE_BURROW:
+      if (!("burrowId" in request)) {
         sendResponse({
-          error: "projectId required",
+          error: "burrowId required",
         });
         break;
       }
-      db.changeActiveProject(request.projectId)
+      db.changeActiveBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -297,8 +288,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.GET_ACTIVE_PROJECT:
-      db.getActiveProject()
+    case MessageRequest.GET_ACTIVE_BURROW:
+      db.getActiveBurrow()
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -306,14 +297,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.GET_PROJECT:
-      if (!("projectId" in request)) {
+    case MessageRequest.GET_BURROW:
+      if (!("burrowId" in request)) {
         sendResponse({
-          error: "projectId required",
+          error: "burrowId required",
         });
         break;
       }
-      db.getProject(request.projectId)
+      db.getBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -321,22 +312,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT:
+    case MessageRequest.SAVE_WINDOW_TO_NEW_BURROW:
       chrome.tabs.query({ windowId: sender.tab.windowId }).then((tabs) => {
         let websites: string[] = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
         // store websites async
         storeWebsites(tabs, db, sendResponse);
 
-        if (!("newProjectName" in request)) {
+        if (!("newBurrowName" in request)) {
           sendResponse({
-            error: "projectName required",
+            error: "burrowName required",
           });
         }
-        // FIXME: remove websites to see if that fixes double website store
-        db.createNewActiveProject(request.newProjectName, websites)
-          .then(async (project) => {
-            await db.updateProjectActiveTabs(project.id, websites);
-            sendResponse(project);
+        db.createNewActiveBurrow(request.newBurrowName, websites)
+          .then(async (burrow) => {
+            await db.updateBurrowActiveTabs(burrow.id, websites);
+            sendResponse(burrow);
           })
           .catch((err) => {
             console.log(err);
@@ -346,7 +336,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       break;
 
-    case MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT:
+    case MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW:
       chrome.windows.getCurrent().then((window) => {
         chrome.tabs.query({ windowId: window.id }).then(async (tabs) => {
           storeWebsites(tabs, db, sendResponse);
@@ -357,8 +347,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case MessageRequest.UPDATE_ACTIVE_TABS:
       chrome.tabs.query({ windowId: sender.tab.windowId }).then(async (tabs) => {
         const websites = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
-        const activeProject = await db.getActiveProject();
-        await db.updateProjectActiveTabs(activeProject.id, websites);
+        const activeBurrow = await db.getActiveBurrow();
+        await db.updateBurrowActiveTabs(activeBurrow.id, websites);
 
         // store websites async
         storeWebsites(tabs, db, sendResponse);
@@ -366,14 +356,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       break;
 
-    case MessageRequest.RENAME_PROJECT:
-      if (!("newName" in request) || !("projectId" in request)) {
+    case MessageRequest.RENAME_BURROW:
+      if (!("newName" in request) || !("burrowId" in request)) {
         sendResponse({
-          error: "projectId and newName required",
+          error: "burrowId and newName required",
         });
         break;
       }
-      db.renameProject(request.projectId, request.newName)
+      db.renameBurrow(request.burrowId, request.newName)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -381,14 +371,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.DELETE_PROJECT:
-      if (!("projectId" in request)) {
+    case MessageRequest.DELETE_BURROW:
+      if (!("burrowId" in request)) {
         sendResponse({
-          error: "projectId required",
+          error: "burrowId required",
         });
         break;
       }
-      db.deleteProject(request.projectId)
+      db.deleteBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -397,13 +387,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.DELETE_WEBSITE:
-      if (!("url" in request) || !("projectId" in request)) {
+      if (!("url" in request) || !("burrowId" in request)) {
         sendResponse({
-          error: "projectId and url required",
+          error: "burrowId and url required",
         });
         break;
       }
-      db.deleteWebsiteFromProject(request.projectId, request.url)
+      db.deleteWebsiteFromBurrow(request.burrowId, request.url)
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -411,14 +401,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
-    case MessageRequest.PUBLISH_RABBITHOLE:
-      if (!("projectId" in request) || !("uri" in request) || !("timestamp" in request)) {
+    case MessageRequest.PUBLISH_BURROW:
+      if (!("burrowId" in request) || !("uri" in request) || !("timestamp" in request)) {
         sendResponse({
-          error: "projectId, uri, and timestamp required",
+          error: "burrowId, uri, and timestamp required",
         });
         break;
       }
-      db.updateProjectSembleInfo(request.projectId, request.uri, request.timestamp)
+      db.updateBurrowSembleInfo(request.burrowId, request.uri, request.timestamp)
         .then(() => sendResponse({ success: true }))
         .catch((err) => {
           console.log(err);
@@ -438,11 +428,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "REMOVE_FROM_ACTIVE_TABS":
-      if (!("projectId" in request) || !("url" in request)) {
-        sendResponse({ error: "projectId and url required" });
+      if (!("burrowId" in request) || !("url" in request)) {
+        sendResponse({ error: "burrowId and url required" });
         break;
       }
-      db.removeWebsiteFromActiveTabs(request.projectId, request.url)
+      db.removeWebsiteFromActiveTabs(request.burrowId, request.url)
         .then(() => sendResponse({ success: true }))
         .catch((err) => {
           console.log(err);
@@ -455,26 +445,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ error: "projects required" });
         break;
       }
-      const projectsToImport = request.projects;
-      const websitesToImport = request.savedWebsites || [];
+      const burrowsToImport = request.projects as Burrow[];
+      const websitesToImport = request.websites || [];
 
       (async () => {
         try {
-          // Save full website details first
           if (websitesToImport.length > 0) {
             await db.saveWebsites(websitesToImport);
           }
 
-          const existingProjects = await db.getAllProjects();
+          const existingBurrows = await db.getAllBurrows();
           const allWebsites = await db.getAllWebsites();
 
           const existingUrls = new Set(allWebsites.map((w) => w.url));
-          const existingProjectMap = new Map(existingProjects.map((p) => [p.name, p]));
+          const existingBurrowMap = new Map(existingBurrows.map((b) => [b.name, b]));
 
-          for (const project of projectsToImport) {
+          for (const burrow of burrowsToImport) {
             const missingWebsites = [];
-            if (project.savedWebsites) {
-              for (const url of project.savedWebsites) {
+            if (burrow.websites) {
+              for (const url of burrow.websites) {
                 if (!existingUrls.has(url)) {
                   missingWebsites.push({
                     url,
@@ -493,13 +482,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               await db.saveWebsites(missingWebsites);
             }
 
-            let projectName = project.name;
-            const existingProject = existingProjectMap.get(projectName);
+            let burrowName = burrow.name;
+            const existingBurrow = existingBurrowMap.get(burrowName);
 
-            if (existingProject) {
+            if (existingBurrow) {
               // Check consistency
-              const existingWebsites = new Set(existingProject.savedWebsites);
-              const newWebsites = new Set(project.savedWebsites || []);
+              const existingWebsites = new Set(existingBurrow.websites);
+              const newWebsites = new Set(burrow.websites || []);
 
               let isConsistent = existingWebsites.size === newWebsites.size;
               if (isConsistent) {
@@ -512,28 +501,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
 
               if (isConsistent) {
-                console.log(`Project ${projectName} already exists and is consistent. Skipping creation.`);
+                console.log(`Project ${burrowName} already exists and is consistent. Skipping creation.`);
                 continue;
               } else {
-                // Disparate state: rename to allow import
                 let counter = 1;
-                while (existingProjectMap.has(projectName)) {
-                  projectName = `${project.name} (${counter})`;
+                while (existingBurrowMap.has(burrowName)) {
+                  burrowName = `${burrow.name} (${counter})`;
                   counter++;
                 }
               }
             }
 
-            console.log("saving rh", projectName);
-            // Create project (this creates a new project with a new ID but same name/content)
-            await db.createNewActiveProject(projectName, project.savedWebsites || []);
+            console.log("saving rh", burrowName);
+            await db.createNewActiveBurrow(burrowName, burrow.websites || []);
 
-            // Update map to handle subsequent collisions in the same import batch
-            existingProjectMap.set(projectName, {
+            existingBurrowMap.set(burrowName, {
               id: "temp",
               createdAt: Date.now(),
-              name: projectName,
-              savedWebsites: project.savedWebsites || []
+              name: burrowName,
+              websites: burrow.websites || []
             });
           }
           sendResponse({ success: true });
@@ -550,28 +536,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // arcane incantation required for async `sendResponse`s to work
   // https://developer.chrome.com/docs/extensions/mv3/messaging/#simple
   return true;
-});
-
-// send updates to tabs when created, changed, updated
-// chrome.tabs.onUpdated.addListener((tabId, info) => {
-// if (info.status === "complete") {
-// sendOverlayUpdate(tabId);
-// }
-// });
-chrome.tabs.onActivated.addListener((tab) => {
-  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabInfo) => {
-    // Check for various browser newtab/home pages
-    const url = "pendingUrl" in tabInfo[0] ? tabInfo[0].pendingUrl : tabInfo[0].url;
-
-    if (
-      !url.includes("chrome://") &&
-      !url.includes("brave://") &&
-      !url.includes("edge://") &&
-      !url.includes("opera://") &&
-      !url.includes("vivaldi://") &&
-      !url.includes("about:")
-    ) {
-      sendOverlayUpdate(tab.tabId);
-    }
-  });
 });

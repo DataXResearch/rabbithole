@@ -18,15 +18,10 @@ function loadOverlay() {
 }
 
 loadOverlay();
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (!("type" in request)) {
     sendResponse({
       error: "request type required",
     });
-  }
-  if (request.type === MessageRequest.PING) {
-    // load floating action overlay
-    loadOverlay();
-    sendResponse();
   }
 });

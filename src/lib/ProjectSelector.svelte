@@ -53,13 +53,13 @@
 
     try {
       const newProject = await chrome.runtime.sendMessage({
-        type: MessageRequest.CREATE_NEW_PROJECT,
+        type: MessageRequest.CREATE_NEW_BURROW,
         newProjectName: projectName,
       });
 
       // Refresh projects list
       const allProjects = await chrome.runtime.sendMessage({
-        type: MessageRequest.GET_ALL_PROJECTS,
+        type: MessageRequest.GET_ALL_BURROWS,
       });
       projects = allProjects;
 

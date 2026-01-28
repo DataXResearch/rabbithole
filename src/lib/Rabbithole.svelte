@@ -39,14 +39,14 @@
     document.body.classList.toggle("dark-mode", isDark);
     projects = await getOrderedProjects();
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_PROJECT,
+      type: MessageRequest.GET_ACTIVE_BURROW,
     });
     updateWebsites();
   });
 
   async function createNewProject(event) {
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.CREATE_NEW_PROJECT,
+      type: MessageRequest.CREATE_NEW_BURROW,
       newProjectName: event.detail.newProjectName,
     });
     projects = await getOrderedProjects();
@@ -58,7 +58,7 @@
     isLoadingWebsites = true;
 
     await chrome.runtime.sendMessage({
-      type: MessageRequest.SAVE_WINDOW_TO_NEW_PROJECT,
+      type: MessageRequest.SAVE_WINDOW_TO_NEW_BURROW,
       newProjectName: event.detail.newProjectName,
     });
 
@@ -67,7 +67,7 @@
 
     // Fetch fresh state from DB to ensure we have the correct active project and list
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_PROJECT,
+      type: MessageRequest.GET_ACTIVE_BURROW,
     });
     projects = await getOrderedProjects();
     updateWebsites();
@@ -84,11 +84,11 @@
   async function updateActiveProject(event) {
     const newProjectId = event.detail.newProjectId;
     await chrome.runtime.sendMessage({
-      type: MessageRequest.CHANGE_ACTIVE_PROJECT,
+      type: MessageRequest.CHANGE_ACTIVE_BURROW,
       projectId: newProjectId,
     });
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_PROJECT,
+      type: MessageRequest.GET_BURROW,
       projectId: newProjectId,
     });
     updateWebsites();
@@ -98,7 +98,7 @@
     isSyncingWindow = true;
     isLoadingWebsites = true;
     await chrome.runtime.sendMessage({
-      type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_PROJECT,
+      type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
     });
 
     // Wait for websites to be stored in the background
@@ -106,7 +106,7 @@
 
     // Fetch fresh state
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_PROJECT,
+      type: MessageRequest.GET_ACTIVE_BURROW,
     });
     projects = await getOrderedProjects();
     updateWebsites();
@@ -132,7 +132,7 @@
 
     // Fetch fresh state
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_PROJECT,
+      type: MessageRequest.GET_ACTIVE_BURROW,
     });
     projects = await getOrderedProjects();
     updateWebsites();
@@ -148,7 +148,7 @@
 
   async function renameActiveProject(event) {
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.RENAME_PROJECT,
+      type: MessageRequest.RENAME_BURROW,
       newName: event.detail.newActiveProjectName,
       projectId: activeProject.id,
     });
@@ -157,7 +157,7 @@
 
   async function deleteActiveProject(event) {
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.DELETE_PROJECT,
+      type: MessageRequest.DELETE_BURROW,
       projectId: activeProject.id,
     });
     projects = await getOrderedProjects();
@@ -175,7 +175,7 @@
 
   async function updateWebsites() {
     const possiblyDuplicatedWebsites = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_PROJECT_SAVED_WEBSITES,
+      type: MessageRequest.GET_BURROW_WEBSITES,
       projectId: activeProject.id,
     });
     websites = possiblyDuplicatedWebsites.filter(
@@ -186,7 +186,7 @@
 
   async function exportRabbitholes(event) {
     const projects = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ALL_PROJECTS,
+      type: MessageRequest.GET_ALL_BURROWS,
     });
     const savedWebsites = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_ITEMS,
@@ -235,7 +235,7 @@
     // Refresh state
     projects = await getOrderedProjects();
     activeProject = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_PROJECT,
+      type: MessageRequest.GET_ACTIVE_BURROW,
     });
     updateWebsites();
   }
