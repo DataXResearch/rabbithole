@@ -31,14 +31,14 @@ export interface Rabbithole {
   id: string;
   createdAt: number;
   burrows: string[]; // burrow IDs
-  name: string;
-  sembleCollectionUri?: string;
-  lastSembleSync?: number;
-  activeTabs?: string[];
+  title: string;
+  description?: string;
+  meta: string[]; // urls
 }
 
 export interface User {
   id: string;
+  currentRabbithole: string;
   currentBurrow: string;
   settings: Settings;
 }
@@ -148,6 +148,7 @@ export class WebsiteStore {
               store.name = "websites";
             }
 
+            db.createObjectStore("rabbitholes", { keyPath: "id" });
           }
 
           resolve(db);
@@ -168,15 +169,28 @@ export class WebsiteStore {
                 darkMode: false,
               },
               currentBurrow: null,
+              currentRabbithole: null,
             };
             const userRequest = db
               .transaction(["user"], "readwrite")
               .objectStore("user")
               .add(newUser);
             userRequest.onsuccess = async () => {
-              await store.createNewActiveBurrow("Default burrow");
+              const rabbithole = await store.createNewActiveRabbithole("Homebase");
+              const burrow = await store.createNewBurrowInActiveRabbithole("First burrow");
+              await store.changeActiveRabbithole(rabbithole.id);
+              await store.changeActiveBurrow(burrow.id);
             };
             return;
+          }
+
+          if (
+            !("currentRabbithole" in user) ||
+            user.currentRabbithole === null ||
+            user.currentRabbithole === undefined
+          ) {
+            const rabbithole = await store.createNewActiveRabbithole("Homebase");
+            await store.changeActiveRabbithole(rabbithole.id);
           }
 
           if (
@@ -184,10 +198,334 @@ export class WebsiteStore {
             user.currentBurrow === null ||
             user.currentBurrow === undefined
           ) {
-            await store.createNewActiveBurrow("Default burrow");
+            await store.createNewBurrowInActiveRabbithole("First burrow");
           }
         };
       }
+    });
+  }
+
+  async getActiveRabbithole(): Promise<Rabbithole> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const userRequest = db.transaction(["user"]).objectStore("user").getAll();
+
+      userRequest.onsuccess = (_) => {
+        const [user] = userRequest.result;
+        const rabbitholeRequest = db
+          .transaction(["rabbitholes"], "readwrite")
+          .objectStore("rabbitholes")
+          .get(user.currentRabbithole);
+
+        rabbitholeRequest.onsuccess = () => {
+          resolve(rabbitholeRequest.result);
+        };
+
+        rabbitholeRequest.onerror = (event) => {
+          reject(new Error("Failed to retrieve rabbithole"));
+        };
+      };
+
+      userRequest.onerror = (event) => {
+        reject(new Error("Failed to retrieve user"));
+      };
+    });
+  }
+
+  async changeActiveRabbithole(rabbitholeId: string): Promise<void> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const userRequest = db.transaction(["user"]).objectStore("user").getAll();
+
+      userRequest.onsuccess = async () => {
+        const [user] = userRequest.result;
+        user.currentRabbithole = rabbitholeId;
+
+        const userPutRequest = db
+          .transaction(["user"], "readwrite")
+          .objectStore("user")
+          .put(user);
+
+        userPutRequest.onsuccess = () => {
+          resolve();
+        };
+
+        userPutRequest.onerror = (event) => {
+          reject(new Error("Failed to update user"));
+        };
+      };
+
+      userRequest.onerror = (event) => {
+        reject(new Error("Failed to retrieve user"));
+      };
+    });
+  }
+
+  async createNewActiveRabbithole(title: string, description?: string): Promise<Rabbithole> {
+    const db = await this.getDb();
+    const user = await this.getUser();
+
+    const rabbithole: Rabbithole = {
+      id: uuid(),
+      createdAt: Date.now(),
+      burrows: [],
+      title,
+      description,
+      meta: [],
+    };
+
+    return new Promise((resolve, reject) => {
+      const rabbitholeReq = db
+        .transaction(["rabbitholes"], "readwrite")
+        .objectStore("rabbitholes")
+        .put(rabbithole);
+
+      rabbitholeReq.onsuccess = () => {
+        const userReq = db
+          .transaction(["user"], "readwrite")
+          .objectStore("user")
+          .put({
+            ...user,
+            currentRabbithole: rabbithole.id,
+          });
+
+        userReq.onsuccess = () => {
+          resolve(rabbithole);
+        };
+
+        userReq.onerror = (event) => {
+          reject(new Error((event.target as IDBRequest).error.message));
+        };
+      };
+
+      rabbitholeReq.onerror = (event) => {
+        reject(new Error("Failed to create rabbithole"));
+      };
+    });
+  }
+
+  async updateRabbithole(rabbitholeId: string, title?: string, description?: string): Promise<Rabbithole> {
+    const db = await this.getDb();
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["rabbitholes"], "readwrite");
+      const store = tx.objectStore("rabbitholes");
+      const getRequest = store.get(rabbitholeId);
+
+      getRequest.onsuccess = () => {
+        const rabbithole = getRequest.result;
+        if (!rabbithole) {
+          reject(new Error("Rabbithole not found"));
+          return;
+        }
+
+        if (title !== undefined) {
+          rabbithole.title = title;
+        }
+        if (description !== undefined) {
+          rabbithole.description = description;
+        }
+
+        const putRequest = store.put(rabbithole);
+
+        putRequest.onsuccess = () => {
+          resolve(rabbithole);
+        };
+
+        putRequest.onerror = (event) => {
+          reject(new Error((event.target as IDBRequest).error.message));
+        };
+      };
+
+      getRequest.onerror = (event) => {
+        reject(new Error((event.target as IDBRequest).error.message));
+      };
+    });
+  }
+
+  async deleteRabbithole(rabbitholeId: string): Promise<void> {
+    const db = await this.getDb();
+    const user = await this.getUser();
+
+    return new Promise((resolve, reject) => {
+      const rabbitholeTx = db.transaction(["rabbitholes"], "readwrite");
+      const rabbitholeStore = rabbitholeTx.objectStore("rabbitholes");
+      const getRequest = rabbitholeStore.get(rabbitholeId);
+
+      getRequest.onsuccess = async () => {
+        const rabbithole: Rabbithole = getRequest.result;
+        if (!rabbithole) {
+          resolve();
+          return;
+        }
+
+        const burrowIds = rabbithole.burrows || [];
+        const deleteBurrowsPromises = burrowIds.map((id) =>
+          new Promise<void>((res, rej) => {
+            const req = db
+              .transaction(["burrows"], "readwrite")
+              .objectStore("burrows")
+              .delete(id);
+            req.onsuccess = () => res();
+            req.onerror = (e) => rej(new Error((e.target as IDBRequest).error.message));
+          })
+        );
+
+        await Promise.all(deleteBurrowsPromises);
+
+        const deleteRabbitholeReq = db
+          .transaction(["rabbitholes"], "readwrite")
+          .objectStore("rabbitholes")
+          .delete(rabbitholeId);
+
+        deleteRabbitholeReq.onsuccess = async () => {
+          if (user.currentRabbithole === rabbitholeId) {
+            user.currentRabbithole = null;
+            user.currentBurrow = null;
+            await new Promise<void>((res, rej) => {
+              const ureq = db
+                .transaction(["user"], "readwrite")
+                .objectStore("user")
+                .put(user);
+              ureq.onsuccess = () => res();
+              ureq.onerror = (e) => rej(new Error((e.target as IDBRequest).error.message));
+            });
+          }
+          resolve();
+        };
+
+        deleteRabbitholeReq.onerror = (event) => {
+          reject(new Error((event.target as IDBRequest).error.message));
+        };
+      };
+
+      getRequest.onerror = (event) => {
+        reject(new Error((event.target as IDBRequest).error.message));
+      };
+    });
+  }
+
+  async addBurrowsToRabbithole(rabbitholeId: string, burrowIds: string[]): Promise<Rabbithole> {
+    const db = await this.getDb();
+
+    const existingBurrows = await Promise.all(
+      burrowIds.map((id) => this.getBurrow(id).catch(() => null))
+    );
+
+    const validBurrowIds = existingBurrows.filter(Boolean).map((b: Burrow) => b.id);
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["rabbitholes"], "readwrite");
+      const store = tx.objectStore("rabbitholes");
+      const getRequest = store.get(rabbitholeId);
+
+      getRequest.onsuccess = () => {
+        const rabbithole = getRequest.result;
+        if (!rabbithole) {
+          reject(new Error("Rabbithole not found"));
+          return;
+        }
+
+        rabbithole.burrows = [...new Set([...(rabbithole.burrows || []), ...validBurrowIds])];
+
+        const putRequest = store.put(rabbithole);
+        putRequest.onsuccess = () => resolve(rabbithole);
+        putRequest.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
+      };
+
+      getRequest.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
+    });
+  }
+
+  async createNewBurrowInActiveRabbithole(burrowName: string): Promise<Burrow> {
+    const db = await this.getDb();
+    const user = await this.getUser();
+
+    const burrow: Burrow = {
+      id: uuid(),
+      createdAt: Date.now(),
+      name: burrowName,
+      websites: [],
+      activeTabs: [],
+    };
+
+    return new Promise((resolve, reject) => {
+      const burrowReq = db
+        .transaction(["burrows"], "readwrite")
+        .objectStore("burrows")
+        .put(burrow);
+
+      burrowReq.onsuccess = async () => {
+        const rabbithole = await this.getActiveRabbithole();
+        await this.addBurrowsToRabbithole(rabbithole.id, [burrow.id]);
+
+        const userReq = db
+          .transaction(["user"], "readwrite")
+          .objectStore("user")
+          .put({
+            ...user,
+            currentBurrow: burrow.id,
+          });
+
+        userReq.onsuccess = () => resolve(burrow);
+        userReq.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
+      };
+
+      burrowReq.onerror = (event) => {
+        reject(new Error((event.target as IDBRequest).error.message));
+      };
+    });
+  }
+
+  async addWebsitesToRabbitholeMeta(rabbitholeId: string, urls: string[]): Promise<Rabbithole> {
+    const db = await this.getDb();
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["rabbitholes"], "readwrite");
+      const store = tx.objectStore("rabbitholes");
+      const getRequest = store.get(rabbitholeId);
+
+      getRequest.onsuccess = () => {
+        const rabbithole = getRequest.result;
+        if (!rabbithole) {
+          reject(new Error("Rabbithole not found"));
+          return;
+        }
+
+        rabbithole.meta = [...new Set([...(rabbithole.meta || []), ...urls])];
+
+        const putRequest = store.put(rabbithole);
+        putRequest.onsuccess = () => resolve(rabbithole);
+        putRequest.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
+      };
+
+      getRequest.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
+    });
+  }
+
+  async deleteWebsiteFromRabbitholeMeta(rabbitholeId: string, url: string): Promise<Rabbithole> {
+    const db = await this.getDb();
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["rabbitholes"], "readwrite");
+      const store = tx.objectStore("rabbitholes");
+      const getRequest = store.get(rabbitholeId);
+
+      getRequest.onsuccess = () => {
+        const rabbithole = getRequest.result;
+        if (!rabbithole) {
+          reject(new Error("Rabbithole not found"));
+          return;
+        }
+
+        rabbithole.meta = (rabbithole.meta || []).filter((u) => u !== url);
+
+        const putRequest = store.put(rabbithole);
+        putRequest.onsuccess = () => resolve(rabbithole);
+        putRequest.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
+      };
+
+      getRequest.onerror = (event) => reject(new Error((event.target as IDBRequest).error.message));
     });
   }
 

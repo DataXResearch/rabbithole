@@ -416,6 +416,135 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
+    case MessageRequest.GET_ACTIVE_RABBITHOLE:
+      db.getActiveRabbithole()
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.CHANGE_ACTIVE_RABBITHOLE:
+      if (!("rabbitholeId" in request)) {
+        sendResponse({
+          error: "rabbitholeId required",
+        });
+        break;
+      }
+      db.changeActiveRabbithole(request.rabbitholeId)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.CREATE_NEW_RABBITHOLE:
+      if (!("title" in request)) {
+        sendResponse({
+          error: "title required",
+        });
+        break;
+      }
+      db.createNewActiveRabbithole(request.title, request.description)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.UPDATE_RABBITHOLE:
+      if (!("rabbitholeId" in request)) {
+        sendResponse({
+          error: "rabbitholeId required",
+        });
+        break;
+      }
+      db.updateRabbithole(request.rabbitholeId, request.title, request.description)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.DELETE_RABBITHOLE:
+      if (!("rabbitholeId" in request)) {
+        sendResponse({
+          error: "rabbitholeId required",
+        });
+        break;
+      }
+      db.deleteRabbithole(request.rabbitholeId)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.ADD_BURROWS_TO_RABBITHOLE:
+      if (!("rabbitholeId" in request) || !("burrowIds" in request)) {
+        sendResponse({
+          error: "rabbitholeId and burrowIds required",
+        });
+        break;
+      }
+      db.addBurrowsToRabbithole(request.rabbitholeId, request.burrowIds)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.CREATE_NEW_BURROW_IN_RABBITHOLE:
+      if (!("burrowName" in request)) {
+        sendResponse({
+          error: "burrowName required",
+        });
+        break;
+      }
+      db.createNewBurrowInActiveRabbithole(request.burrowName)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.ADD_WEBSITES_TO_RABBITHOLE_META:
+      if (!("rabbitholeId" in request) || !("urls" in request)) {
+        sendResponse({
+          error: "rabbitholeId and urls required",
+        });
+        break;
+      }
+      db.addWebsitesToRabbitholeMeta(request.rabbitholeId, request.urls)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
+    case MessageRequest.DELETE_WEBSITE_FROM_RABBITHOLE_META:
+      if (!("rabbitholeId" in request) || !("url" in request)) {
+        sendResponse({
+          error: "rabbitholeId and url required",
+        });
+        break;
+      }
+      db.deleteWebsiteFromRabbitholeMeta(request.rabbitholeId, request.url)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
     case "OPEN_TABS":
       if (!("urls" in request)) {
         sendResponse({ error: "urls required" });
