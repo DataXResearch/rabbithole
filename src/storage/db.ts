@@ -293,7 +293,10 @@ export class WebsiteStore {
   async getWebsite(url: string): Promise<Website> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db.transaction(["websites"]).objectStore("websites").get(url);
+      const request = db
+        .transaction(["websites"])
+        .objectStore("websites")
+        .get(url);
 
       request.onsuccess = () => {
         console.log("getWebsite success");
@@ -310,7 +313,10 @@ export class WebsiteStore {
   async getAllWebsites(): Promise<Website[]> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db.transaction(["websites"]).objectStore("websites").getAll();
+      const request = db
+        .transaction(["websites"])
+        .objectStore("websites")
+        .getAll();
 
       request.onsuccess = (_) => {
         console.log("getAll success");
@@ -466,7 +472,10 @@ export class WebsiteStore {
   async getAllBurrows(): Promise<Burrow[]> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db.transaction(["burrows"]).objectStore("burrows").getAll();
+      const request = db
+        .transaction(["burrows"])
+        .objectStore("burrows")
+        .getAll();
 
       request.onsuccess = (_) => {
         console.log("getAll success");
@@ -483,7 +492,10 @@ export class WebsiteStore {
   async getBurrow(burrowId: string): Promise<Burrow> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
-      const request = db.transaction(["burrows"]).objectStore("burrows").get(burrowId);
+      const request = db
+        .transaction(["burrows"])
+        .objectStore("burrows")
+        .get(burrowId);
 
       request.onsuccess = () => {
         console.log("getBurrow success");
