@@ -120,12 +120,34 @@ export class WebsiteStore {
             if (txn.objectStoreNames.contains("projects")) {
               const store = txn.objectStore("projects");
               store.name = "burrows";
+              const cursorRequest = store.openCursor();
+
+              cursorRequest.onsuccess = () => {
+                const cursor = cursorRequest.result;
+                if (!cursor) {
+                  return;
+                }
+
+                const value = cursor.value;
+                if (
+                  value &&
+                  "savedWebsites" in value &&
+                  !("websites" in value)
+                ) {
+                  value.websites = value.savedWebsites;
+                  delete value.savedWebsites;
+                  cursor.update(value);
+                }
+
+                cursor.continue();
+              };
             }
 
             if (txn.objectStoreNames.contains("savedWebsites")) {
               const store = txn.objectStore("savedWebsites");
               store.name = "websites";
             }
+
           }
 
           resolve(db);
