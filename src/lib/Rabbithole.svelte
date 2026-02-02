@@ -2,21 +2,33 @@
   import { onMount } from "svelte";
   import Timeline from "src/lib/Timeline.svelte";
   import Sidebar from "src/lib/Sidebar.svelte";
+  import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
+  import BurrowGrid from "src/lib/BurrowGrid.svelte";
   import {
     MessageRequest,
     getOrderedBurrows,
     NotificationDuration,
   } from "../utils";
-  import { SvelteUIProvider, AppShell, Navbar, ActionIcon, Button } from "@svelteuidev/core";
+  import {
+    SvelteUIProvider,
+    AppShell,
+    Navbar,
+    ActionIcon,
+    Button,
+    Loader,
+    Text,
+  } from "@svelteuidev/core";
   import { HamburgerMenu, Sun, Moon } from "radix-icons-svelte";
 
   let activeBurrow = {};
   let websites = [];
   let burrows = [];
+  let rabbitholes = [];
+  let activeRabbithole = null;
+
   let isDark = false;
   let opened = true;
 
-  // Split state for buttons
   let syncWindowSuccess = false;
   let isSyncingWindow = false;
   let updateActiveTabsSuccess = false;
@@ -25,6 +37,8 @@
   let isCreatingAndSyncing = false;
 
   let isLoadingWebsites = false;
+  let isLoadingHome = true;
+
   let settings = {
     show: false,
     alignment: "right",
@@ -37,12 +51,108 @@
     });
     isDark = settings.darkMode;
     document.body.classList.toggle("dark-mode", isDark);
-    burrows = await getOrderedBurrows();
-    activeBurrow = await chrome.runtime.sendMessage({
+
+    await refreshHomeState();
+    isLoadingHome = false;
+
+    if (activeBurrow?.id) {
+      updateWebsites();
+    }
+  });
+
+  async function refreshHomeState() {
+    try {
+      const [rh, allRh, allBurrows, activeB] = await Promise.all([
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_RABBITHOLE }),
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_RABBITHOLES }),
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_BURROW }),
+      ]);
+
+      activeRabbithole = rh || null;
+      rabbitholes = Array.isArray(allRh) ? allRh : [];
+      burrows = Array.isArray(allBurrows) ? allBurrows : [];
+      activeBurrow = activeB || {};
+    } catch (e) {
+      const [allRh, allBurrows] = await Promise.all([
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_RABBITHOLES }),
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
+      ]);
+
+      activeRabbithole = null;
+      activeBurrow = {};
+      websites = [];
+      rabbitholes = Array.isArray(allRh) ? allRh : [];
+      burrows = Array.isArray(allBurrows) ? allBurrows : [];
+    }
+  }
+
+  $: burrowsInActiveRabbithole =
+    activeRabbithole && Array.isArray(activeRabbithole.burrows)
+      ? burrows.filter((b) => activeRabbithole.burrows.includes(b.id))
+      : [];
+
+  $: pageTitle = (() => {
+    if (activeRabbithole?.title) return activeRabbithole.title;
+    return "Rabbithole";
+  })();
+
+  async function goHome() {
+    await Promise.all([
+      chrome.runtime.sendMessage({
+        type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
+        rabbitholeId: null,
+      }),
+      chrome.runtime.sendMessage({
+        type: MessageRequest.CHANGE_ACTIVE_BURROW,
+        burrowId: null,
+      }),
+    ]);
+
+    activeRabbithole = null;
+    activeBurrow = {};
+    websites = [];
+  }
+
+  async function selectRabbithole(rabbithole) {
+    if (!rabbithole?.id) return;
+
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
+      rabbitholeId: rabbithole.id,
+    });
+
+    activeRabbithole = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+    });
+
+    const activeB = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
+
+    if (activeB?.id && activeRabbithole?.burrows?.includes(activeB.id)) {
+      activeBurrow = activeB;
+    } else {
+      activeBurrow = {};
+      websites = [];
+    }
+  }
+
+  async function selectBurrow(burrow) {
+    if (!burrow?.id) return;
+
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_BURROW,
+      burrowId: burrow.id,
+    });
+
+    activeBurrow = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_BURROW,
+      burrowId: burrow.id,
+    });
+
     updateWebsites();
-  });
+  }
 
   async function createNewBurrow(event) {
     activeBurrow = await chrome.runtime.sendMessage({
@@ -62,10 +172,8 @@
       newBurrowName: event.detail.newBurrowName,
     });
 
-    // Wait for websites to be stored in the background
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Fetch fresh state from DB to ensure we have the correct active burrow and list
     activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
@@ -102,7 +210,7 @@
     });
 
     // Wait for websites to be stored in the background
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Fetch fresh state
     activeBurrow = await chrome.runtime.sendMessage({
@@ -127,10 +235,8 @@
       type: MessageRequest.UPDATE_ACTIVE_TABS,
     });
 
-    // Wait for websites to be stored in the background
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Fetch fresh state
     activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ACTIVE_BURROW,
     });
@@ -174,13 +280,17 @@
   }
 
   async function updateWebsites() {
+    if (!activeBurrow?.id) {
+      websites = [];
+      return;
+    }
+
     const possiblyDuplicatedWebsites = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_BURROW_WEBSITES,
       burrowId: activeBurrow.id,
     });
     websites = possiblyDuplicatedWebsites.filter(
-      (value, index, self) =>
-        index === self.findIndex((t) => t.url === value.url)
+      (value, index, self) => index === self.findIndex((t) => t.url === value.url),
     );
   }
 
@@ -194,7 +304,7 @@
 
     const exportData = {
       burrows,
-      websites
+      websites,
     };
 
     const blob = new Blob([JSON.stringify(exportData)], {
@@ -203,8 +313,8 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     const date = new Date();
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     const filename = `rabbithole-${day}-${month}-${year}.json`;
 
@@ -257,7 +367,13 @@
 
 <SvelteUIProvider>
   <div class="theme-toggle">
-    <Button on:click={toggleTheme} variant="subtle" color="gray" size="sm" style="transform: scale(1.1);">
+    <Button
+      on:click={toggleTheme}
+      variant="subtle"
+      color="gray"
+      size="sm"
+      style="transform: scale(1.1);"
+    >
       {#if isDark}
         <Sun size="22" />
       {:else}
@@ -266,7 +382,7 @@
     </Button>
   </div>
 
-  <AppShell class={!opened ? 'sidebar-closed-shell' : ''}>
+  <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
     <div class="main-content" class:sidebar-closed={!opened}>
       {#if opened}
         <Navbar
@@ -316,28 +432,77 @@
       {/if}
 
       <div class="timeline-wrapper">
-        <Timeline
-          on:websiteDelete={deleteWebsite}
-          on:burrowRename={renameActiveBurrow}
-          activeBurrow={activeBurrow}
-          {websites}
-          isLoading={isLoadingWebsites}
-        />
+        {#if isLoadingHome}
+          <div class="home-loading">
+            <Loader size="lg" variant="dots" />
+            <Text size="md" color="dimmed" style="margin-top: 1rem;">
+              Loading...
+            </Text>
+          </div>
+        {:else}
+          <div class="home-header" on:click={goHome} role="button" tabindex="0">
+            <div class="logo-container">
+              <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png" />
+            </div>
+            <h1 class="home-title">{pageTitle}</h1>
+          </div>
+
+          {#if !activeRabbithole}
+            <div class="timeline-placeholder timeline-placeholder-grid">
+              <RabbitholeGrid
+                {rabbitholes}
+                {burrows}
+                onSelect={selectRabbithole}
+              />
+            </div>
+          {:else}
+            {#if activeBurrow?.id}
+              <BurrowGrid
+                burrows={burrowsInActiveRabbithole}
+                selectedBurrowId={activeBurrow?.id}
+                onSelect={selectBurrow}
+              />
+
+              <Timeline
+                on:websiteDelete={deleteWebsite}
+                on:burrowRename={renameActiveBurrow}
+                activeBurrow={activeBurrow}
+                {websites}
+                isLoading={isLoadingWebsites}
+              />
+            {:else}
+              <div class="timeline-placeholder timeline-placeholder-grid">
+                <BurrowGrid
+                  burrows={burrowsInActiveRabbithole}
+                  selectedBurrowId={activeBurrow?.id}
+                  onSelect={selectBurrow}
+                />
+              </div>
+            {/if}
+          {/if}
+        {/if}
       </div>
     </div>
   </AppShell>
 </SvelteUIProvider>
 
 <style>
-  /* Global Background Consistency */
   :global(body) {
     background-color: #f8f9fa;
     margin: 0;
   }
 
+  :global(body.dark-mode) {
+    background-color: #141517;
+  }
+
   :global(.mantine-AppShell-main) {
     background-color: #f8f9fa;
     padding: 0 !important;
+  }
+
+  :global(body.dark-mode .mantine-AppShell-main) {
+    background-color: #141517;
   }
 
   .main-content {
@@ -348,16 +513,22 @@
     transition: background-color 0.3s ease;
   }
 
+  :global(body.dark-mode) .main-content {
+    background-color: #141517;
+  }
+
   .timeline-wrapper {
     flex: 1;
     width: 100%;
+    padding: 40px 20px;
+    max-width: 1100px;
+    margin: 0 auto;
   }
 
   .main-content.sidebar-closed {
     justify-content: center;
   }
 
-  /* Force removal of padding when sidebar is closed */
   :global(.sidebar-closed-shell .mantine-AppShell-main) {
     padding-left: 0 !important;
   }
@@ -384,26 +555,83 @@
     z-index: 9999;
   }
 
-  /* Theme Toggle Hover Effects */
-  /* Using 'button' selector to be more robust than class names */
   :global(body:not(.dark-mode) .theme-toggle button:hover) {
     background-color: #141517 !important;
     color: #c1c2c5 !important;
   }
 
   :global(body.dark-mode .theme-toggle button:hover) {
-    background-color: #f8f9fa !important;
-    color: #141517 !important;
+    background-color: #141517 !important;
+    color: #c1c2c5 !important;
   }
 
-  /* Dark Mode Global Overrides */
-  :global(body.dark-mode) {
-    background-color: #141517;
-    color: #c1c2c5;
+  .home-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 50px;
+    cursor: pointer;
+    user-select: none;
   }
 
-  :global(body.dark-mode .main-content) {
-    background-color: #141517;
+  .home-header:hover .home-title {
+    text-decoration: underline;
+  }
+
+  .logo-container {
+    margin-bottom: 12px;
+  }
+
+  .logo {
+    width: 72px;
+    height: auto;
+    opacity: 0.95;
+  }
+
+  .home-title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1a1b1e;
+    text-align: center;
+  }
+
+  :global(body.dark-mode) .home-title {
+    color: #e7e7e7;
+  }
+
+  .timeline-placeholder {
+    margin-top: 28px;
+    min-height: 420px;
+    border-radius: 16px;
+    border: 2px dashed rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .timeline-placeholder-grid {
+    padding: 18px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  :global(body.dark-mode) .timeline-placeholder {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  :global(body.dark-mode) .timeline-placeholder-grid {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(26, 27, 30, 0.6);
+  }
+
+  .home-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
   }
 
   :global(body.dark-mode .mantine-AppShell-root) {
@@ -411,7 +639,6 @@
   }
 
   :global(body.dark-mode .mantine-AppShell-main) {
-    background-color: #141517;
     color: #c1c2c5;
   }
 
@@ -429,8 +656,8 @@
   }
 
   :global(body.dark-mode .mantine-Navbar-root) {
-    background-color: #1A1B1E !important;
-    border-right: 1px solid #2C2E33 !important;
+    background-color: #1a1b1e !important;
+    border-right: 1px solid #2c2e33 !important;
   }
 
   :global(body.dark-mode .mantine-Navbar-root[aria-hidden="true"]) {
@@ -453,6 +680,7 @@
   :global(body.dark-mode .hamburger-btn) {
     color: #e7e7e7 !important;
   }
+
   :global(body.dark-mode .hamburger-btn:hover) {
     background-color: #25262b;
   }

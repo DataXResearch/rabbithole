@@ -205,13 +205,37 @@ export class WebsiteStore {
     });
   }
 
-  async getActiveRabbithole(): Promise<Rabbithole> {
+  async getAllRabbitholes(): Promise<Rabbithole[]> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const request = db
+        .transaction(["rabbitholes"])
+        .objectStore("rabbitholes")
+        .getAll();
+
+      request.onsuccess = (_) => {
+        resolve(request.result);
+      };
+
+      request.onerror = (event) => {
+        reject(new Error("Failed to retrieve rabbitholes"));
+      };
+    });
+  }
+
+  async getActiveRabbithole(): Promise<Rabbithole | null> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = (_) => {
         const [user] = userRequest.result;
+
+        if (!user.currentRabbithole) {
+          resolve(null);
+          return;
+        }
+
         const rabbitholeRequest = db
           .transaction(["rabbitholes"], "readwrite")
           .objectStore("rabbitholes")
@@ -232,7 +256,7 @@ export class WebsiteStore {
     });
   }
 
-  async changeActiveRabbithole(rabbitholeId: string): Promise<void> {
+  async changeActiveRabbithole(rabbitholeId: string | null): Promise<void> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
@@ -776,13 +800,19 @@ export class WebsiteStore {
     });
   }
 
-  async getActiveBurrow(): Promise<Burrow> {
+  async getActiveBurrow(): Promise<Burrow | null> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
 
       userRequest.onsuccess = (_) => {
         const [user] = userRequest.result;
+
+        if (!user.currentBurrow) {
+          resolve(null);
+          return;
+        }
+
         const burrowRequest = db
           .transaction(["burrows"], "readwrite")
           .objectStore("burrows")
@@ -864,7 +894,7 @@ export class WebsiteStore {
     });
   }
 
-  async changeActiveBurrow(burrowId: string): Promise<void> {
+  async changeActiveBurrow(burrowId: string | null): Promise<void> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const userRequest = db.transaction(["user"]).objectStore("user").getAll();
