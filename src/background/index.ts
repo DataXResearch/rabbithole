@@ -567,11 +567,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "IMPORT_DATA":
-      if (!("projects" in request)) {
+      if (!("burrows" in request && "websites" in request)) {
         sendResponse({ error: "projects required" });
         break;
       }
-      const burrowsToImport = request.projects as Burrow[];
+      const burrowsToImport = request.burrows as (Burrow & { savedWebsites?: string[] })[];
       const websitesToImport = request.websites || [];
 
       (async () => {
@@ -583,13 +583,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const existingBurrows = await db.getAllBurrows();
           const allWebsites = await db.getAllWebsites();
 
+          // FIXME: how much scale is this required to support?
           const existingUrls = new Set(allWebsites.map((w) => w.url));
           const existingBurrowMap = new Map(existingBurrows.map((b) => [b.name, b]));
 
           for (const burrow of burrowsToImport) {
             const missingWebsites = [];
-            if (burrow.websites) {
-              for (const url of burrow.websites) {
+            const websites = burrow.websites ?? burrow.savedWebsites ?? [];
+            if (websites) {
+              for (const url of websites) {
                 if (!existingUrls.has(url)) {
                   missingWebsites.push({
                     url,
@@ -614,7 +616,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (existingBurrow) {
               // Check consistency
               const existingWebsites = new Set(existingBurrow.websites);
-              const newWebsites = new Set(burrow.websites || []);
+              const newWebsites = new Set(websites);
 
               let isConsistent = existingWebsites.size === newWebsites.size;
               if (isConsistent) {
@@ -638,14 +640,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             }
 
-            console.log("saving rh", burrowName);
-            await db.createNewActiveBurrow(burrowName, burrow.websites || []);
+            await db.createNewActiveBurrow(burrowName, websites);
 
             existingBurrowMap.set(burrowName, {
               id: "temp",
               createdAt: Date.now(),
               name: burrowName,
-              websites: burrow.websites || []
+              websites: websites
             });
           }
           sendResponse({ success: true });
