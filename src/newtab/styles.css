@@ -1,4 +1,12 @@
 body {
+  margin: 0;
+  background-color: #f8f9fa;
+  color: #1a1b1e;
+}
+
+body.dark-mode {
+  background-color: #141517;
+  color: #c1c2c5;
 }
 
 #project-name {

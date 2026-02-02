@@ -29,6 +29,7 @@ export enum MessageRequest {
   CREATE_NEW_BURROW_IN_RABBITHOLE,
   ADD_WEBSITES_TO_RABBITHOLE_META,
   DELETE_WEBSITE_FROM_RABBITHOLE_META,
+  GET_ALL_RABBITHOLES,
 }
 
 export async function getOrderedBurrows(): Promise<Burrow[]> {
