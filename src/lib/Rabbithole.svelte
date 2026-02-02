@@ -331,9 +331,10 @@
 
     if (Array.isArray(importData)) {
       burrowsToImport = importData;
-    } else if (importData && typeof importData === 'object') {
-      burrowsToImport = importData.burrows || [];
-      websitesToImport = importData.websites || [];
+    } else if (importData && typeof importData === "object") {
+      // TODO: supporting legacy data imports for now, deprecate in a few version
+      burrowsToImport = importData.burrows ?? importData.projects ?? [];
+      websitesToImport = importData.websites ?? importData.savedWebsites ?? [];
     }
 
     await chrome.runtime.sendMessage({
