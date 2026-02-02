@@ -15,7 +15,7 @@
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
   import Modal from "src/lib/Modal.svelte";
-  import ActiveTabs from "src/lib/ActiveTabs.svelte";
+  import BurrowHome from "src/lib/BurrowHome.svelte";
   import {
     Pencil1,
     MagnifyingGlass,
@@ -421,7 +421,7 @@
       </div>
     {:else}
       {#if !searchQuery}
-        <ActiveTabs bind:activeBurrow {websites} />
+        <BurrowHome bind:activeBurrow {websites} />
       {/if}
 
       <div class="timeline-feed">
