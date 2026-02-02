@@ -251,10 +251,6 @@
 
 <div class="timeline">
   <div class="header-section">
-    <div class="logo-container">
-      <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png" />
-    </div>
-
     <Group position="center" spacing="md" class="project-controls">
       <div class="input-div">
         <Tooltip {isHovering} label="Click to rename burrow" withArrow>
