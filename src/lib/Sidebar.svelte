@@ -33,8 +33,8 @@
   export let burrows;
   export let syncWindowSuccess = false;
   export let isSyncingWindow = false;
-  export let updateActiveTabsSuccess = false;
-  export let isUpdatingActiveTabs = false;
+  export let updateBurrowHomeSuccess = false;
+  export let isUpdatingBurrowHome = false;
   export let createAndSyncSuccess = false;
   export let isCreatingAndSyncing = false;
   export let opened;
@@ -44,7 +44,7 @@
 
   let newRabbitholeName = "";
   let isHoveringOverSync = false;
-  let isHoveringOverUpdateActiveTabs = false;
+  let isHoveringOverUpdateBurrowHome = false;
   let isHoveringOverDelete = false;
   let isHoveringOverCreateSync = false;
   let fileInput;
@@ -60,18 +60,18 @@
   };
 
   onMount(() => {
-    isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
     function handleKeydown(e) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         openSearchModal();
       }
     }
 
-    window.addEventListener('keydown', handleKeydown);
+    window.addEventListener("keydown", handleKeydown);
     return () => {
-      window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener("keydown", handleKeydown);
     };
   });
 
@@ -83,7 +83,7 @@
     }
     if (
       burrows.filter(
-        (b) => b.name.toLowerCase() === newRabbitholeName.toLowerCase()
+        (b) => b.name.toLowerCase() === newRabbitholeName.toLowerCase(),
       ).length > 0
     ) {
       createBurrowFailMsg = "Taken!";
@@ -129,8 +129,8 @@
     dispatch("burrowSync");
   }
 
-  async function updateActiveTabs() {
-    dispatch("updateActiveTabs");
+  async function updateBurrowHome() {
+    dispatch("updateBurrowHome");
   }
 
   async function deleteBurrow() {
@@ -189,7 +189,7 @@
           <button class="search-button" on:click={openSearchModal}>
             <MagnifyingGlass size={16} />
             <span class="search-text">Search everywhere...</span>
-            <span class="search-shortcut">{isMac ? '⌘K' : 'Ctrl+K'}</span>
+            <span class="search-shortcut">{isMac ? "⌘K" : "Ctrl+K"}</span>
           </button>
         </div>
 
@@ -239,26 +239,26 @@
             </Tooltip>
 
             <Tooltip
-              {isHoveringOverUpdateActiveTabs}
-              label="Update active tabs list"
+              {isHoveringOverUpdateBurrowHome}
+              label="Update burrow home list"
               withArrow
               position="bottom"
               color="dark"
             >
               <div class="button-wrapper">
                 <Button
-                  on:click={updateActiveTabs}
-                  on:mouseenter={() => (isHoveringOverUpdateActiveTabs = true)}
-                  on:mouseleave={() => (isHoveringOverUpdateActiveTabs = false)}
+                  on:click={updateBurrowHome}
+                  on:mouseenter={() => (isHoveringOverUpdateBurrowHome = true)}
+                  on:mouseleave={() => (isHoveringOverUpdateBurrowHome = false)}
                   color="blue"
                   fullWidth
                   class="sidebar-btn custom-blue-btn"
                   leftIcon={Update}
-                  loading={isUpdatingActiveTabs}
+                  loading={isUpdatingBurrowHome}
                 >
-                  Update Active Tabs
+                  Update Burrow Home
                 </Button>
-                {#if updateActiveTabsSuccess}
+                {#if updateBurrowHomeSuccess}
                   <div class="success-check-outside">
                     <Check />
                   </div>

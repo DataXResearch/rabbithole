@@ -31,8 +31,8 @@
 
   let syncWindowSuccess = false;
   let isSyncingWindow = false;
-  let updateActiveTabsSuccess = false;
-  let isUpdatingActiveTabs = false;
+  let updateBurrowHomeSuccess = false;
+  let isUpdatingBurrowHome = false;
   let createAndSyncSuccess = false;
   let isCreatingAndSyncing = false;
 
@@ -228,8 +228,8 @@
     }, NotificationDuration);
   }
 
-  async function updateActiveTabs(event) {
-    isUpdatingActiveTabs = true;
+  async function updateBurrowHome(event) {
+    isUpdatingBurrowHome = true;
     isLoadingWebsites = true;
     await chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_ACTIVE_TABS,
@@ -243,12 +243,12 @@
     burrows = await getOrderedBurrows();
     updateWebsites();
 
-    updateActiveTabsSuccess = true;
-    isUpdatingActiveTabs = false;
+    updateBurrowHomeSuccess = true;
+    isUpdatingBurrowHome = false;
     isLoadingWebsites = false;
 
     setTimeout(() => {
-      updateActiveTabsSuccess = false;
+      updateBurrowHomeSuccess = false;
     }, NotificationDuration);
   }
 
@@ -290,7 +290,8 @@
       burrowId: activeBurrow.id,
     });
     websites = possiblyDuplicatedWebsites.filter(
-      (value, index, self) => index === self.findIndex((t) => t.url === value.url),
+      (value, index, self) =>
+        index === self.findIndex((t) => t.url === value.url),
     );
   }
 
@@ -402,8 +403,8 @@
           <Sidebar
             {syncWindowSuccess}
             {isSyncingWindow}
-            {updateActiveTabsSuccess}
-            {isUpdatingActiveTabs}
+            {updateBurrowHomeSuccess}
+            {isUpdatingBurrowHome}
             {createAndSyncSuccess}
             {isCreatingAndSyncing}
             burrows={burrows}
@@ -413,7 +414,7 @@
             on:newBurrow={createNewBurrow}
             on:newBurrowSync={createNewBurrowFromWindow}
             on:burrowSync={saveWindowToActiveBurrow}
-            on:updateActiveTabs={updateActiveTabs}
+            on:updateBurrowHome={updateBurrowHome}
             on:exportRabbitholes={exportRabbitholes}
             on:importRabbitholes={importRabbitholes}
             on:toggleSidebar={handleToggleSidebar}
@@ -443,7 +444,11 @@
         {:else}
           <div class="home-header" on:click={goHome} role="button" tabindex="0">
             <div class="logo-container">
-              <img class="logo" alt="Rabbithole logo" src="../assets/icons/logo.png" />
+              <img
+                class="logo"
+                alt="Rabbithole logo"
+                src="../assets/icons/logo.png"
+              />
             </div>
             <h1 class="home-title">{pageTitle}</h1>
           </div>
