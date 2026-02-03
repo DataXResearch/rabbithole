@@ -428,6 +428,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
+    case MessageRequest.FETCH_RABBITHOLES_FOR_BURROW:
+      if (!("burrowId" in request)) {
+        sendResponse({ error: "burrowId required" });
+        break;
+      }
+      db.fetchRabbitholesForBurrow(request.burrowId)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse({ error: err.message });
+        });
+      break;
+
+    case MessageRequest.DELETE_BURROW_FROM_RABBITHOLE:
+      if (!("rabbitholeId" in request) || !("burrowId" in request)) {
+        sendResponse({ error: "rabbitholeId and burrowId required" });
+        break;
+      }
+      db.deleteBurrowFromRabbithole(request.rabbitholeId, request.burrowId)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse({ error: err.message });
+        });
+      break;
+
     case MessageRequest.CHANGE_ACTIVE_RABBITHOLE:
       db.changeActiveRabbithole("rabbitholeId" in request ? request.rabbitholeId : null)
         .then((res) => sendResponse(res))
