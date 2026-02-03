@@ -63,8 +63,12 @@
   async function refreshHomeState() {
     try {
       const [rh, allRh, allBurrows, activeB] = await Promise.all([
-        chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_RABBITHOLE }),
-        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_RABBITHOLES }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_RABBITHOLES,
+        }),
         chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
         chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_BURROW }),
       ]);
@@ -75,7 +79,9 @@
       activeBurrow = activeB || {};
     } catch (e) {
       const [allRh, allBurrows] = await Promise.all([
-        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_RABBITHOLES }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_RABBITHOLES,
+        }),
         chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
       ]);
 
@@ -407,7 +413,7 @@
             {isUpdatingBurrowHome}
             {createAndSyncSuccess}
             {isCreatingAndSyncing}
-            burrows={burrows}
+            {burrows}
             {opened}
             on:burrowDelete={deleteActiveBurrow}
             on:burrowChange={updateActiveBurrow}
@@ -450,7 +456,10 @@
                 src="../assets/icons/logo.png"
               />
             </div>
-            <h1 class="home-title">{pageTitle}</h1>
+
+            {#if !activeBurrow?.id}
+              <h1 class="home-title">{pageTitle}</h1>
+            {/if}
           </div>
 
           {#if !activeRabbithole}
@@ -461,30 +470,23 @@
                 onSelect={selectRabbithole}
               />
             </div>
+          {:else if activeBurrow?.id}
+            <Timeline
+              on:websiteDelete={deleteWebsite}
+              on:burrowRename={renameActiveBurrow}
+              {activeBurrow}
+              {websites}
+              {selectRabbithole}
+              isLoading={isLoadingWebsites}
+            />
           {:else}
-            {#if activeBurrow?.id}
+            <div class="timeline-placeholder timeline-placeholder-grid">
               <BurrowGrid
                 burrows={burrowsInActiveRabbithole}
                 selectedBurrowId={activeBurrow?.id}
                 onSelect={selectBurrow}
               />
-
-              <Timeline
-                on:websiteDelete={deleteWebsite}
-                on:burrowRename={renameActiveBurrow}
-                activeBurrow={activeBurrow}
-                {websites}
-                isLoading={isLoadingWebsites}
-              />
-            {:else}
-              <div class="timeline-placeholder timeline-placeholder-grid">
-                <BurrowGrid
-                  burrows={burrowsInActiveRabbithole}
-                  selectedBurrowId={activeBurrow?.id}
-                  onSelect={selectBurrow}
-                />
-              </div>
-            {/if}
+            </div>
           {/if}
         {/if}
       </div>
@@ -575,7 +577,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 50px;
+    margin-bottom: 26px;
     cursor: pointer;
     user-select: none;
   }
@@ -603,6 +605,26 @@
   }
 
   :global(body.dark-mode) .home-title {
+    color: #e7e7e7;
+  }
+
+  .burrow-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 18px 0;
+  }
+
+  .burrow-title {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #1a1b1e;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  :global(body.dark-mode) .burrow-title {
     color: #e7e7e7;
   }
 
