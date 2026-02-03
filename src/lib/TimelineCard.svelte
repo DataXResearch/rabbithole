@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Button, Card, Group, Text, ActionIcon, Tooltip } from "@svelteuidev/core";
+  import { Button, Card, Group, Text } from "@svelteuidev/core";
   import { Trash, ExternalLink } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
@@ -16,22 +16,28 @@
 
 <div class="card-container">
   <Card shadow="sm" padding="lg" radius="md" class="timeline-card" withBorder>
-    <!-- Header: Title and Actions -->
+    <button
+      type="button"
+      class="remove-btn"
+      title="Delete"
+      aria-label="Delete"
+      on:click={deleteWebsite}
+    >
+      <Trash size="16" />
+    </button>
+
+    <!-- Header: Title -->
     <Group position="apart" noWrap align="start" style="margin-bottom: 16px;">
-      <Text weight="bold" size="lg" lineClamp={1} title={website.name} class="card-title" style="flex: 1; padding-right: 8px;">
+      <Text
+        weight="bold"
+        size="lg"
+        lineClamp={1}
+        title={website.name}
+        class="card-title"
+        style="flex: 1; padding-right: 8px;"
+      >
         {website.name || "Untitled"}
       </Text>
-      
-      <Tooltip label="Delete" withArrow position="left">
-        <ActionIcon 
-          variant="subtle" 
-          color="red" 
-          on:click={deleteWebsite}
-          size="md"
-        >
-          <Trash size="18" />
-        </ActionIcon>
-      </Tooltip>
     </Group>
 
     <!-- Body: Description -->
@@ -60,6 +66,7 @@
 <style>
   .card-container {
     width: 100%;
+    padding: 6px 0;
   }
 
   .description-container {
@@ -67,16 +74,45 @@
   }
 
   :global(.timeline-card) {
+    position: relative;
     background-color: #ffffff;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
     height: 100%;
   }
-  
+
   :global(.timeline-card:hover) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Match RabbitholeGrid delete button style */
+  .remove-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.55);
+    z-index: 2;
+  }
+
+  .remove-btn:hover {
+    color: #e03131;
+    border-color: rgba(224, 49, 49, 0.35);
+    background: rgba(255, 245, 245, 0.9);
   }
 
   :global(body.dark-mode .timeline-card) {
@@ -93,8 +129,22 @@
   :global(body.dark-mode .timeline-card .mantine-Text-root) {
     color: #c1c2c5 !important;
   }
-  
-  :global(body.dark-mode .timeline-card .mantine-Text-root[data-color="dimmed"]) {
+
+  :global(
+    body.dark-mode .timeline-card .mantine-Text-root[data-color="dimmed"]
+  ) {
     color: #909296 !important;
+  }
+
+  :global(body.dark-mode) .remove-btn {
+    background: rgba(26, 27, 30, 0.9);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  :global(body.dark-mode) .remove-btn:hover {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.35);
+    background: rgba(66, 0, 0, 0.25);
   }
 </style>
