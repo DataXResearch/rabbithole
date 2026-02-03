@@ -193,7 +193,8 @@ export class WebsiteStore {
               const rabbithole =
                 await store.createNewActiveRabbithole("Homebase");
               const burrow =
-                await store.createNewBurrowInActiveRabbithole("First burrow");
+                await store.createNewBurrowInActiveRabbithole("Bookmarks");
+              await store.createNewBurrowInActiveRabbithole("Reminders");
               await store.changeActiveRabbithole(rabbithole.id);
               await store.changeActiveBurrow(burrow.id);
             };
@@ -214,7 +215,8 @@ export class WebsiteStore {
             user.currentBurrow === null ||
             user.currentBurrow === undefined
           ) {
-            await store.createNewBurrowInActiveRabbithole("First burrow");
+            await store.createNewBurrowInActiveRabbithole("Bookmarks");
+            await store.createNewBurrowInActiveRabbithole("Reminders");
           }
         };
       }
