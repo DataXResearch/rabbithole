@@ -53,6 +53,10 @@
   let hoverY = 0;
   let isHoveringTimestamp = false;
 
+  // Slider-controlled date window
+  let startDate = null;
+  let endDate = null;
+
   let rabbitholes = [];
   let showAddToRabbitholeModal = false;
 
@@ -243,9 +247,57 @@
     }).format(new Date(ts));
   }
 
-  function dateKey(ts) {
-    if (!ts) return "";
-    const d = new Date(ts);
+  function toTimeMs(value) {
+    if (value === null || value === undefined) return null;
+
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) return null;
+      // Heuristic: if it's in seconds, convert to ms
+      return value < 10_000_000_000 ? value * 1000 : value;
+    }
+
+    if (value instanceof Date) {
+      const t = value.getTime();
+      return Number.isFinite(t) ? t : null;
+    }
+
+    if (typeof value === "string") {
+      const t = new Date(value).getTime();
+      return Number.isFinite(t) ? t : null;
+    }
+
+    return null;
+  }
+
+  function getWebsiteTimeMs(w) {
+    if (!w || typeof w !== "object") return null;
+
+    const candidates = [
+      w.savedAt,
+      w.saved_at,
+      w.createdAt,
+      w.created_at,
+      w.timestamp,
+      w.time,
+      w.date,
+      w.saved,
+      w.addedAt,
+      w.added_at,
+      w.indexedAt,
+      w.indexed_at,
+    ];
+
+    for (const c of candidates) {
+      const t = toTimeMs(c);
+      if (t !== null) return t;
+    }
+
+    return null;
+  }
+
+  function dateKeyFromMs(ms) {
+    if (!ms) return "";
+    const d = new Date(ms);
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
@@ -255,7 +307,9 @@
   function groupByDate(items) {
     const map = new Map();
     for (const site of items) {
-      const key = dateKey(site.savedAt);
+      const t = getWebsiteTimeMs(site);
+      if (t === null) continue;
+      const key = dateKeyFromMs(t);
       if (!map.has(key)) {
         map.set(key, []);
       }
@@ -265,16 +319,42 @@
     const keys = Array.from(map.keys()).sort((a, b) => (a < b ? 1 : -1));
     return keys.map((key) => ({
       key,
-      label: formatDate(map.get(key)[0]?.savedAt),
+      label: formatDate(
+        map.get(key)[0] ? getWebsiteTimeMs(map.get(key)[0]) : null,
+      ),
       items: map.get(key),
     }));
   }
 
+  function isWithinRange(site) {
+    if (!startDate || !endDate) return true;
+    const t = getWebsiteTimeMs(site);
+    if (t === null) return false;
+    return t >= startDate.getTime() && t <= endDate.getTime();
+  }
+
+  function getFullRange(items) {
+    if (!items || items.length === 0) return { min: null, max: null };
+    const times = items.map(getWebsiteTimeMs).filter((t) => t !== null);
+    if (times.length === 0) return { min: null, max: null };
+    return {
+      min: new Date(Math.min(...times)),
+      max: new Date(Math.max(...times)),
+    };
+  }
+
+  $: fullRange = getFullRange(websites);
+
+  // Reset slider range when burrow/websites change
   $: if (websites.length !== previousWebsitesLength) {
     filteredWebsites = websites;
     searchResults = [];
     searchQuery = "";
     previousWebsitesLength = websites.length;
+
+    // Reset slider to full range for the new dataset
+    startDate = fullRange.min;
+    endDate = fullRange.max;
   }
 
   // Compose filters: search + date window
@@ -316,6 +396,25 @@
     hoverX = e.clientX;
     hoverY = e.clientY;
   }
+
+  function isSameDay(a, b) {
+    if (!a || !b) return false;
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
+
+  $: sliderIsActive =
+    !!fullRange.min &&
+    !!fullRange.max &&
+    !!startDate &&
+    !!endDate &&
+    (!isSameDay(startDate, fullRange.min) ||
+      !isSameDay(endDate, fullRange.max));
+
+  $: shouldShowBurrowHome = searchQuery.length === 0 && !sliderIsActive;
 
   $: rabbitholesForActiveBurrow = rabbitholes;
 </script>
@@ -459,13 +558,15 @@
       />
     </div>
 
-  <!-- FIXME: make this functional-->
-  <!-- <TimelineSlider -->
-  <!--   {websites} -->
-  <!--   {startDate} -->
-  <!--   {endDate} -->
-  <!--   on:dateRangeChange={handleDateRangeChange} -->
-  <!-- /> -->
+    <!-- <div class="slider-bar"> -->
+    <!--   <TimelineSlider -->
+    <!--     websites={[...websites]} -->
+    <!--     {startDate} -->
+    <!--     {endDate} -->
+    <!--     on:dateRangeChange={handleDateRangeChange} -->
+    <!--   /> -->
+    <!-- </div> -->
+  </div>
 
   <div class="feed">
     {#if isLoading}
@@ -486,13 +587,10 @@
             showRemove={true}
             addTooltip="Add this burrow to another rabbithole"
             removeTooltip="Remove this burrow from this rabbithole"
-            on:add={() => {
-              if (handleAddBurrowToRabbithole) {
-                handleAddBurrowToRabbithole();
-              }
+            on:addBurrowToRabbithole={() => {
               openAddToRabbitholeModal();
             }}
-            on:remove={async (e) => {
+            on:removeBurrowFromRabbithole={async (e) => {
               await removeBurrowFromRabbithole(e.detail.rabbitholeId);
             }}
           />

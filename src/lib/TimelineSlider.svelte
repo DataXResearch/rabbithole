@@ -1,7 +1,5 @@
 <script>
-  import { createEventDispatcher, onMount } from "svelte";
-  import { scaleTime } from "d3-scale";
-  import { timeDay } from "d3-time";
+  import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -9,221 +7,290 @@
   export let startDate = null;
   export let endDate = null;
 
-  let sliderContainer;
+  let sliderEl;
   let isDragging = false;
-  let dragHandle = null;
+  let dragMode = null;
+  let dragStartX = 0;
+  let dragStartStart = 0;
+  let dragStartEnd = 0;
 
-  $: if (websites.length > 0) {
-    initializeSlider();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  // Get timestamp from website object
+  function getTimestamp(w) {
+    const fields = [
+      "savedAt",
+      "saved_at",
+      "createdAt",
+      "created_at",
+      "timestamp",
+      "date",
+    ];
+    for (const f of fields) {
+      if (w[f]) {
+        const d = new Date(w[f]);
+        if (!isNaN(d)) return d.getTime();
+      }
+    }
+    return null;
   }
 
-  function initializeSlider() {
-    if (websites.length === 0) return;
+  // Calculate min/max dates from websites
+  $: times = websites.map(getTimestamp).filter((t) => t !== null);
+  $: minDate = times.length ? new Date(Math.min(...times)) : null;
+  $: maxDate = times.length ? new Date(Math.max(...times)) : null;
+  $: totalDays =
+    minDate && maxDate ? Math.ceil((maxDate - minDate) / DAY_MS) : 0;
 
-    const dates = websites.map((w) => new Date(w.savedAt));
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
+  // Initialize date range when data loads
+  $: if (minDate && maxDate && !startDate && !endDate) {
+    startDate = minDate;
+    endDate = maxDate;
+  }
 
-    if (!startDate) startDate = minDate;
-    if (!endDate) endDate = maxDate;
+  // Convert dates to day positions (0 to totalDays)
+  $: startDay =
+    minDate && startDate ? Math.round((startDate - minDate) / DAY_MS) : 0;
+  $: endDay =
+    minDate && endDate ? Math.round((endDate - minDate) / DAY_MS) : totalDays;
 
+  // Convert to percentages for CSS
+  $: startPct = totalDays ? (startDay / totalDays) * 100 : 0;
+  $: endPct = totalDays ? (endDay / totalDays) * 100 : 100;
+
+  function dayToDate(day) {
+    return new Date(minDate.getTime() + day * DAY_MS);
+  }
+
+  function xToDay(clientX) {
+    const rect = sliderEl.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    return Math.round((x / rect.width) * totalDays);
+  }
+
+  function updateRange(newStart, newEnd) {
+    startDate = dayToDate(Math.max(0, Math.min(totalDays, newStart)));
+    endDate = dayToDate(Math.max(0, Math.min(totalDays, newEnd)));
     dispatch("dateRangeChange", { startDate, endDate });
   }
 
-  function handleSliderChange(event) {
-    if (websites.length === 0) return;
+  function onPointerDown(e, mode) {
+    e.preventDefault();
+    isDragging = true;
+    dragMode = mode;
+    dragStartX = e.clientX;
+    dragStartStart = startDay;
+    dragStartEnd = endDay;
 
-    const rect = sliderContainer.getBoundingClientRect();
-    const dates = websites.map((w) => new Date(w.savedAt));
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  }
 
-    const scale = scaleTime().domain([minDate, maxDate]).range([0, rect.width]);
+  function onPointerMove(e) {
+    if (!isDragging) return;
 
-    const x = event.clientX - rect.left;
-    const selectedDate = scale.invert(x);
+    const rect = sliderEl.getBoundingClientRect();
+    const dx = e.clientX - dragStartX;
+    const dayDelta = Math.round((dx / rect.width) * totalDays);
 
-    if (event.target.classList.contains("start-handle")) {
-      startDate = selectedDate;
-    } else if (event.target.classList.contains("end-handle")) {
-      endDate = selectedDate;
+    if (dragMode === "start") {
+      updateRange(
+        Math.min(dragStartStart + dayDelta, dragStartEnd),
+        dragStartEnd,
+      );
+    } else if (dragMode === "end") {
+      updateRange(
+        dragStartStart,
+        Math.max(dragStartEnd + dayDelta, dragStartStart),
+      );
+    } else {
+      const span = dragStartEnd - dragStartStart;
+      let newStart = dragStartStart + dayDelta;
+      let newEnd = dragStartEnd + dayDelta;
+
+      if (newStart < 0) {
+        newStart = 0;
+        newEnd = span;
+      }
+      if (newEnd > totalDays) {
+        newEnd = totalDays;
+        newStart = totalDays - span;
+      }
+
+      updateRange(newStart, newEnd);
+    }
+  }
+
+  function onPointerUp() {
+    isDragging = false;
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+  }
+
+  function onTrackClick(e) {
+    const clickDay = xToDay(e.clientX);
+    const span = endDay - startDay;
+    let newStart = clickDay - Math.floor(span / 2);
+    let newEnd = newStart + span;
+
+    if (newStart < 0) {
+      newStart = 0;
+      newEnd = span;
+    }
+    if (newEnd > totalDays) {
+      newEnd = totalDays;
+      newStart = totalDays - span;
     }
 
-    dispatch("dateRangeChange", { startDate, endDate });
+    updateRange(newStart, newEnd);
   }
-
-  function getWebsitePositions() {
-    if (websites.length === 0 || !sliderContainer) return [];
-
-    const rect = sliderContainer.getBoundingClientRect();
-    const dates = websites.map((w) => new Date(w.savedAt));
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
-
-    const scale = scaleTime().domain([minDate, maxDate]).range([0, rect.width]);
-
-    return websites.map((website) => ({
-      ...website,
-      x: scale(new Date(website.savedAt)),
-    }));
-  }
-
-  function getHandlePositions() {
-    if (websites.length === 0 || !sliderContainer || !startDate || !endDate)
-      return { start: 0, end: 0 };
-
-    const rect = sliderContainer.getBoundingClientRect();
-    const dates = websites.map((w) => new Date(w.savedAt));
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
-
-    const scale = scaleTime().domain([minDate, maxDate]).range([0, rect.width]);
-
-    return {
-      start: scale(startDate),
-      end: scale(endDate),
-    };
-  }
-
-  $: websitePositions = getWebsitePositions();
-  $: handlePositions = getHandlePositions();
 </script>
 
-<div class="timeline-container">
-  <div
-    class="timeline-slider"
-    bind:this={sliderContainer}
-    on:click={handleSliderChange}
-  >
-    <div class="slider-track"></div>
+<div class="timeline-slider-wrap">
+  {#if minDate && maxDate}
+    <div class="timeline-slider" bind:this={sliderEl} on:click={onTrackClick}>
+      <div class="slider-track"></div>
 
-    <!-- Website icons -->
-    {#each websitePositions as website}
       <div
-        class="website-icon"
-        style="left: {website.x}px"
-        title="{website.name} - {new Date(
-          website.savedAt,
-        ).toLocaleDateString()}"
-      >
-        {#if website.faviconUrl}
-          <img src={website.faviconUrl} alt={website.name} />
-        {:else}
-          <div class="default-icon">•</div>
-        {/if}
+        class="range-selection"
+        style="left: {startPct}%; width: {endPct - startPct}%;"
+        on:pointerdown={(e) => onPointerDown(e, "range")}
+      ></div>
+
+      <div
+        class="slider-handle"
+        style="left: {startPct}%;"
+        on:pointerdown={(e) => onPointerDown(e, "start")}
+      ></div>
+
+      <div
+        class="slider-handle"
+        style="left: {endPct}%;"
+        on:pointerdown={(e) => onPointerDown(e, "end")}
+      ></div>
+    </div>
+
+    <div class="date-labels">
+      <span>{startDate?.toLocaleDateString()}</span>
+      <span>{endDate?.toLocaleDateString()}</span>
+    </div>
+  {:else}
+    <div class="timeline-slider disabled">
+      <div class="slider-track"></div>
+      <div class="disabled-text">
+        Add saved websites to enable the timeline slider
       </div>
-    {/each}
-
-    <!-- Range selection -->
-    <div
-      class="range-selection"
-      style="left: {handlePositions.start}px; width: {handlePositions.end -
-        handlePositions.start}px"
-    ></div>
-
-    <!-- Handles -->
-    <div
-      class="slider-handle start-handle"
-      style="left: {handlePositions.start}px"
-      on:click={handleSliderChange}
-    ></div>
-    <div
-      class="slider-handle end-handle"
-      style="left: {handlePositions.end}px"
-      on:click={handleSliderChange}
-    ></div>
-  </div>
-
-  <!-- Date labels -->
-  <div class="date-labels">
-    <span>{startDate ? startDate.toLocaleDateString() : ""}</span>
-    <span>{endDate ? endDate.toLocaleDateString() : ""}</span>
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .timeline-container {
-    margin: 20px 0;
+  .timeline-slider-wrap {
     width: 100%;
   }
 
   .timeline-slider {
     position: relative;
-    height: 60px;
+    height: 44px;
     width: 100%;
-    background: #f5f5f5;
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
     cursor: pointer;
+    overflow: hidden;
+    padding: 0 20px;
+  }
+
+  .disabled-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.45);
+    padding: 0 12px;
+    text-align: center;
+    pointer-events: none;
   }
 
   .slider-track {
     position: absolute;
     top: 50%;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: #ddd;
+    left: 10px;
+    right: 10px;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.18);
     transform: translateY(-50%);
-  }
-
-  .website-icon {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 16px;
-    height: 16px;
-    z-index: 2;
-  }
-
-  .website-icon img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-  }
-
-  .default-icon {
-    width: 100%;
-    height: 100%;
-    background: #007bff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 8px;
+    border-radius: 999px;
   }
 
   .range-selection {
     position: absolute;
     top: 50%;
-    height: 8px;
-    background: rgba(0, 123, 255, 0.3);
+    height: 18px;
     transform: translateY(-50%);
-    z-index: 1;
+    background: rgba(17, 133, 254, 0.22);
+    border: 1px solid rgba(17, 133, 254, 0.35);
+    border-radius: 999px;
+    cursor: grab;
+  }
+
+  .range-selection:active {
+    cursor: grabbing;
   }
 
   .slider-handle {
     position: absolute;
     top: 50%;
-    width: 20px;
-    height: 20px;
-    background: #007bff;
-    border: 2px solid white;
-    border-radius: 50%;
+    width: 14px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
     transform: translate(-50%, -50%);
-    cursor: grab;
+    cursor: ew-resize;
     z-index: 3;
   }
 
-  .slider-handle:active {
-    cursor: grabbing;
+  .slider-handle:hover {
+    border-color: rgba(17, 133, 254, 0.7);
   }
 
   .date-labels {
     display: flex;
     justify-content: space-between;
-    margin-top: 10px;
+    margin-top: 8px;
     font-size: 12px;
-    color: #666;
+    color: rgba(0, 0, 0, 0.55);
+    font-weight: 700;
+  }
+
+  :global(body.dark-mode) .timeline-slider {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+
+  :global(body.dark-mode) .slider-track {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  :global(body.dark-mode) .range-selection {
+    background: rgba(77, 171, 247, 0.22);
+    border-color: rgba(77, 171, 247, 0.35);
+  }
+
+  :global(body.dark-mode) .slider-handle {
+    background: rgba(26, 27, 30, 0.95);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+
+  :global(body.dark-mode) .date-labels {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  :global(body.dark-mode) .disabled-text {
+    color: rgba(255, 255, 255, 0.55);
   }
 </style>
