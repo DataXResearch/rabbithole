@@ -1,12 +1,13 @@
 <script>
-  import { Text, Button, Stack } from "@svelteuidev/core";
+  import { Button } from "@svelteuidev/core";
   import { OpenInNewWindow } from "radix-icons-svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
+  import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
 
   export let activeBurrow = {};
   export let websites = [];
 
-  let isCollapsed = false;
+  let isOpen = true;
 
   $: burrowHomeWebsites = (() => {
     if (!activeBurrow?.activeTabs || activeBurrow.activeTabs.length === 0) {
@@ -21,9 +22,9 @@
 
   $: hasBurrowHome = burrowHomeWebsites.length > 0;
 
-  // If Burrow Home becomes empty, reset collapsed state so it doesn't "stick"
-  $: if (!hasBurrowHome && isCollapsed) {
-    isCollapsed = false;
+  // If Burrow Home becomes empty, reset open state so it doesn't "stick"
+  $: if (!hasBurrowHome && !isOpen) {
+    isOpen = true;
   }
 
   async function openAllBurrowHomeTabs() {
@@ -45,38 +46,27 @@
     activeBurrow.activeTabs = activeBurrow.activeTabs.filter((u) => u !== url);
   }
 
-  function toggleCollapsed() {
-    isCollapsed = !isCollapsed;
+  function handleToggle(e) {
+    isOpen = e.detail.open;
   }
 
   function handleOpenAllClick(event) {
-    // This Button sits inside a clickable header; prevent collapsing when clicking "Open All"
+    // Prevent toggling collapse when clicking "Open All"
     event.stopPropagation();
     openAllBurrowHomeTabs();
   }
 </script>
 
 {#if hasBurrowHome}
-  {#if isCollapsed}
-    <div
-      class="burrow-home-section burrow-home-collapsed"
-      role="button"
-      tabindex="0"
-      on:click={toggleCollapsed}
-      on:keydown={(e) => e.key === "Enter" && toggleCollapsed()}
+  <div class="burrow-home-wrapper">
+    <CollapsibleContainer
+      title="Burrow Home"
+      titleClass="burrow-home-title"
+      open={isOpen}
+      on:toggle={handleToggle}
+      defaultOpen={true}
     >
-      <Text weight="bold" size="lg" color="dimmed">Burrow Home</Text>
-    </div>
-  {:else}
-    <div class="burrow-home-section">
-      <div
-        class="section-header section-header-clickable"
-        role="button"
-        tabindex="0"
-        on:click={toggleCollapsed}
-        on:keydown={(e) => e.key === "Enter" && toggleCollapsed()}
-      >
-        <Text weight="bold" size="lg" color="dimmed">Burrow Home</Text>
+      <div class="header-actions">
         <Button
           class="open-all-btn"
           variant="subtle"
@@ -88,104 +78,75 @@
         </Button>
       </div>
 
-      <div class="scroll-container">
-        <Stack spacing="md">
-          {#each burrowHomeWebsites as site}
-            <div class="burrow-home-card">
-              <TimelineCard
-                website={site}
-                on:websiteDelete={() => removeFromBurrowHome(site.url)}
-              />
-            </div>
-          {/each}
-        </Stack>
+      <div class="horizontal-list" aria-label="Burrow Home websites">
+        {#each burrowHomeWebsites as site (site.url)}
+          <div class="card-wrap">
+            <TimelineCard
+              website={site}
+              on:websiteDelete={() => removeFromBurrowHome(site.url)}
+            />
+          </div>
+        {/each}
       </div>
-    </div>
-  {/if}
+    </CollapsibleContainer>
+  </div>
 {/if}
 
 <style>
-  .burrow-home-section {
+  .burrow-home-wrapper {
     margin-bottom: 40px;
-    background-color: rgba(0, 0, 0, 0.03);
-    border: 2px dotted #adb5bd;
-    border-radius: 12px;
-    padding: 20px;
   }
 
-  .burrow-home-collapsed {
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.15s ease, border-color 0.15s ease,
-      transform 0.15s ease;
+  /* Keep the title styling you liked */
+  :global(.burrow-home-title) {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: rgba(0, 0, 0, 0.55);
+    letter-spacing: 0;
   }
 
-  .burrow-home-collapsed:hover {
-    background-color: rgba(0, 0, 0, 0.06);
-    border-color: rgba(17, 133, 254, 0.65);
+  :global(body.dark-mode .burrow-home-title) {
+    color: rgba(255, 255, 255, 0.65);
   }
 
-  .burrow-home-collapsed:active {
-    transform: translateY(1px);
-  }
-
-  .section-header {
+  .header-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding: 0 4px;
+    justify-content: flex-end;
+    margin-bottom: 12px;
   }
 
-  .section-header-clickable {
-    cursor: pointer;
-    user-select: none;
-    border-radius: 10px;
-    padding: 8px 8px;
-    margin: -8px -4px 8px -4px;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+  .horizontal-list {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Highlight the header on hover, but NOT when hovering the "Open All" button */
-  .section-header-clickable:hover:not(:has(.open-all-btn:hover)) {
-    background-color: rgba(0, 0, 0, 0.06);
+  .card-wrap {
+    flex: 0 0 360px;
+    scroll-snap-align: start;
   }
 
-  .scroll-container {
-    max-height: 600px; /* Approximate height for ~5 cards */
-    overflow-y: auto;
-    padding-right: 4px; /* Space for scrollbar */
+  /* Scrollbar styling */
+  .horizontal-list::-webkit-scrollbar {
+    height: 10px;
   }
 
-  /* Custom scrollbar styling for webkit browsers */
-  .scroll-container::-webkit-scrollbar {
-    width: 8px;
+  .horizontal-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 999px;
   }
 
-  .scroll-container::-webkit-scrollbar-track {
-    background: transparent;
+  :global(body.dark-mode) .horizontal-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
   }
 
-  .scroll-container::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-
-  :global(body.dark-mode) .burrow-home-section {
-    background-color: rgba(255, 255, 255, 0.03);
-    border-color: #5c5f66;
-  }
-
-  :global(body.dark-mode) .burrow-home-collapsed:hover {
-    background-color: rgba(255, 255, 255, 0.06);
-    border-color: rgba(77, 171, 247, 0.65);
-  }
-
-  :global(body.dark-mode) .section-header-clickable:hover:not(:has(.open-all-btn:hover)) {
-    background-color: rgba(255, 255, 255, 0.06);
-  }
-
-  :global(body.dark-mode) .scroll-container::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.2);
+  @media (max-width: 640px) {
+    .card-wrap {
+      flex-basis: 300px;
+    }
   }
 </style>

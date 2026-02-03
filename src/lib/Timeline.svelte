@@ -8,14 +8,15 @@
     TextInput,
     Tooltip,
     Loader,
-    Stack,
     ActionIcon,
-    Button,
   } from "@svelteuidev/core";
+  import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import TimelineSlider from "src/lib/TimelineSlider.svelte";
   import Modal from "src/lib/Modal.svelte";
+  import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import BurrowHome from "src/lib/BurrowHome.svelte";
+  import AddToRabbitholeModal from "src/lib/AddToRabbitholeModal.svelte";
   import {
     Pencil1,
     MagnifyingGlass,
@@ -37,14 +38,12 @@
   export let activeBurrow = {};
   export let websites = [];
   export let isLoading = false;
+  export let selectRabbithole;
 
   let searchResults = [];
-  let nameClicked = false;
   let isHovering = false;
   let searchQuery = "";
   let filteredWebsites = [];
-  let startDate = null;
-  let endDate = null;
   let previousWebsitesLength = 0;
   let isPublishing = false;
   let showInfoModal = false;
@@ -54,6 +53,60 @@
   let hoverY = 0;
   let isHoveringTimestamp = false;
 
+  let rabbitholes = [];
+  let showAddToRabbitholeModal = false;
+
+  async function loadRabbitholesForActiveBurrow() {
+    if (!activeBurrow?.id) {
+      rabbitholes = [];
+      return;
+    }
+
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: MessageRequest.FETCH_RABBITHOLES_FOR_BURROW,
+        burrowId: activeBurrow.id,
+      });
+
+      if (res && typeof res === "object" && "error" in res) {
+        console.error("Failed to fetch rabbitholes for burrow:", res.error);
+        rabbitholes = [];
+      } else {
+        rabbitholes = Array.isArray(res) ? res : [];
+      }
+    } catch (e) {
+      console.error("Failed to fetch rabbitholes for burrow:", e);
+      rabbitholes = [];
+    }
+  }
+
+  $: if (activeBurrow?.id) {
+    loadRabbitholesForActiveBurrow();
+  } else {
+    rabbitholes = [];
+  }
+
+  function openAddToRabbitholeModal() {
+    showAddToRabbitholeModal = true;
+  }
+
+  async function removeBurrowFromRabbithole(rabbitholeId) {
+    if (!activeBurrow?.id || !rabbitholeId) return;
+
+    const res = await chrome.runtime.sendMessage({
+      type: MessageRequest.DELETE_BURROW_FROM_RABBITHOLE,
+      rabbitholeId,
+      burrowId: activeBurrow.id,
+    });
+
+    if (res && typeof res === "object" && "error" in res) {
+      console.error("Failed to remove burrow from rabbithole:", res.error);
+      return;
+    }
+
+    await loadRabbitholesForActiveBurrow();
+  }
+
   async function renameBurrow() {
     if (activeBurrow.name === "") {
       return;
@@ -61,7 +114,6 @@
     dispatch("burrowRename", {
       newActiveBurrowName: activeBurrow.name,
     });
-    nameClicked = false;
   }
 
   async function deleteWebsite(event) {
@@ -70,8 +122,8 @@
     });
   }
 
-  function checkWebsiteForQuery(websites) {
-    const fuse = new Fuse(websites, {
+  function checkWebsiteForQuery(items) {
+    const fuse = new Fuse(items, {
       keys: ["name", "description", "url"],
       includeScore: true,
       threshold: 0.3,
@@ -81,7 +133,7 @@
     return results;
   }
 
-  function applySearchQuery(node) {
+  function applySearchQuery() {
     const results = checkWebsiteForQuery(websites);
     searchResults = results.map((res) => res.item);
   }
@@ -89,11 +141,6 @@
   function handleDateRangeChange(event) {
     startDate = event.detail.startDate;
     endDate = event.detail.endDate;
-
-    filteredWebsites = websites.filter((website) => {
-      const websiteDate = new Date(website.savedAt);
-      return websiteDate >= startDate && websiteDate <= endDate;
-    });
   }
 
   async function publishRabbithole() {
@@ -230,8 +277,9 @@
     previousWebsitesLength = websites.length;
   }
 
-  $: websitesToDisplay =
-    searchQuery.length < 3 ? filteredWebsites : searchResults;
+  // Compose filters: search + date window
+  $: baseList = searchQuery.length < 3 ? filteredWebsites : searchResults;
+  $: websitesToDisplay = baseList.filter(isWithinRange);
 
   $: groupedWebsites = groupByDate(websitesToDisplay);
 
@@ -268,7 +316,18 @@
     hoverX = e.clientX;
     hoverY = e.clientY;
   }
+
+  $: rabbitholesForActiveBurrow = rabbitholes;
 </script>
+
+<AddToRabbitholeModal
+  bind:isOpen={showAddToRabbitholeModal}
+  {activeBurrow}
+  existingRabbitholes={rabbitholesForActiveBurrow}
+  on:updated={async () => {
+    await loadRabbitholesForActiveBurrow();
+  }}
+/>
 
 <Modal
   isOpen={showInfoModal}
@@ -319,9 +378,6 @@
             variant="unstyled"
             size="xl"
             class="project-name-input"
-            on:click={() => {
-              nameClicked = true;
-            }}
             on:mouseenter={() => {
               isHovering = true;
             }}
@@ -391,6 +447,7 @@
         </Tooltip>
       </div>
     </Group>
+
     <div class="search-bar">
       <TextInput
         placeholder="Search your burrow..."
@@ -401,7 +458,6 @@
         on:input={applySearchQuery}
       />
     </div>
-  </div>
 
   <!-- FIXME: make this functional-->
   <!-- <TimelineSlider -->
@@ -420,7 +476,30 @@
         >
       </div>
     {:else}
-      {#if !searchQuery}
+      <div class="rabbitholes-collapsible">
+        <CollapsibleContainer title="Rabbitholes" defaultOpen={false}>
+          <RabbitholeGrid
+            rabbitholes={rabbitholesForActiveBurrow}
+            onSelect={selectRabbithole}
+            horizontal={true}
+            showAdd={true}
+            showRemove={true}
+            addTooltip="Add this burrow to another rabbithole"
+            removeTooltip="Remove this burrow from this rabbithole"
+            on:add={() => {
+              if (handleAddBurrowToRabbithole) {
+                handleAddBurrowToRabbithole();
+              }
+              openAddToRabbitholeModal();
+            }}
+            on:remove={async (e) => {
+              await removeBurrowFromRabbithole(e.detail.rabbitholeId);
+            }}
+          />
+        </CollapsibleContainer>
+      </div>
+
+      {#if shouldShowBurrowHome}
         <BurrowHome bind:activeBurrow {websites} />
       {/if}
 
@@ -441,7 +520,7 @@
                       class="timeline-dot"
                       on:mouseenter={(e) => {
                         updateHoverPosition(e);
-                        showTimestamp(site.savedAt);
+                        showTimestamp(getWebsiteTimeMs(site));
                       }}
                       on:mousemove={updateHoverPosition}
                       on:mouseleave={clearTimestamp}
@@ -450,7 +529,7 @@
                       class="timeline-connector"
                       on:mouseenter={(e) => {
                         updateHoverPosition(e);
-                        showTimestamp(site.savedAt);
+                        showTimestamp(getWebsiteTimeMs(site));
                       }}
                       on:mousemove={updateHoverPosition}
                       on:mouseleave={clearTimestamp}
@@ -479,7 +558,7 @@
         {/if}
       </div>
 
-      {#if websitesToDisplay.length === 0 && searchQuery.length > 0}
+      {#if websitesToDisplay.length === 0 && (searchQuery.length > 0 || sliderIsActive)}
         <Text align="center" color="dimmed" size="sm" style="margin-top: 2rem;"
           >No results found.</Text
         >
@@ -492,7 +571,9 @@
   .timeline {
     width: 100%;
     padding: 40px 20px;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   .header-section {
@@ -502,16 +583,6 @@
     align-items: center;
     margin-bottom: 40px;
     max-width: 800px;
-  }
-
-  .logo-container {
-    margin-bottom: 20px;
-  }
-
-  .logo {
-    width: 80px;
-    height: auto;
-    opacity: 0.9;
   }
 
   .project-controls {
@@ -541,8 +612,13 @@
   }
 
   .search-bar {
-    margin: 30px 0;
+    margin: 30px 0 12px 0;
     width: 100%;
+  }
+
+  .slider-bar {
+    width: 100%;
+    margin-bottom: 10px;
   }
 
   .timeline-feed {
@@ -607,12 +683,15 @@
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.35);
     z-index: 10;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .timeline-dot:hover {
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
       0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
@@ -681,6 +760,10 @@
     background-color: rgba(34, 139, 230, 0.2);
   }
 
+  .rabbitholes-collapsible {
+    margin-bottom: 30px;
+  }
+
   :global(body.dark-mode .feed) {
     background-color: transparent;
   }
@@ -699,26 +782,12 @@
     color: #c1c2c5;
   }
 
-  :global(body.dark-mode) .semble-link {
-    color: #4dabf7;
-    background-color: rgba(77, 171, 247, 0.15);
-  }
-
-  :global(body.dark-mode) .semble-link:hover {
-    background-color: rgba(77, 171, 247, 0.25);
-  }
-
   :global(body.dark-mode) .timeline-line {
     background: rgba(255, 255, 255, 0.14);
   }
 
   :global(body.dark-mode) .timeline-dot {
     background: rgba(255, 255, 255, 0.35);
-  }
-
-  :global(body.dark-mode) .timeline-dot:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.35),
-      0 4px 6px -2px rgba(0, 0, 0, 0.25);
   }
 
   :global(body.dark-mode) .timeline-connector {
