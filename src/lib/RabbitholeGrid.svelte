@@ -7,12 +7,13 @@
   export let onSelect;
 
   export let horizontal = false;
-  export let showAdd = false;
   export let addTooltip = "add this burrow to another rabbithole";
-
-  // Removal UI
-  export let showRemove = false;
+  export let showBurrows = true;
   export let removeTooltip = "Remove this burrow from this rabbithole";
+
+  // features for showing rabbithole grid within a burrow view
+  export let burrowShowAddRabbithole = false;
+  export let burrowShowRemoveRabbithole = false;
 
   const dispatch = createEventDispatcher();
 
@@ -20,15 +21,10 @@
     if (!rabbithole?.burrows) return [];
     return burrows.filter((b) => rabbithole.burrows.includes(b.id));
   }
-
-  function handleRemove(e, rabbithole) {
-    e.stopPropagation();
-    dispatch("remove", { rabbitholeId: rabbithole.id });
-  }
 </script>
 
 <div class="grid" class:horizontal>
-  {#if showAdd}
+  {#if burrowShowAddRabbithole}
     <button
       type="button"
       class="card add-card"
@@ -42,7 +38,7 @@
 
   {#each rabbitholes as rabbithole (rabbithole.id)}
     <button type="button" class="card" on:click={() => onSelect(rabbithole)}>
-      {#if showRemove}
+      {#if burrowShowRemoveRabbithole}
         <button
           type="button"
           class="remove-btn"
@@ -60,14 +56,16 @@
       {/if}
 
       <div class="card-title">{rabbithole.title || "Untitled"}</div>
-      <div class="burrow-preview">
-        {#each burrowsFor(rabbithole).slice(0, 3) as burrow (burrow.id)}
-          <div class="burrow-chip" title={burrow.name}>{burrow.name}</div>
-        {/each}
-        {#if burrowsFor(rabbithole).length === 0}
-          <div class="burrow-empty">No burrows yet</div>
-        {/if}
-      </div>
+      {#if showBurrows}
+        <div class="burrow-preview">
+          {#each burrowsFor(rabbithole).slice(0, 3) as burrow (burrow.id)}
+            <div class="burrow-chip" title={burrow.name}>{burrow.name}</div>
+          {/each}
+          {#if burrowsFor(rabbithole).length === 0}
+            <div class="burrow-empty">No burrows yet</div>
+          {/if}
+        </div>
+      {/if}
     </button>
   {/each}
 </div>

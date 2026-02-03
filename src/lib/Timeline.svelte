@@ -583,8 +583,9 @@
             rabbitholes={rabbitholesForActiveBurrow}
             onSelect={selectRabbithole}
             horizontal={true}
-            showAdd={true}
-            showRemove={true}
+            burrowShowAddRabbithole={true}
+            burrowShowRemoveRabbithole={true}
+            showBurrows={false}
             addTooltip="Add this burrow to another rabbithole"
             removeTooltip="Remove this burrow from this rabbithole"
             on:addBurrowToRabbithole={() => {
