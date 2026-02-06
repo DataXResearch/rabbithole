@@ -71,9 +71,11 @@
           class="open-all-btn"
           variant="subtle"
           compact
-          leftIcon={OpenInNewWindow}
           on:click={handleOpenAllClick}
         >
+          <svelte:fragment slot="leftIcon">
+            <OpenInNewWindow size={16} />
+          </svelte:fragment>
           Open All
         </Button>
       </div>

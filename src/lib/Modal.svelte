@@ -5,6 +5,7 @@
 
   export let isOpen = false;
   export let title = "";
+  export let titleLink = "";
 
   const dispatch = createEventDispatcher();
 
@@ -26,7 +27,13 @@
   <div class="modal-overlay" on:click={close}>
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
-        <h2 class="modal-title">{title}</h2>
+        {#if titleLink}
+          <h2 class="modal-title">
+            Sign in with <a href={titleLink} target="_blank" rel="noopener noreferrer" class="modal-title-link">Internet Handle</a>
+          </h2>
+        {:else}
+          <h2 class="modal-title">{title}</h2>
+        {/if}
         <ActionIcon variant="subtle" on:click={close}>
           <Cross2 />
         </ActionIcon>
@@ -58,7 +65,7 @@
     padding: 24px;
     border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     max-height: 90vh;
     overflow-y: auto;
@@ -90,6 +97,18 @@
     color: #1a1b1e;
   }
 
+  .modal-title-link {
+    color: #1a1b1e;
+    text-decoration: none;
+    border-bottom: 1px dotted #1a1b1e;
+    transition: color 0.2s ease, border-bottom-color 0.2s ease;
+  }
+
+  .modal-title-link:hover {
+    color: #228be6;
+    border-bottom-color: #228be6;
+  }
+
   .modal-body {
     color: #495057;
     line-height: 1.6;
@@ -105,6 +124,16 @@
 
   :global(body.dark-mode) .modal-title {
     color: #e7f5ff;
+  }
+
+  :global(body.dark-mode) .modal-title-link {
+    color: #e7f5ff;
+    border-bottom-color: #e7f5ff;
+  }
+
+  :global(body.dark-mode) .modal-title-link:hover {
+    color: #4dabf7;
+    border-bottom-color: #4dabf7;
   }
 
   :global(body.dark-mode) .modal-body {
