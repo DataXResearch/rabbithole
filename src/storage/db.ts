@@ -6,6 +6,7 @@ export interface Settings {
   alignment: string;
   show: boolean;
   darkMode: boolean;
+  hasSeenOnboarding: boolean;
 }
 
 export interface Website {
