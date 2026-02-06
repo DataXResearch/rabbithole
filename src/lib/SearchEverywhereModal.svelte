@@ -1,10 +1,19 @@
 <script>
   import { onMount, tick, afterUpdate } from "svelte";
   import { createEventDispatcher } from "svelte";
-  import { ActionIcon, TextInput, Text, Stack, Loader } from "@svelteuidev/core";
+  import {
+    ActionIcon,
+    TextInput,
+    Text,
+    Stack,
+    Loader,
+  } from "@svelteuidev/core";
   import { Cross2, MagnifyingGlass } from "radix-icons-svelte";
   import Fuse from "fuse.js";
   import TimelineCard from "src/lib/TimelineCard.svelte";
+  import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
+  import BurrowGrid from "src/lib/BurrowGrid.svelte";
+  import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import { MessageRequest } from "../utils";
 
   export let isOpen = false;
@@ -13,32 +22,54 @@
 
   let searchQuery = "";
   let allWebsites = [];
-  let searchResults = [];
+  let allRabbitholes = [];
+  let allBurrows = [];
+  let websiteResults = [];
+  let rabbitholeResults = [];
+  let burrowResults = [];
   let isLoading = true;
   let inputRef;
 
+  // Track collapse state for each section
+  let sectionStates = {
+    rabbitholes: true,
+    burrows: true,
+    websites: true,
+  };
+
   onMount(async () => {
-    await loadAllWebsites();
+    await loadAllData();
   });
 
   afterUpdate(() => {
     if (isOpen && inputRef) {
-      // Find the actual input element within the TextInput component
-      const input = inputRef.querySelector('input');
+      const input = inputRef.querySelector("input");
       if (input) {
         input.focus();
       }
     }
   });
 
-  async function loadAllWebsites() {
+  async function loadAllData() {
     isLoading = true;
     try {
-      allWebsites = await chrome.runtime.sendMessage({
-        type: MessageRequest.GET_ALL_ITEMS,
-      });
+      const [websites, rabbitholes, burrows] = await Promise.all([
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_ITEMS,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_RABBITHOLES,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_BURROWS,
+        }),
+      ]);
+
+      allWebsites = websites || [];
+      allRabbitholes = rabbitholes || [];
+      allBurrows = burrows || [];
     } catch (err) {
-      console.error("Failed to load websites:", err);
+      console.error("Failed to load data:", err);
     }
     isLoading = false;
   }
@@ -46,7 +77,9 @@
   function close() {
     isOpen = false;
     searchQuery = "";
-    searchResults = [];
+    websiteResults = [];
+    rabbitholeResults = [];
+    burrowResults = [];
   }
 
   function handleKeydown(e) {
@@ -57,45 +90,70 @@
 
   function performSearch() {
     if (searchQuery.length < 2) {
-      searchResults = [];
+      websiteResults = [];
+      rabbitholeResults = [];
+      burrowResults = [];
       return;
     }
 
-    const fuse = new Fuse(allWebsites, {
+    // Search websites
+    const websiteFuse = new Fuse(allWebsites, {
       keys: ["name", "description", "url"],
       includeScore: true,
       threshold: 0.3,
     });
+    const websiteMatches = websiteFuse.search(searchQuery);
+    websiteResults = websiteMatches.map((res) => res.item);
 
-    const results = fuse.search(searchQuery);
-    searchResults = results.map((res) => res.item);
+    // Search rabbitholes
+    const rabbitholeFuse = new Fuse(allRabbitholes, {
+      keys: ["title", "description"],
+      includeScore: true,
+      threshold: 0.3,
+    });
+    const rabbitholeMatches = rabbitholeFuse.search(searchQuery);
+    rabbitholeResults = rabbitholeMatches.map((res) => res.item);
+
+    // Search burrows
+    const burrowFuse = new Fuse(allBurrows, {
+      keys: ["name"],
+      includeScore: true,
+      threshold: 0.3,
+    });
+    const burrowMatches = burrowFuse.search(searchQuery);
+    burrowResults = burrowMatches.map((res) => res.item);
   }
 
-  async function handleDeleteWebsite(event) {
-    const urlToDelete = event.detail.url;
+  function handleToggleSection(section, event) {
+    sectionStates[section] = event.detail.open;
+  }
 
-    const burrows = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ALL_BURROWS,
+  async function handleSelectRabbithole(rabbithole) {
+    // Navigate to the rabbithole
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
+      rabbitholeId: rabbithole.id,
     });
+    dispatch("select", { type: "rabbithole", id: rabbithole.id });
+    close();
+  }
 
-    for (const burrow of burrows) {
-      if (burrow.websites.includes(urlToDelete)) {
-        await chrome.runtime.sendMessage({
-          type: MessageRequest.DELETE_WEBSITE,
-          burrowId: burrow.id,
-          url: urlToDelete,
-        });
-      }
-    }
-
-    // Reload websites and re-search
-    await loadAllWebsites();
-    performSearch();
+  async function handleSelectBurrow(burrow) {
+    // Navigate to the burrow
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_BURROW,
+      burrowId: burrow.id,
+    });
+    dispatch("select", { type: "burrow", id: burrow.id });
+    close();
   }
 
   $: if (searchQuery) {
     performSearch();
   }
+
+  $: totalResults =
+    websiteResults.length + rabbitholeResults.length + burrowResults.length;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -113,7 +171,7 @@
       <div class="modal-body">
         <div class="search-input-wrapper" bind:this={inputRef}>
           <TextInput
-            placeholder="Search across all burrows..."
+            placeholder="Search rabbitholes, burrows, and websites..."
             icon={MagnifyingGlass}
             size="md"
             radius="md"
@@ -125,7 +183,7 @@
           <div class="loading-container">
             <Loader size="md" variant="dots" />
             <Text size="sm" color="dimmed" style="margin-top: 1rem;">
-              Loading websites...
+              Searching...
             </Text>
           </div>
         {:else if searchQuery.length < 2}
@@ -134,7 +192,7 @@
               Type at least 2 characters to search
             </Text>
           </div>
-        {:else if searchResults.length === 0}
+        {:else if totalResults === 0}
           <div class="empty-state">
             <Text size="sm" color="dimmed" align="center">
               No results found for "{searchQuery}"
@@ -142,13 +200,48 @@
           </div>
         {:else}
           <div class="results-container">
-            <Text size="sm" color="dimmed" style="margin-bottom: 12px;">
-              Found {searchResults.length} result{searchResults.length === 1 ? "" : "s"}
-            </Text>
-            <Stack spacing="md">
-              {#each searchResults as website}
-                <TimelineCard {website} on:websiteDelete={handleDeleteWebsite} />
-              {/each}
+            <Stack spacing="lg">
+              {#if rabbitholeResults.length > 0}
+                <CollapsibleContainer
+                  title="Rabbitholes ({rabbitholeResults.length})"
+                  open={sectionStates.rabbitholes}
+                  on:toggle={(e) => handleToggleSection("rabbitholes", e)}
+                >
+                  <RabbitholeGrid
+                    rabbitholes={rabbitholeResults}
+                    burrows={allBurrows}
+                    onSelect={handleSelectRabbithole}
+                    showBurrows={true}
+                  />
+                </CollapsibleContainer>
+              {/if}
+
+              {#if burrowResults.length > 0}
+                <CollapsibleContainer
+                  title="Burrows ({burrowResults.length})"
+                  open={sectionStates.burrows}
+                  on:toggle={(e) => handleToggleSection("burrows", e)}
+                >
+                  <BurrowGrid
+                    burrows={burrowResults}
+                    onSelect={handleSelectBurrow}
+                  />
+                </CollapsibleContainer>
+              {/if}
+
+              {#if websiteResults.length > 0}
+                <CollapsibleContainer
+                  title="Websites ({websiteResults.length})"
+                  open={sectionStates.websites}
+                  on:toggle={(e) => handleToggleSection("websites", e)}
+                >
+                  <Stack spacing="md">
+                    {#each websiteResults as website}
+                      <TimelineCard {website} showDelete={false} />
+                    {/each}
+                  </Stack>
+                </CollapsibleContainer>
+              {/if}
             </Stack>
           </div>
         {/if}
@@ -177,7 +270,7 @@
     padding: 24px;
     border-radius: 12px;
     width: 90%;
-    max-width: 700px;
+    max-width: 900px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     max-height: 85vh;
     display: flex;
