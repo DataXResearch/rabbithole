@@ -2,6 +2,12 @@
   export let burrows = [];
   export let selectedBurrowId = null;
   export let onSelect;
+
+  function handleSelect(burrow) {
+    if (onSelect) {
+      onSelect(burrow);
+    }
+  }
 </script>
 
 <div class="grid">
@@ -9,10 +15,15 @@
     <button
       type="button"
       class="card"
-      class:selected={selectedBurrowId === burrow.id}
-      on:click={() => onSelect(burrow)}
+      class:selected={burrow.id === selectedBurrowId}
+      on:click={() => handleSelect(burrow)}
     >
-      <div class="card-title" title={burrow.name}>{burrow.name || "Untitled"}</div>
+      <div class="card-title">{burrow.name || "Untitled"}</div>
+      <div class="card-meta">
+        <div class="meta-item">
+          {burrow.websites?.length || 0} website{(burrow.websites?.length || 0) === 1 ? "" : "s"}
+        </div>
+      </div>
     </button>
   {/each}
 </div>
@@ -23,7 +34,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
     width: 100%;
-    margin-bottom: 22px;
   }
 
   .card {
@@ -33,8 +43,11 @@
     border-radius: 16px;
     padding: 22px;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-    min-height: 110px;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      border-color 0.15s ease;
+    min-height: 120px;
   }
 
   .card:hover {
@@ -44,18 +57,28 @@
   }
 
   .card.selected {
-    border-color: rgba(17, 133, 254, 0.9);
-    box-shadow: 0 12px 22px rgba(17, 133, 254, 0.12);
+    border-color: rgba(17, 133, 254, 0.6);
+    background: rgba(17, 133, 254, 0.05);
   }
 
   .card-title {
     font-weight: 900;
     font-size: 18px;
     color: #1a1b1e;
+    margin-bottom: 14px;
     line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .meta-item {
+    font-size: 13px;
+    color: #868e96;
+    font-weight: 600;
   }
 
   @media (max-width: 980px) {
@@ -81,11 +104,15 @@
   }
 
   :global(body.dark-mode) .card.selected {
-    border-color: rgba(77, 171, 247, 0.95);
-    box-shadow: 0 12px 22px rgba(77, 171, 247, 0.18);
+    border-color: rgba(77, 171, 247, 0.7);
+    background: rgba(77, 171, 247, 0.08);
   }
 
   :global(body.dark-mode) .card-title {
     color: #e7e7e7;
+  }
+
+  :global(body.dark-mode) .meta-item {
+    color: #909296;
   }
 </style>
