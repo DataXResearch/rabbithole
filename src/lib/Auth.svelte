@@ -1,9 +1,10 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, createEventDispatcher } from "svelte";
   import { Agent } from "@atproto/api";
   import { InfoCircled } from "radix-icons-svelte";
   import { Tooltip } from "@svelteuidev/core";
   import Modal from "./Modal.svelte";
+  import CollapsibleContainer from "./CollapsibleContainer.svelte";
   import {
     ClientMetadataUrl,
     generateRandomString,
@@ -16,8 +17,12 @@
     saveSession,
     clearSession,
     saveDpopKey,
-    getDpopKey
+    getDpopKey,
   } from "../atproto/client";
+
+  export let showWhyBluesky = false;
+
+  const dispatch = createEventDispatcher();
 
   let isLoading = false;
   let error = null;
@@ -25,7 +30,6 @@
   let userDisplayName = null;
   let userHandle = null;
   let userAvatar = null;
-  let showHandleInput = false;
   let handleInput = "";
   let inputElement;
   let dpopKeyPair = null;
@@ -45,7 +49,9 @@
         // Verify we have valid DPoP keys
         const keys = await getDpopKey();
         if (!keys) {
-          console.warn("Session exists but DPoP keys are missing or invalid. Clearing session.");
+          console.warn(
+            "Session exists but DPoP keys are missing or invalid. Clearing session.",
+          );
           await clearSession();
           return;
         }
@@ -69,19 +75,7 @@
     userDisplayName = response.data.displayName || response.data.handle;
     userHandle = response.data.handle;
     userAvatar = response.data.avatar;
-    console.log(response)
-  }
-
-  function openHandleInput() {
-    showHandleInput = true;
-    error = null;
-    setTimeout(() => inputElement?.focus(), 0);
-  }
-
-  function cancelHandleInput() {
-    showHandleInput = false;
-    handleInput = "";
-    error = null;
+    console.log(response);
   }
 
   async function submitHandle() {
@@ -92,7 +86,6 @@
 
     error = null;
     isLoading = true;
-    showHandleInput = false;
 
     try {
       let handle = handleInput.trim();
@@ -122,7 +115,10 @@
       authUrl.searchParams.set("client_id", ClientMetadataUrl);
       authUrl.searchParams.set("redirect_uri", RedirectUri);
       // Request specific scopes for the custom collections
-      authUrl.searchParams.set("scope", "atproto repo:network.cosmik.collection repo:network.cosmik.card repo:network.cosmik.collectionLink");
+      authUrl.searchParams.set(
+        "scope",
+        "atproto repo:network.cosmik.collection repo:network.cosmik.card repo:network.cosmik.collectionLink",
+      );
       // Force consent to ensure new scopes are granted
       authUrl.searchParams.set("prompt", "consent");
       authUrl.searchParams.set("state", state);
@@ -170,7 +166,7 @@
         authServer.token_endpoint,
         dpopKeyPair,
         RedirectUri,
-        ClientMetadataUrl
+        ClientMetadataUrl,
       );
       console.log("Token response received");
 
@@ -187,6 +183,7 @@
 
       await fetchProfile(session);
       error = null;
+      dispatch("authSuccess");
     } catch (err) {
       console.error("OAuth error:", err);
       error = err.message || "Failed to start authentication";
@@ -199,8 +196,6 @@
   function handleKeydown(event) {
     if (event.key === "Enter") {
       submitHandle();
-    } else if (event.key === "Escape") {
-      cancelHandleInput();
     }
   }
 
@@ -212,40 +207,6 @@
     userAvatar = null;
   }
 </script>
-
-<Modal
-  isOpen={showWhyBlueskyModal}
-  title="Why Bluesky?"
-  on:close={() => (showWhyBlueskyModal = false)}
->
-  <p><strong>Bluesky is built on the AT Protocol, the foundation of the new open web.</strong></p>
-  <p>
-    By connecting your Bluesky account, you can:
-  </p>
-  <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;">
-    <li style="margin-bottom: 8px;">
-      <strong>Own your Rabbitholes.</strong> We do not store any of your information (nor do we want to).
-      All your data is tied to your AT Protocol handle and stored in your personal
-      data repository.
-    </li>
-    <li style="margin-bottom: 8px;">
-      <strong>Share your rabbithole info with other apps.</strong> For e.g. share your
-      rabbitholes as curated collections on the Semble network.
-    </li>
-    <li>
-      <strong>Control your data.</strong> Your collections are stored in your personal
-      data repository, not locked in a walled garden.
-    </li>
-  </ul>
-  <p>👀 Coming soon:</p>
-  <ul style="padding-left: 20px;">
-    <li>Create a <a href="https://sidetrail.app" target="_blank" rel="noopener noreferrer">Sidetrail</a></li>
-    <li>Add annotations with <a href="https://seams.so/" target="_blank" rel="noopener noreferrer">Seams</a></li>
-  </ul>
-  <p style="margin-top: 20px;">
-    <a href="https://overreacted.io/open-social/" target="_blank" rel="noopener noreferrer">Learn more</a>
-  </p>
-</Modal>
 
 <div class="auth-container">
   {#if isAuthenticated}
@@ -260,8 +221,19 @@
         Logout
       </button>
     </div>
-  {:else if showHandleInput}
+  {:else}
     <div class="handle-input-container">
+      <div class="bluesky-info">
+        <InfoCircled size={16} />
+        <span
+          >You can use your <a
+            href="https://bsky.app"
+            target="_blank"
+            rel="noopener noreferrer">Bluesky</a
+          > handle</span
+        >
+      </div>
+
       <input
         type="text"
         class="handle-input"
@@ -270,45 +242,71 @@
         bind:this={inputElement}
         on:keydown={handleKeydown}
       />
-      <div class="handle-buttons">
-        <button class="auth-button cancel" on:click={cancelHandleInput}>
-          Cancel
-        </button>
-        <button class="auth-button login" on:click={submitHandle}>
-          Connect
-        </button>
-      </div>
-    </div>
-  {:else}
-    <div class="connect-wrapper">
       <button
         class="auth-button login"
-        on:click={openHandleInput}
+        on:click={submitHandle}
         disabled={isLoading}
       >
-        <svg
-          viewBox="0 0 568 500"
-          style="width: 18px; height: 18px; margin-right: 8px; fill: currentColor;"
-        >
-          <path
-            d="M123.121 33.664C186.071 80.918 253.774 176.746 278.631 228.165C303.488 176.746 371.19 80.918 434.141 33.664C479.563 -0.436 553.163 -26.817 553.163 57.146C553.163 73.915 543.548 198.012 537.909 218.158C518.31 288.193 446.889 306.058 383.356 295.245C494.411 314.146 522.663 376.754 461.65 439.362C345.772 558.273 295.101 409.542 282.112 371.426C279.732 364.44 278.618 361.171 278.602 363.951C278.585 361.171 277.472 364.44 275.092 371.426C262.102 409.542 211.431 558.273 95.553 439.362C34.54 376.754 62.792 314.146 173.847 295.245C110.314 306.058 38.893 288.193 19.294 218.158C13.655 198.012 4.04 73.915 4.04 57.146C4.04 -26.817 77.64 -0.436 123.121 33.664Z"
-          />
-        </svg>
         {#if isLoading}
           Connecting...
         {:else}
-          Connect Bluesky
+          Sign in
         {/if}
       </button>
-      <Tooltip label="Why Bluesky?" withArrow>
-        <button
-          class="info-icon-btn"
-          on:click={() => (showWhyBlueskyModal = true)}
-        >
-          <InfoCircled />
-        </button>
-      </Tooltip>
     </div>
+
+    {#if showWhyBluesky}
+      <div class="why-bluesky-wrapper">
+        <CollapsibleContainer title="Why Internet Handle?" defaultOpen={false}>
+          <div class="why-bluesky-content">
+            <ul
+              style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;"
+            >
+              <li style="margin-bottom: 8px;">
+                <strong>Own your Rabbitholes.</strong> We do not store any of
+                your information (nor do we want to). All your data is tied to
+                your handle and
+                <strong>you control where it's stored</strong>
+              </li>
+              <li style="margin-bottom: 8px;">
+                <strong>Share your Rabbithole info with other apps.</strong> For
+                e.g. share your rabbitholes as curated collections on the
+                <a href="https://semble.so">Semble network</a>.
+              </li>
+              <li>
+                <strong>Control your data.</strong> Your collections are stored in
+                your personal data repository, not locked in a walled garden.
+              </li>
+            </ul>
+            <p style="margin-top: 20px;">
+              <a
+                href="https://overreacted.io/open-social/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Learn more about the open social web</a
+              >
+            </p>
+            <p>👀 Coming soon:</p>
+            <ul style="padding-left: 20px;">
+              <li>
+                Create a <a
+                  href="https://sidetrail.app"
+                  target="_blank"
+                  rel="noopener noreferrer">Sidetrail</a
+                >
+              </li>
+              <li>
+                Add annotations with <a
+                  href="https://seams.so/"
+                  target="_blank"
+                  rel="noopener noreferrer">Seams</a
+                >
+              </li>
+            </ul>
+          </div>
+        </CollapsibleContainer>
+      </div>
+    {/if}
   {/if}
 
   {#if error}
@@ -365,15 +363,27 @@
     white-space: nowrap;
   }
 
+  .bluesky-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #495057;
+    align-self: flex-start;
+    margin-bottom: 4px;
+  }
+
   .handle-input-container {
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: 100%;
-    max-width: 280px;
+    max-width: 400px;
+    align-items: center;
   }
 
   .handle-input {
+    width: 100%;
     padding: 10px 14px;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -390,12 +400,6 @@
 
   .handle-input::placeholder {
     color: #999;
-  }
-
-  .handle-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
   }
 
   .auth-button {
@@ -425,6 +429,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 120px;
   }
 
   .auth-button.login:hover:not(:disabled),
@@ -432,37 +437,20 @@
     background-color: #0070e0;
   }
 
-  .auth-button.cancel {
-    background-color: #e4e6eb;
-    color: #333;
+  .why-bluesky-wrapper {
+    margin-top: 24px;
+    width: 100%;
+    max-width: 500px;
   }
 
-  .auth-button.cancel:hover {
-    background-color: #d4d6db;
+  .why-bluesky-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #495057;
   }
 
-  .connect-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .info-icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #666;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-  }
-
-  .info-icon-btn:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #333;
+  .why-bluesky-content p {
+    margin: 0 0 12px 0;
   }
 
   .error-message {
@@ -480,6 +468,10 @@
     border-color: #3a3b3c;
   }
 
+  :global(body.dark-mode) .bluesky-info {
+    color: #c1c2c5;
+  }
+
   :global(body.dark-mode) .handle-input {
     background: #2c2e33;
     border-color: #3a3b3c;
@@ -494,21 +486,7 @@
     color: #666;
   }
 
-  :global(body.dark-mode) .auth-button.cancel {
-    background-color: #3a3b3c;
-    color: #e4e6eb;
-  }
-
-  :global(body.dark-mode) .auth-button.cancel:hover {
-    background-color: #4a4b4c;
-  }
-
-  :global(body.dark-mode) .info-icon-btn {
-    color: #a0a0a0;
-  }
-
-  :global(body.dark-mode) .info-icon-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #e4e6eb;
+  :global(body.dark-mode) .why-bluesky-content {
+    color: #c1c2c5;
   }
 </style>
