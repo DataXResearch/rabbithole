@@ -12,10 +12,12 @@
     Exit,
     Download,
     Upload,
+    QuestionMarkCircled,
   } from "radix-icons-svelte";
   import SearchEverywhereModal from "src/lib/SearchEverywhereModal.svelte";
   import Modal from "src/lib/Modal.svelte";
   import Auth from "src/lib/Auth.svelte";
+  import OnboardingModal from "src/lib/OnboardingModal.svelte";
   import { getSession, clearSession } from "../atproto/client";
   import { MessageRequest } from "../utils";
 
@@ -27,6 +29,7 @@
   let showSearchModal = false;
   let showAuthModal = false;
   let showInfoModal = false;
+  let showOnboardingModal = false;
   let isMac = false;
   let isLoggedIn = false;
   let userHandle = "";
@@ -38,6 +41,7 @@
     show: false,
     alignment: "right",
     darkMode: false,
+    hasSeenOnboarding: false,
   };
 
   onMount(async () => {
@@ -48,6 +52,10 @@
       type: MessageRequest.GET_SETTINGS,
     });
     isDark = settings.darkMode;
+
+    if (!settings.hasSeenOnboarding) {
+      showOnboardingModal = true;
+    }
 
     // Check if user is logged in
     const session = await getSession();
@@ -187,6 +195,17 @@
   function handleSearchSelect(event) {
     dispatch("navigate", event.detail);
   }
+
+  async function handleOnboardingClose() {
+    showOnboardingModal = false;
+    if (!settings.hasSeenOnboarding) {
+      settings.hasSeenOnboarding = true;
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.UPDATE_SETTINGS,
+        settings,
+      });
+    }
+  }
 </script>
 
 <SearchEverywhereModal
@@ -202,6 +221,11 @@
 >
   <Auth on:authSuccess={handleAuthSuccess} showWhyBluesky={true} />
 </Modal>
+
+<OnboardingModal
+  isOpen={showOnboardingModal}
+  on:close={handleOnboardingClose}
+/>
 
 <input
   type="file"
@@ -245,6 +269,17 @@
   </div>
 
   <div class="navbar-right">
+    <ActionIcon
+      variant="subtle"
+      color="gray"
+      size="xl"
+      radius="xl"
+      on:click={() => (showOnboardingModal = true)}
+      title="Help"
+    >
+      <QuestionMarkCircled size={22} />
+    </ActionIcon>
+
     <ActionIcon
       variant="subtle"
       color="gray"

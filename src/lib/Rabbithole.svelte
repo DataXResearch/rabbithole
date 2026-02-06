@@ -417,55 +417,39 @@
               Loading...
             </Text>
           </div>
-        {:else}
-          <div class="home-header" on:click={goHome} role="button" tabindex="0">
-            <div class="logo-container">
-              <img
-                class="logo"
-                alt="Rabbithole logo"
-                src="../assets/icons/logo.png"
-              />
-            </div>
-
-            {#if !activeBurrow?.id}
-              <h1 class="home-title">{pageTitle}</h1>
-            {/if}
-          </div>
-
-          {#if activeBurrow?.id}
-            <Timeline
-              on:websiteDelete={deleteWebsite}
-              on:burrowRename={renameActiveBurrow}
-              {activeBurrow}
-              {websites}
-              {selectRabbithole}
-              isLoading={isLoadingWebsites}
+        {:else if activeBurrow?.id}
+          <Timeline
+            on:websiteDelete={deleteWebsite}
+            on:burrowRename={renameActiveBurrow}
+            {activeBurrow}
+            {websites}
+            {selectRabbithole}
+            isLoading={isLoadingWebsites}
+          />
+        {:else if viewingAllBurrows}
+          <div class="timeline-placeholder timeline-placeholder-grid">
+            <BurrowGrid
+              {burrows}
+              selectedBurrowId={activeBurrow?.id}
+              onSelect={selectBurrow}
             />
-          {:else if viewingAllBurrows}
-            <div class="timeline-placeholder timeline-placeholder-grid">
-              <BurrowGrid
-                burrows={burrows}
-                selectedBurrowId={activeBurrow?.id}
-                onSelect={selectBurrow}
-              />
-            </div>
-          {:else if !activeRabbithole}
-            <div class="timeline-placeholder timeline-placeholder-grid">
-              <RabbitholeGrid
-                {rabbitholes}
-                {burrows}
-                onSelect={selectRabbithole}
-              />
-            </div>
-          {:else}
-            <div class="timeline-placeholder timeline-placeholder-grid">
-              <BurrowGrid
-                burrows={burrowsInActiveRabbithole}
-                selectedBurrowId={activeBurrow?.id}
-                onSelect={selectBurrow}
-              />
-            </div>
-          {/if}
+          </div>
+        {:else if !activeRabbithole}
+          <div class="timeline-placeholder timeline-placeholder-grid">
+            <RabbitholeGrid
+              {rabbitholes}
+              {burrows}
+              onSelect={selectRabbithole}
+            />
+          </div>
+        {:else}
+          <div class="timeline-placeholder timeline-placeholder-grid">
+            <BurrowGrid
+              burrows={burrowsInActiveRabbithole}
+              selectedBurrowId={activeBurrow?.id}
+              onSelect={selectBurrow}
+            />
+          </div>
         {/if}
       </div>
     </div>
