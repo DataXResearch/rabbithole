@@ -6,6 +6,7 @@
   const dispatch = createEventDispatcher();
 
   export let website;
+  export let showDelete = true;
 
   async function deleteWebsite() {
     dispatch("websiteDelete", {
@@ -16,15 +17,17 @@
 
 <div class="card-container">
   <Card shadow="sm" padding="lg" radius="md" class="timeline-card" withBorder>
-    <button
-      type="button"
-      class="remove-btn"
-      title="Delete"
-      aria-label="Delete"
-      on:click={deleteWebsite}
-    >
-      <Trash size="16" />
-    </button>
+    {#if showDelete}
+      <button
+        type="button"
+        class="remove-btn"
+        title="Delete"
+        aria-label="Delete"
+        on:click={deleteWebsite}
+      >
+        <Trash size="16" />
+      </button>
+    {/if}
 
     <!-- Header: Title -->
     <Group position="apart" noWrap align="start" style="margin-bottom: 16px;">

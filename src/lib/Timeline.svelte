@@ -9,6 +9,7 @@
     Tooltip,
     Loader,
     ActionIcon,
+    Button,
   } from "@svelteuidev/core";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
@@ -18,12 +19,13 @@
   import BurrowHome from "src/lib/BurrowHome.svelte";
   import AddToRabbitholeModal from "src/lib/AddToRabbitholeModal.svelte";
   import {
-    Pencil1,
     MagnifyingGlass,
     Globe,
     Rocket,
     Reload,
-    InfoCircled,
+    Trash,
+    Home,
+    Upload,
   } from "radix-icons-svelte";
   import { getSession } from "../atproto/client";
   import {
@@ -46,7 +48,7 @@
   let filteredWebsites = [];
   let previousWebsitesLength = 0;
   let isPublishing = false;
-  let showInfoModal = false;
+  let showPublishModal = false;
 
   let hoveredTimestamp = null;
   let hoverX = 0;
@@ -59,6 +61,12 @@
 
   let rabbitholes = [];
   let showAddToRabbitholeModal = false;
+
+  let isUpdatingBurrowHome = false;
+  let isSavingWindowToBurrow = false;
+  let isDeletingBurrow = false;
+
+  let showSearchBar = false;
 
   async function loadRabbitholesForActiveBurrow() {
     if (!activeBurrow?.id) {
@@ -82,6 +90,48 @@
       console.error("Failed to fetch rabbitholes for burrow:", e);
       rabbitholes = [];
     }
+  }
+
+  async function loadWebsitesForActiveBurrow() {
+    if (!activeBurrow?.id) {
+      websites = [];
+      return;
+    }
+
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: MessageRequest.GET_BURROW_WEBSITES,
+        burrowId: activeBurrow.id,
+      });
+
+      const list = Array.isArray(res) ? res : [];
+      websites = list.filter(
+        (value, index, self) =>
+          index === self.findIndex((t) => t.url === value.url),
+      );
+    } catch (e) {
+      console.error("Failed to fetch websites for burrow:", e);
+      websites = [];
+    }
+  }
+
+  async function refreshActiveBurrow() {
+    try {
+      const b = await chrome.runtime.sendMessage({
+        type: MessageRequest.GET_ACTIVE_BURROW,
+      });
+      activeBurrow = b || {};
+    } catch (e) {
+      console.error("Failed to refresh active burrow:", e);
+    }
+  }
+
+  async function refreshAllBurrowState() {
+    await refreshActiveBurrow();
+    await Promise.all([
+      loadWebsitesForActiveBurrow(),
+      loadRabbitholesForActiveBurrow(),
+    ]);
   }
 
   $: if (activeBurrow?.id) {
@@ -109,6 +159,65 @@
     }
 
     await loadRabbitholesForActiveBurrow();
+  }
+
+  async function updateBurrowHome() {
+    if (!activeBurrow?.id) return;
+
+    isUpdatingBurrowHome = true;
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.UPDATE_ACTIVE_TABS,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await refreshAllBurrowState();
+    } catch (e) {
+      console.error("Failed to update burrow home:", e);
+    } finally {
+      isUpdatingBurrowHome = false;
+    }
+  }
+
+  async function saveWindowToBurrow() {
+    if (!activeBurrow?.id) return;
+
+    isSavingWindowToBurrow = true;
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await refreshAllBurrowState();
+    } catch (e) {
+      console.error("Failed to save window to burrow:", e);
+    } finally {
+      isSavingWindowToBurrow = false;
+    }
+  }
+
+  async function deleteBurrow() {
+    if (!activeBurrow?.id) return;
+
+    isDeletingBurrow = true;
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: MessageRequest.DELETE_BURROW,
+        burrowId: activeBurrow.id,
+      });
+
+      if (res && typeof res === "object" && "error" in res) {
+        console.error("Failed to delete burrow:", res.error);
+        return;
+      }
+
+      dispatch("burrowDeleted", { burrowId: activeBurrow.id });
+    } catch (e) {
+      console.error("Failed to delete burrow:", e);
+    } finally {
+      isDeletingBurrow = false;
+    }
   }
 
   async function renameBurrow() {
@@ -145,6 +254,15 @@
   function handleDateRangeChange(event) {
     startDate = event.detail.startDate;
     endDate = event.detail.endDate;
+  }
+
+  function openPublishModal() {
+    showPublishModal = true;
+  }
+
+  async function confirmPublish() {
+    await publishRabbithole();
+    showPublishModal = false;
   }
 
   async function publishRabbithole() {
@@ -417,6 +535,14 @@
   $: shouldShowBurrowHome = searchQuery.length === 0 && !sliderIsActive;
 
   $: rabbitholesForActiveBurrow = rabbitholes;
+
+  function toggleSearchBar() {
+    showSearchBar = !showSearchBar;
+    if (!showSearchBar) {
+      searchQuery = "";
+      searchResults = [];
+    }
+  }
 </script>
 
 <AddToRabbitholeModal
@@ -429,143 +555,215 @@
 />
 
 <Modal
-  isOpen={showInfoModal}
-  title="About Semble"
-  on:close={() => (showInfoModal = false)}
+  isOpen={showPublishModal}
+  title={sembleUrl ? "Update on Semble" : "Publish to Semble"}
+  on:close={() => (showPublishModal = false)}
 >
-  <p><strong>A social knowledge network for researchers.</strong></p>
   <p>
-    Follow your peers' research trails. Surface and discover new connections.
-    Built on ATProto so you own your data.
+    {sembleUrl
+      ? "Update this collection on Semble with the latest changes?"
+      : "Publish this rabbithole as a collection on Semble?"}
   </p>
 
-  <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;">
-    <li style="margin-bottom: 8px;">
-      <strong>Curate your research trails.</strong> Collect interesting links, add
-      notes, and organize them into shareable collections.
-    </li>
-    <li style="margin-bottom: 8px;">
-      <strong>Connect with peers.</strong> See what your peers are sharing and find
-      new collaborators with shared interests.
-    </li>
-    <li>
-      <strong>Own your data.</strong> Built on ATProto, new apps will come to you.
-      No more rebuilding your social graph and data when apps pivot and shut down.
-    </li>
-  </ul>
+  <div style="margin: 20px 0;">
+    <CollapsibleContainer title="What is Semble?" defaultOpen={false}>
+      <p><strong>A social knowledge network for researchers.</strong></p>
+      <p>
+        Follow your peers' research trails. Surface and discover new
+        connections. Built on ATProto so you own your data.
+      </p>
 
-  <div style="margin-top: 24px; text-align: center;">
-    <a
-      href="https://semble.so"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="semble-link"
-    >
-      Visit Semble.so &rarr;
-    </a>
+      <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 20px;">
+        <li style="margin-bottom: 8px;">
+          <strong>Curate your research trails.</strong> Collect interesting links,
+          add notes, and organize them into shareable collections.
+        </li>
+        <li style="margin-bottom: 8px;">
+          <strong>Connect with peers.</strong> See what your peers are sharing and
+          find new collaborators with shared interests.
+        </li>
+        <li>
+          <strong>Own your data.</strong> Built on ATProto, new apps will come to
+          you. No more rebuilding your social graph and data when apps pivot and shut
+          down.
+        </li>
+      </ul>
+
+      <div style="margin-top: 24px; text-align: center;">
+        <a
+          href="https://semble.so"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="semble-link"
+        >
+          Visit Semble.so &rarr;
+        </a>
+      </div>
+    </CollapsibleContainer>
   </div>
+
+  <Group position="right">
+    <Button
+      variant="subtle"
+      color="gray"
+      on:click={() => (showPublishModal = false)}>Cancel</Button
+    >
+    <Button on:click={confirmPublish} loading={isPublishing}>
+      {sembleUrl ? "Update" : "Publish"}
+    </Button>
+  </Group>
 </Modal>
 
 <div class="timeline">
   <div class="header-section">
-    <Group position="center" spacing="md" class="project-controls">
-      <div class="input-div">
-        <Tooltip {isHovering} label="Click to rename burrow" withArrow>
-          <Input
-            id="project-name"
-            icon={Pencil1}
-            variant="unstyled"
-            size="xl"
-            class="project-name-input"
-            on:mouseenter={() => {
-              isHovering = true;
-            }}
-            on:mouseleave={() => {
-              isHovering = false;
-            }}
-            bind:value={activeBurrow.name}
-            on:blur={renameBurrow}
-            on:keydown={(e) => e.key === "Enter" && renameBurrow()}
-          />
-        </Tooltip>
-      </div>
+    <div class="title-row">
+      <Tooltip {isHovering} label="Click to rename burrow" withArrow>
+        <Input
+          id="project-name"
+          variant="unstyled"
+          size="xl"
+          class="project-name-input"
+          on:mouseenter={() => {
+            isHovering = true;
+          }}
+          on:mouseleave={() => {
+            isHovering = false;
+          }}
+          bind:value={activeBurrow.name}
+          on:blur={renameBurrow}
+          on:keydown={(e) => e.key === "Enter" && renameBurrow()}
+        />
+      </Tooltip>
+    </div>
 
-      <div class="semble-actions">
+    <div class="action-bar">
+      <Group spacing="xs">
+        <!-- Sync Actions -->
+        <Tooltip
+          label="Sync open tabs with this burrow"
+          withArrow
+          transition="fade"
+        >
+          <ActionIcon
+            size="xl"
+            radius="md"
+            color="blue"
+            on:click={saveWindowToBurrow}
+            loading={isSavingWindowToBurrow}
+            disabled={!activeBurrow?.id}
+          >
+            <Reload size={22} />
+          </ActionIcon>
+        </Tooltip>
+
+        <div class="action-divider"></div>
+
+        <Tooltip
+          label="Update burrow home (pinned tabs)"
+          withArrow
+          transition="fade"
+        >
+          <ActionIcon
+            size="xl"
+            radius="md"
+            color="blue"
+            on:click={updateBurrowHome}
+            loading={isUpdatingBurrowHome}
+            disabled={!activeBurrow?.id}
+          >
+            <Home size={22} />
+          </ActionIcon>
+        </Tooltip>
+
+        <div class="action-divider"></div>
+
+        <!-- Search -->
+        <Tooltip label="Search within burrow" withArrow transition="fade">
+          <ActionIcon
+            size="xl"
+            radius="md"
+            color="blue"
+            on:click={toggleSearchBar}
+            disabled={!activeBurrow?.id}
+          >
+            <MagnifyingGlass size={22} />
+          </ActionIcon>
+        </Tooltip>
+
+        <div class="action-divider"></div>
+
+        <!-- Semble Actions -->
         {#if sembleUrl}
-          <Tooltip label="View on Semble" withArrow>
+          <Tooltip label="View on Semble" withArrow transition="fade">
             <ActionIcon
-              variant="light"
-              color="cyan"
-              size={42}
+              size="xl"
               radius="md"
+              color="cyan"
               on:click={openSemble}
             >
-              <Globe size={24} />
+              <Globe size={22} />
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label="Update on Semble" withArrow>
+          <div class="action-divider"></div>
+
+          <Tooltip label="Update on Semble" withArrow transition="fade">
             <ActionIcon
-              variant="light"
-              color="orange"
-              size={42}
+              size="xl"
               radius="md"
-              on:click={publishRabbithole}
+              color="orange"
+              on:click={openPublishModal}
               loading={isPublishing}
-              disabled={isPublishing}
+              disabled={!activeBurrow?.id}
             >
-              <Reload size={24} />
+              <Upload size={22} />
             </ActionIcon>
           </Tooltip>
         {:else}
-          <Tooltip label="Publish to Semble" withArrow>
+          <Tooltip label="Publish Rabbithole" withArrow transition="fade">
             <ActionIcon
-              variant="filled"
-              color="grape"
-              size={42}
+              size="xl"
               radius="md"
-              on:click={publishRabbithole}
+              color="grape"
+              on:click={openPublishModal}
               loading={isPublishing}
-              disabled={isPublishing}
+              disabled={!activeBurrow?.id}
             >
-              <Rocket size={24} />
+              <Rocket size={22} />
             </ActionIcon>
           </Tooltip>
         {/if}
 
-        <Tooltip label="About Semble" withArrow>
+        <div class="action-divider"></div>
+
+        <!-- Delete -->
+        <Tooltip label="Delete burrow" withArrow color="red" transition="fade">
           <ActionIcon
-            variant="transparent"
-            color="gray"
-            size="lg"
-            radius="xl"
-            on:click={() => (showInfoModal = true)}
+            size="xl"
+            radius="md"
+            color="red"
+            on:click={deleteBurrow}
+            loading={isDeletingBurrow}
+            disabled={!activeBurrow?.id}
           >
-            <InfoCircled />
+            <Trash size={22} />
           </ActionIcon>
         </Tooltip>
-      </div>
-    </Group>
-
-    <div class="search-bar">
-      <TextInput
-        placeholder="Search your burrow..."
-        icon={MagnifyingGlass}
-        size="md"
-        radius="md"
-        bind:value={searchQuery}
-        on:input={applySearchQuery}
-      />
+      </Group>
     </div>
 
-    <!-- <div class="slider-bar"> -->
-    <!--   <TimelineSlider -->
-    <!--     websites={[...websites]} -->
-    <!--     {startDate} -->
-    <!--     {endDate} -->
-    <!--     on:dateRangeChange={handleDateRangeChange} -->
-    <!--   /> -->
-    <!-- </div> -->
+    {#if showSearchBar}
+      <div class="search-bar">
+        <TextInput
+          placeholder="Search your burrow..."
+          icon={MagnifyingGlass}
+          size="md"
+          radius="md"
+          bind:value={searchQuery}
+          on:input={applySearchQuery}
+        />
+      </div>
+    {/if}
   </div>
 
   <div class="feed">
@@ -684,22 +882,30 @@
     max-width: 800px;
   }
 
-  .project-controls {
+  .title-row {
     width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .semble-actions {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: 12px;
+    justify-content: center;
+    margin-bottom: 8px;
   }
 
-  .input-div {
-    max-width: 500px;
-    text-align: center;
+  .action-bar {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 12px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .action-divider {
+    width: 1px;
+    height: 24px;
+    background-color: rgba(0, 0, 0, 0.1);
+    margin: 0 8px;
   }
 
   :global(.project-name-input input) {
@@ -711,13 +917,9 @@
   }
 
   .search-bar {
-    margin: 30px 0 12px 0;
+    margin: 18px 0 12px 0;
     width: 100%;
-  }
-
-  .slider-bar {
-    width: 100%;
-    margin-bottom: 10px;
+    max-width: 800px;
   }
 
   .timeline-feed {
@@ -781,7 +983,7 @@
     height: 14px;
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.35);
-    z-index: 10;
+    z-index: 20;
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease;
@@ -904,6 +1106,14 @@
 
   :global(body.dark-mode) .timeline-tooltip::after {
     border-right-color: rgba(231, 231, 231, 0.95);
+  }
+
+  :global(body.dark-mode) .action-bar {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  :global(body.dark-mode) .action-divider {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 
   @media (max-width: 640px) {
