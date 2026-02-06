@@ -532,7 +532,8 @@
     (!isSameDay(startDate, fullRange.min) ||
       !isSameDay(endDate, fullRange.max));
 
-  $: shouldShowBurrowHome = searchQuery.length === 0 && !sliderIsActive;
+  $: shouldShowRabbitholes = !showSearchBar;
+  $: shouldShowBurrowHome = !showSearchBar;
 
   $: rabbitholesForActiveBurrow = rabbitholes;
 
@@ -659,11 +660,7 @@
 
         <div class="action-divider"></div>
 
-        <Tooltip
-          label="Update pinned websites"
-          withArrow
-          transition="fade"
-        >
+        <Tooltip label="Update pinned websites" withArrow transition="fade">
           <ActionIcon
             size="xl"
             radius="md"
@@ -782,26 +779,28 @@
         >
       </div>
     {:else}
-      <div class="rabbitholes-collapsible">
-        <CollapsibleContainer title="Rabbitholes" defaultOpen={false}>
-          <RabbitholeGrid
-            rabbitholes={rabbitholesForActiveBurrow}
-            onSelect={selectRabbithole}
-            horizontal={true}
-            burrowShowAddRabbithole={true}
-            burrowShowRemoveRabbithole={true}
-            showBurrows={false}
-            addTooltip="Add this burrow to another rabbithole"
-            removeTooltip="Remove this burrow from this rabbithole"
-            on:addBurrowToRabbithole={() => {
-              openAddToRabbitholeModal();
-            }}
-            on:removeBurrowFromRabbithole={async (e) => {
-              await removeBurrowFromRabbithole(e.detail.rabbitholeId);
-            }}
-          />
-        </CollapsibleContainer>
-      </div>
+      {#if shouldShowRabbitholes}
+        <div class="rabbitholes-collapsible">
+          <CollapsibleContainer title="Rabbitholes" defaultOpen={false}>
+            <RabbitholeGrid
+              rabbitholes={rabbitholesForActiveBurrow}
+              onSelect={selectRabbithole}
+              horizontal={true}
+              burrowShowAddRabbithole={true}
+              burrowShowRemoveRabbithole={true}
+              showBurrows={false}
+              addTooltip="Add this burrow to another rabbithole"
+              removeTooltip="Remove this burrow from this rabbithole"
+              on:addBurrowToRabbithole={() => {
+                openAddToRabbitholeModal();
+              }}
+              on:removeBurrowFromRabbithole={async (e) => {
+                await removeBurrowFromRabbithole(e.detail.rabbitholeId);
+              }}
+            />
+          </CollapsibleContainer>
+        </div>
+      {/if}
 
       {#if shouldShowBurrowHome}
         <BurrowHome bind:activeBurrow {websites} />
