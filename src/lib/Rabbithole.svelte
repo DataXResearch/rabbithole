@@ -1,7 +1,6 @@
 <script>
   import { onMount } from "svelte";
   import Timeline from "src/lib/Timeline.svelte";
-  import Sidebar from "src/lib/Sidebar.svelte";
   import Navbar from "src/lib/Navbar.svelte";
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import BurrowGrid from "src/lib/BurrowGrid.svelte";
@@ -391,47 +390,31 @@
               Loading...
             </Text>
           </div>
-        {:else}
-          <div class="home-header" on:click={goHome} role="button" tabindex="0">
-            <div class="logo-container">
-              <img
-                class="logo"
-                alt="Rabbithole logo"
-                src="../assets/icons/logo.png"
-              />
-            </div>
-
-            {#if !activeBurrow?.id}
-              <h1 class="home-title">{pageTitle}</h1>
-            {/if}
-          </div>
-
-          {#if !activeRabbithole}
-            <div class="timeline-placeholder timeline-placeholder-grid">
-              <RabbitholeGrid
-                {rabbitholes}
-                {burrows}
-                onSelect={selectRabbithole}
-              />
-            </div>
-          {:else if activeBurrow?.id}
-            <Timeline
-              on:websiteDelete={deleteWebsite}
-              on:burrowRename={renameActiveBurrow}
-              {activeBurrow}
-              {websites}
-              {selectRabbithole}
-              isLoading={isLoadingWebsites}
+        {:else if !activeRabbithole}
+          <div class="timeline-placeholder timeline-placeholder-grid">
+            <RabbitholeGrid
+              {rabbitholes}
+              {burrows}
+              onSelect={selectRabbithole}
             />
-          {:else}
-            <div class="timeline-placeholder timeline-placeholder-grid">
-              <BurrowGrid
-                burrows={burrowsInActiveRabbithole}
-                selectedBurrowId={activeBurrow?.id}
-                onSelect={selectBurrow}
-              />
-            </div>
-          {/if}
+          </div>
+        {:else if activeBurrow?.id}
+          <Timeline
+            on:websiteDelete={deleteWebsite}
+            on:burrowRename={renameActiveBurrow}
+            {activeBurrow}
+            {websites}
+            {selectRabbithole}
+            isLoading={isLoadingWebsites}
+          />
+        {:else}
+          <div class="timeline-placeholder timeline-placeholder-grid">
+            <BurrowGrid
+              burrows={burrowsInActiveRabbithole}
+              selectedBurrowId={activeBurrow?.id}
+              onSelect={selectBurrow}
+            />
+          </div>
         {/if}
       </div>
     </div>
