@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import Timeline from "src/lib/Timeline.svelte";
   import Sidebar from "src/lib/Sidebar.svelte";
+  import Navbar from "src/lib/Navbar.svelte";
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import BurrowGrid from "src/lib/BurrowGrid.svelte";
   import {
@@ -12,7 +13,7 @@
   import {
     SvelteUIProvider,
     AppShell,
-    Navbar,
+    Navbar as MantineNavbar,
     ActionIcon,
     Button,
     Loader,
@@ -358,87 +359,30 @@
     updateWebsites();
   }
 
-  async function toggleTheme() {
-    isDark = !isDark;
-    document.body.classList.toggle("dark-mode", isDark);
-    settings.darkMode = isDark;
-    chrome.runtime.sendMessage({
-      type: MessageRequest.UPDATE_SETTINGS,
-      settings,
-    });
-  }
-
   function handleToggleSidebar() {
     opened = !opened;
+  }
+
+  function handleRabbitholesClick() {
+    goHome();
+  }
+
+  async function handleNavigation() {
+    await refreshHomeState();
+    if (activeBurrow?.id) {
+      updateWebsites();
+    }
   }
 </script>
 
 <SvelteUIProvider>
-  <div class="theme-toggle">
-    <Button
-      on:click={toggleTheme}
-      variant="subtle"
-      color="gray"
-      size="sm"
-      style="transform: scale(1.1);"
-    >
-      {#if isDark}
-        <Sun size="22" />
-      {:else}
-        <Moon size="22" />
-      {/if}
-    </Button>
-  </div>
+  <Navbar
+    onRabbitholesClick={handleRabbitholesClick}
+    on:navigate={handleNavigation}
+  />
 
   <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
     <div class="main-content" class:sidebar-closed={!opened}>
-      {#if opened}
-        <Navbar
-          width={{
-            sm: 280,
-            lg: 300,
-            base: 100,
-          }}
-          height={"100%"}
-          override={{
-            borderRight: "1px solid #e9ecef",
-            overflowY: "auto",
-            backgroundColor: isDark ? "#1A1B1E" : "#ffffff",
-          }}
-        >
-          <Sidebar
-            {syncWindowSuccess}
-            {isSyncingWindow}
-            {updateBurrowHomeSuccess}
-            {isUpdatingBurrowHome}
-            {createAndSyncSuccess}
-            {isCreatingAndSyncing}
-            {burrows}
-            {opened}
-            on:burrowDelete={deleteActiveBurrow}
-            on:burrowChange={updateActiveBurrow}
-            on:newBurrow={createNewBurrow}
-            on:newBurrowSync={createNewBurrowFromWindow}
-            on:burrowSync={saveWindowToActiveBurrow}
-            on:updateBurrowHome={updateBurrowHome}
-            on:exportRabbitholes={exportRabbitholes}
-            on:importRabbitholes={importRabbitholes}
-            on:toggleSidebar={handleToggleSidebar}
-          />
-        </Navbar>
-      {:else}
-        <div class="hamburger-only">
-          <ActionIcon
-            on:click={handleToggleSidebar}
-            variant="transparent"
-            class="hamburger-btn"
-            size="xl"
-          >
-            <HamburgerMenu size="24" />
-          </ActionIcon>
-        </div>
-      {/if}
-
       <div class="timeline-wrapper">
         {#if isLoadingHome}
           <div class="home-loading">
@@ -519,6 +463,7 @@
     min-height: 100vh;
     background-color: #f8f9fa;
     transition: background-color 0.3s ease;
+    padding-top: 72px; /* Account for fixed navbar */
   }
 
   :global(body.dark-mode) .main-content {
@@ -554,23 +499,6 @@
     background: transparent !important;
     width: auto !important;
     padding: 20px !important;
-  }
-
-  .theme-toggle {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-  }
-
-  :global(body:not(.dark-mode) .theme-toggle button:hover) {
-    background-color: #141517 !important;
-    color: #c1c2c5 !important;
-  }
-
-  :global(body.dark-mode .theme-toggle button:hover) {
-    background-color: #141517 !important;
-    color: #c1c2c5 !important;
   }
 
   .home-header {
