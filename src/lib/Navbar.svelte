@@ -20,6 +20,7 @@
   import { MessageRequest } from "../utils";
 
   export let onRabbitholesClick = () => {};
+  export let onBurrowsClick = () => {};
 
   const dispatch = createEventDispatcher();
 
@@ -223,6 +224,15 @@
       class="rabbitholes-btn"
     >
       Rabbitholes
+    </Button>
+    <Button
+      variant="subtle"
+      color="gray"
+      size="lg"
+      on:click={onBurrowsClick}
+      class="rabbitholes-btn"
+    >
+      Burrows
     </Button>
   </div>
 
