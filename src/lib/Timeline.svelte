@@ -647,6 +647,7 @@
           <ActionIcon
             size="xl"
             radius="md"
+            variant="subtle"
             color="blue"
             on:click={saveWindowToBurrow}
             loading={isSavingWindowToBurrow}
@@ -659,13 +660,14 @@
         <div class="action-divider"></div>
 
         <Tooltip
-          label="Update burrow home (pinned tabs)"
+          label="Update pinned websites"
           withArrow
           transition="fade"
         >
           <ActionIcon
             size="xl"
             radius="md"
+            variant="subtle"
             color="blue"
             on:click={updateBurrowHome}
             loading={isUpdatingBurrowHome}
@@ -682,6 +684,7 @@
           <ActionIcon
             size="xl"
             radius="md"
+            variant={showSearchBar ? "light" : "subtle"}
             color="blue"
             on:click={toggleSearchBar}
             disabled={!activeBurrow?.id}
@@ -698,6 +701,7 @@
             <ActionIcon
               size="xl"
               radius="md"
+              variant="subtle"
               color="cyan"
               on:click={openSemble}
             >
@@ -711,6 +715,7 @@
             <ActionIcon
               size="xl"
               radius="md"
+              variant="subtle"
               color="orange"
               on:click={openPublishModal}
               loading={isPublishing}
@@ -724,6 +729,7 @@
             <ActionIcon
               size="xl"
               radius="md"
+              variant="subtle"
               color="grape"
               on:click={openPublishModal}
               loading={isPublishing}
@@ -741,6 +747,7 @@
           <ActionIcon
             size="xl"
             radius="md"
+            variant="subtle"
             color="red"
             on:click={deleteBurrow}
             loading={isDeletingBurrow}

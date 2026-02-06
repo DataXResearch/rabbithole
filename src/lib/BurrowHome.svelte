@@ -60,7 +60,7 @@
 {#if hasBurrowHome}
   <div class="burrow-home-wrapper">
     <CollapsibleContainer
-      title="Burrow Home"
+      title="Pinned Websites"
       titleClass="burrow-home-title"
       open={isOpen}
       on:toggle={handleToggle}
@@ -80,7 +80,7 @@
         </Button>
       </div>
 
-      <div class="horizontal-list" aria-label="Burrow Home websites">
+      <div class="horizontal-list" aria-label="Pinned websites">
         {#each burrowHomeWebsites as site (site.url)}
           <div class="card-wrap">
             <TimelineCard
