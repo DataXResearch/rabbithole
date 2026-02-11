@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Group, Tooltip, ActionIcon, Text } from "@svelteuidev/core";
+  import { Group, Tooltip, ActionIcon, Text, Button, Input, Textarea } from "@svelteuidev/core";
   import Options from "./Options.svelte";
   import BurrowSelector from "src/lib/BurrowSelector.svelte";
   import { MessageRequest, getOrderedBurrows, NotificationDuration } from "../utils.ts";
   import type { Settings } from "../storage/db";
-  import { Move, EyeNone, Update, Check } from "radix-icons-svelte";
+  import { Move, EyeNone, Update, Check, Cross2 } from "radix-icons-svelte";
 
   export let isPopup = false;
 
@@ -20,6 +20,13 @@
   let syncWindowSuccess = false;
   let isHoveringOverSync = false;
   let isHoveringOverMove = false;
+
+  // Save Page State
+  let isSavingPage = false;
+  let pageTitle = "";
+  let pageDescription = "";
+  let isSaving = false;
+  let saveSuccess = false;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
@@ -68,6 +75,52 @@
       console.error(e);
     } finally {
       isSyncingWindow = false;
+    }
+  }
+
+  function initSavePage() {
+    // Pre-fill with current page data
+    pageTitle = document.title;
+    
+    // Try to find description
+    const metaDesc = document.querySelector('meta[name="description"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    pageDescription = metaDesc ? metaDesc.getAttribute("content") : (ogDesc ? ogDesc.getAttribute("content") : "");
+    
+    isSavingPage = true;
+  }
+
+  function cancelSavePage() {
+    isSavingPage = false;
+    pageTitle = "";
+    pageDescription = "";
+  }
+
+  async function savePage() {
+    isSaving = true;
+    try {
+      // 1. Save the tab (this creates the record if needed)
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.SAVE_TAB,
+      });
+
+      // 2. Update with user's custom metadata
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.UPDATE_WEBSITE,
+        url: window.location.href,
+        name: pageTitle,
+        description: pageDescription
+      });
+
+      saveSuccess = true;
+      setTimeout(() => {
+        saveSuccess = false;
+        isSavingPage = false;
+      }, 1500);
+    } catch (e) {
+      console.error("Failed to save page:", e);
+    } finally {
+      isSaving = false;
     }
   }
 </script>
@@ -135,12 +188,50 @@
     {/if}
 
     <div class="rabbithole-content">
-      <div class="rabbithole-selector-wrapper">
-        <BurrowSelector {burrows} {handleBurrowChange} dropdownDirection={isPopup ? "down" : "up"} allowCreate={true} />
-      </div>
-      <div class="rabbithole-options-wrapper">
-        <Options />
-      </div>
+      {#if isSavingPage}
+        <div class="save-page-form">
+          <div class="form-header">
+            <Text size="xs" weight="bold" color="dimmed">Save to Burrow</Text>
+            <ActionIcon size="xs" variant="subtle" on:click={cancelSavePage}>
+              <Cross2 />
+            </ActionIcon>
+          </div>
+          
+          <Input
+            placeholder="Title"
+            bind:value={pageTitle}
+            size="xs"
+            class="save-input"
+          />
+          
+          <Textarea
+            placeholder="Description"
+            bind:value={pageDescription}
+            size="xs"
+            minRows={2}
+            maxRows={4}
+            autosize
+            class="save-input"
+          />
+          
+          <Button 
+            size="xs" 
+            fullWidth 
+            on:click={savePage} 
+            loading={isSaving}
+            color={saveSuccess ? "green" : "blue"}
+          >
+            {saveSuccess ? "Saved!" : "Save Page"}
+          </Button>
+        </div>
+      {:else}
+        <div class="rabbithole-selector-wrapper">
+          <BurrowSelector {burrows} {handleBurrowChange} dropdownDirection={isPopup ? "down" : "up"} allowCreate={true} />
+        </div>
+        <div class="rabbithole-options-wrapper">
+          <Options on:save={initSavePage} />
+        </div>
+      {/if}
     </div>
   </div>
 {/if}
@@ -228,6 +319,27 @@
     width: 100%;
   }
 
+  .save-page-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  :global(.save-input input), :global(.save-input textarea) {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+  }
+
   :global(.rabbithole-icon) {
     color: white !important;
   }
@@ -282,6 +394,17 @@
 
     :global(.rabbithole-icon.header-icon:hover) {
       background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .save-page-form {
+      background: rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    :global(.save-input input), :global(.save-input textarea) {
+      background-color: rgba(0, 0, 0, 0.3) !important;
+      color: white !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
     }
   }
 </style>
