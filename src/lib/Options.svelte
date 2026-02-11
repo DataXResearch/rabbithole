@@ -1,20 +1,12 @@
 <script lang="ts">
-  import { MessageRequest, NotificationDuration } from "../utils";
-  import { Button, Group, Text } from "@svelteuidev/core";
+  import { createEventDispatcher } from "svelte";
+  import { Button } from "@svelteuidev/core";
   import { Bookmark } from "radix-icons-svelte";
 
-  let successMessage: string = null;
+  const dispatch = createEventDispatcher();
 
-  async function save() {
-    const [savedTab] = await chrome.runtime.sendMessage({
-      type: MessageRequest.SAVE_TAB,
-    });
-    successMessage = savedTab.alreadySaved
-      ? "Already saved!"
-      : "Saved!";
-    setTimeout(() => {
-      successMessage = null;
-    }, NotificationDuration);
+  function save() {
+    dispatch("save");
   }
 </script>
 
@@ -27,11 +19,6 @@
   >
     Save Website
   </Button>
-  {#if successMessage}
-    <Text size="xs" color="white" align="center" weight="bold" style="margin-top: 8px;">
-      {successMessage}
-    </Text>
-  {/if}
 </div>
 
 <style>
