@@ -1,6 +1,6 @@
 <script>
   import Fuse from "fuse.js";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount, tick } from "svelte";
   import {
     Group,
     Input,
@@ -19,6 +19,7 @@
   import BurrowHome from "src/lib/BurrowHome.svelte";
   import AddToRabbitholeModal from "src/lib/AddToRabbitholeModal.svelte";
   import {
+    Pencil1,
     MagnifyingGlass,
     Globe,
     Rocket,
@@ -26,6 +27,7 @@
     Trash,
     Home,
     Upload,
+    Update,
   } from "radix-icons-svelte";
   import { getSession } from "../atproto/client";
   import {
@@ -41,6 +43,7 @@
   export let websites = [];
   export let isLoading = false;
   export let selectRabbithole;
+  export let autoFocusTitle = false;
 
   let searchResults = [];
   let isHovering = false;
@@ -67,6 +70,17 @@
   let isDeletingBurrow = false;
 
   let showSearchBar = false;
+
+  onMount(async () => {
+    if (autoFocusTitle) {
+      await tick();
+      const input = document.querySelector(".project-name-input input");
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+  });
 
   async function loadRabbitholesForActiveBurrow() {
     if (!activeBurrow?.id) {
@@ -233,6 +247,26 @@
     dispatch("websiteDelete", {
       url: event.detail.url,
     });
+  }
+
+  async function updateWebsite(event) {
+    const { url, name, description } = event.detail;
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.UPDATE_WEBSITE,
+        url,
+        name,
+        description,
+      });
+
+      // Update local state
+      const index = websites.findIndex((w) => w.url === url);
+      if (index !== -1) {
+        websites[index] = { ...websites[index], name, description };
+      }
+    } catch (e) {
+      console.error("Failed to update website:", e);
+    }
   }
 
   function checkWebsiteForQuery(items) {
@@ -803,7 +837,11 @@
       {/if}
 
       {#if shouldShowBurrowHome}
-        <BurrowHome bind:activeBurrow {websites} />
+        <BurrowHome
+          bind:activeBurrow
+          {websites}
+          on:websiteUpdate={updateWebsite}
+        />
       {/if}
 
       <div class="timeline-feed">
@@ -842,6 +880,7 @@
                       <TimelineCard
                         website={site}
                         on:websiteDelete={deleteWebsite}
+                        on:websiteUpdate={updateWebsite}
                       />
                     </div>
                   </div>
@@ -892,7 +931,16 @@
     width: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
     margin-bottom: 8px;
+    position: relative;
+  }
+
+  .sync-indicator {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .action-bar {

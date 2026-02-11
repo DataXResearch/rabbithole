@@ -1,4 +1,5 @@
 <script>
+  import { createEventDispatcher } from "svelte";
   import { Button } from "@svelteuidev/core";
   import { OpenInNewWindow } from "radix-icons-svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
@@ -6,6 +7,8 @@
 
   export let activeBurrow = {};
   export let websites = [];
+
+  const dispatch = createEventDispatcher();
 
   let isOpen = true;
 
@@ -55,6 +58,10 @@
     event.stopPropagation();
     openAllBurrowHomeTabs();
   }
+
+  function handleWebsiteUpdate(event) {
+    dispatch("websiteUpdate", event.detail);
+  }
 </script>
 
 {#if hasBurrowHome}
@@ -86,6 +93,7 @@
             <TimelineCard
               website={site}
               on:websiteDelete={() => removeFromBurrowHome(site.url)}
+              on:websiteUpdate={handleWebsiteUpdate}
             />
           </div>
         {/each}

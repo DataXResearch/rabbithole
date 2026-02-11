@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Button, Card, Group, Text } from "@svelteuidev/core";
+  import { Button, Card, Group, Tooltip } from "@svelteuidev/core";
   import { Trash, ExternalLink } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
@@ -8,10 +8,38 @@
   export let website;
   export let showDelete = true;
 
+  let isHoveringTitle = false;
+  let isHoveringDesc = false;
+
   async function deleteWebsite() {
     dispatch("websiteDelete", {
       url: website.url,
     });
+  }
+
+  function handleUpdate() {
+    dispatch("websiteUpdate", {
+      url: website.url,
+      name: website.name,
+      description: website.description
+    });
+  }
+
+  function autoResize(node) {
+    const resize = () => {
+      node.style.height = 'auto';
+      node.style.height = node.scrollHeight + 'px';
+    };
+    node.addEventListener('input', resize);
+    
+    // Wait for next tick to ensure value is populated and layout is done
+    setTimeout(resize, 0);
+    
+    return {
+      destroy() {
+        node.removeEventListener('input', resize);
+      }
+    };
   }
 </script>
 
@@ -30,24 +58,40 @@
     {/if}
 
     <!-- Header: Title -->
-    <Group position="apart" noWrap align="start" style="margin-bottom: 16px;">
-      <Text
-        weight="bold"
-        size="lg"
-        lineClamp={1}
-        title={website.name}
-        class="card-title"
-        style="flex: 1; padding-right: 8px;"
-      >
-        {website.name || "Untitled"}
-      </Text>
+    <Group position="apart" noWrap align="start" style="margin-bottom: 8px; padding-right: 24px;">
+        <div 
+            class="title-wrapper"
+            on:mouseenter={() => isHoveringTitle = true}
+            on:mouseleave={() => isHoveringTitle = false}
+        >
+            <Tooltip label="Click to change title" withArrow opened={isHoveringTitle} allowPointerEvents={false} style="width: 100%;">
+                 <input
+                    type="text"
+                    class="card-title-input"
+                    bind:value={website.name}
+                    on:blur={handleUpdate}
+                    on:keydown={(e) => e.key === "Enter" && e.target.blur()} 
+                 />
+            </Tooltip>
+        </div>
     </Group>
 
     <!-- Body: Description -->
-    <div class="description-container">
-      <Text size="md" color="dimmed" lineClamp={4} style="line-height: 1.5;">
-        {website.description || "No description available."}
-      </Text>
+    <div 
+        class="description-container"
+        on:mouseenter={() => isHoveringDesc = true}
+        on:mouseleave={() => isHoveringDesc = false}
+    >
+        <Tooltip label="Click to change description" withArrow opened={isHoveringDesc} allowPointerEvents={false} style="width: 100%;">
+             <textarea
+                use:autoResize
+                class="card-desc-input"
+                bind:value={website.description}
+                on:blur={handleUpdate}
+                placeholder="No description available."
+                rows="2"
+             ></textarea>
+        </Tooltip>
     </div>
 
     <!-- Footer: Action Button -->
@@ -74,6 +118,14 @@
 
   .description-container {
     min-height: 60px;
+    width: 100%;
+  }
+
+  /* Ensure Tooltip wrapper takes full width */
+  .title-wrapper :global(.mantine-Tooltip-root),
+  .description-container :global(.mantine-Tooltip-root) {
+    width: 100%;
+    display: block;
   }
 
   :global(.timeline-card) {
@@ -118,25 +170,77 @@
     background: rgba(255, 245, 245, 0.9);
   }
 
+  .title-wrapper {
+      flex: 1;
+      width: 100%;
+  }
+
+  .card-title-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1.25rem; /* 20px */
+      color: #1a1b1e;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+      text-overflow: ellipsis;
+  }
+
+  .card-title-input:hover,
+  .card-title-input:focus {
+      background-color: rgba(0, 0, 0, 0.05);
+      outline: none;
+  }
+
+  .card-desc-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: #868e96;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+      resize: none;
+      line-height: 1.5;
+      display: block;
+  }
+
+  .card-desc-input:hover,
+  .card-desc-input:focus {
+      background-color: rgba(0, 0, 0, 0.05);
+      outline: none;
+      color: #495057; /* Darker text on focus/hover for better readability */
+  }
+
+  /* Dark mode styles */
   :global(body.dark-mode .timeline-card) {
     background-color: #25262b !important;
     border-color: #373a40 !important;
     color: #c1c2c5 !important;
   }
 
-  /* Specific override for the title class */
-  :global(body.dark-mode .timeline-card .card-title) {
-    color: #e7e7e7 !important;
+  :global(body.dark-mode) .card-title-input {
+      color: #e7e7e7;
   }
 
-  :global(body.dark-mode .timeline-card .mantine-Text-root) {
-    color: #c1c2c5 !important;
+  :global(body.dark-mode) .card-title-input:hover,
+  :global(body.dark-mode) .card-title-input:focus {
+      background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  :global(body.dark-mode) .card-desc-input {
+      color: #909296;
   }
 
-  :global(
-    body.dark-mode .timeline-card .mantine-Text-root[data-color="dimmed"]
-  ) {
-    color: #909296 !important;
+  :global(body.dark-mode) .card-desc-input:hover,
+  :global(body.dark-mode) .card-desc-input:focus {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #c1c2c5;
   }
 
   :global(body.dark-mode) .remove-btn {
