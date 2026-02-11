@@ -226,7 +226,14 @@
         return;
       }
 
-      dispatch("burrowDeleted", { burrowId: activeBurrow.id });
+      // Navigate back to home/rabbithole view
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.CHANGE_ACTIVE_BURROW,
+        burrowId: null,
+      });
+
+      // Reload the page to refresh state and show the grid view
+      window.location.reload();
     } catch (e) {
       console.error("Failed to delete burrow:", e);
     } finally {

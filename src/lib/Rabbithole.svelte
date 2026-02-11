@@ -17,8 +17,10 @@
     Button,
     Loader,
     Text,
+    Input,
+    Tooltip,
   } from "@svelteuidev/core";
-  import { HamburgerMenu, Sun, Moon } from "radix-icons-svelte";
+  import { HamburgerMenu, Sun, Moon, Pencil1 } from "radix-icons-svelte";
 
   let activeBurrow = {};
   let websites = [];
@@ -39,6 +41,10 @@
 
   let isLoadingWebsites = false;
   let isLoadingHome = true;
+
+  let autoFocusTimelineTitle = false;
+  let autoFocusRabbitholeTitle = false;
+  let isHoveringRabbitholeTitle = false;
 
   let settings = {
     show: false,
@@ -188,6 +194,63 @@
     });
     burrows = await getOrderedBurrows();
     updateWebsites();
+  }
+
+  async function handleCreateBurrow() {
+    activeBurrow = await chrome.runtime.sendMessage({
+      type: MessageRequest.CREATE_NEW_BURROW,
+      newBurrowName: "New Burrow",
+    });
+    burrows = await getOrderedBurrows();
+    updateWebsites();
+    autoFocusTimelineTitle = true;
+  }
+
+  async function handleCreateRabbithole() {
+    const newRabbithole = await chrome.runtime.sendMessage({
+      type: MessageRequest.CREATE_NEW_RABBITHOLE,
+      title: "New Rabbithole",
+    });
+
+    await selectRabbithole(newRabbithole);
+    await refreshHomeState();
+
+    autoFocusRabbitholeTitle = true;
+
+    // Focus the input after render
+    await tick();
+    const input = document.querySelector(".rabbithole-title-input");
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }
+
+  async function renameActiveRabbithole() {
+    if (!activeRabbithole?.id) {
+      return;
+    }
+
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_RABBITHOLE,
+      rabbitholeId: activeRabbithole.id,
+      title: activeRabbithole.title,
+    });
+
+    rabbitholes = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ALL_RABBITHOLES,
+    });
+  }
+
+  async function deleteRabbithole(event) {
+    const { rabbitholeId } = event.detail;
+    if (confirm("Are you sure you want to delete this rabbithole?")) {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.DELETE_RABBITHOLE,
+        rabbitholeId,
+      });
+      await refreshHomeState();
+    }
   }
 
   async function createNewBurrowFromWindow(event) {
@@ -417,39 +480,74 @@
               Loading...
             </Text>
           </div>
-        {:else if activeBurrow?.id}
-          <Timeline
-            on:websiteDelete={deleteWebsite}
-            on:burrowRename={renameActiveBurrow}
-            {activeBurrow}
-            {websites}
-            {selectRabbithole}
-            isLoading={isLoadingWebsites}
-          />
-        {:else if viewingAllBurrows}
-          <div class="timeline-placeholder timeline-placeholder-grid">
-            <BurrowGrid
-              {burrows}
-              selectedBurrowId={activeBurrow?.id}
-              onSelect={selectBurrow}
-            />
-          </div>
-        {:else if !activeRabbithole}
-          <div class="timeline-placeholder timeline-placeholder-grid">
-            <RabbitholeGrid
-              {rabbitholes}
-              {burrows}
-              onSelect={selectRabbithole}
-            />
-          </div>
         {:else}
-          <div class="timeline-placeholder timeline-placeholder-grid">
-            <BurrowGrid
-              burrows={burrowsInActiveRabbithole}
-              selectedBurrowId={activeBurrow?.id}
-              onSelect={selectBurrow}
-            />
+          <div class="home-header" role="button" tabindex="0">
+            {#if !activeBurrow?.id}
+              {#if activeRabbithole && !viewingAllBurrows}
+                <Tooltip label="Click to rename rabbithole" withArrow>
+                  <input
+                    id="rabbithole-name"
+                    class="project-name-input rabbithole-title-input"
+                    on:mouseenter={() => {
+                      isHoveringRabbitholeTitle = true;
+                    }}
+                    on:mouseleave={() => {
+                      isHoveringRabbitholeTitle = false;
+                    }}
+                    bind:value={activeRabbithole.title}
+                    on:blur={renameActiveRabbithole}
+                    on:keydown={(e) => e.key === "Enter" && e.target.blur()}
+                  />
+                </Tooltip>
+              {:else}
+                <h1 class="home-title">{pageTitle}</h1>
+              {/if}
+            {/if}
           </div>
+
+          {#if activeBurrow?.id}
+            <Timeline
+              on:websiteDelete={deleteWebsite}
+              on:burrowRename={renameActiveBurrow}
+              {activeBurrow}
+              {websites}
+              {selectRabbithole}
+              isLoading={isLoadingWebsites}
+              autoFocusTitle={autoFocusTimelineTitle}
+            />
+          {:else if viewingAllBurrows}
+            <div class="timeline-placeholder timeline-placeholder-grid">
+              <BurrowGrid
+                {burrows}
+                selectedBurrowId={activeBurrow?.id}
+                onSelect={selectBurrow}
+                allowCreate={true}
+                on:createBurrow={handleCreateBurrow}
+              />
+            </div>
+          {:else if !activeRabbithole}
+            <div class="timeline-placeholder timeline-placeholder-grid">
+              <RabbitholeGrid
+                {rabbitholes}
+                {burrows}
+                onSelect={selectRabbithole}
+                allowCreate={true}
+                on:createRabbithole={handleCreateRabbithole}
+                showDelete={true}
+                on:deleteRabbithole={deleteRabbithole}
+              />
+            </div>
+          {:else}
+            <div class="timeline-placeholder timeline-placeholder-grid">
+              <BurrowGrid
+                burrows={burrowsInActiveRabbithole}
+                selectedBurrowId={activeBurrow?.id}
+                onSelect={selectBurrow}
+                allowCreate={true}
+                on:createBurrow={handleCreateBurrow}
+              />
+            </div>
+          {/if}
         {/if}
       </div>
     </div>
@@ -530,16 +628,6 @@
 
   .home-header:hover .home-title {
     text-decoration: underline;
-  }
-
-  .logo-container {
-    margin-bottom: 12px;
-  }
-
-  .logo {
-    width: 72px;
-    height: auto;
-    opacity: 0.95;
   }
 
   .home-title {
@@ -657,5 +745,34 @@
 
   :global(body.dark-mode .hamburger-btn:hover) {
     background-color: #25262b;
+  }
+
+  .rabbithole-title-input {
+    text-align: center;
+    font-weight: 800;
+    font-size: 2rem;
+    color: #1a1b1e;
+    background: transparent;
+    border: none;
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    transition: background-color 0.2s ease;
+  }
+
+  .rabbithole-title-input:hover,
+  .rabbithole-title-input:focus {
+    background-color: rgba(0, 0, 0, 0.05);
+    outline: none;
+  }
+
+  :global(body.dark-mode) .rabbithole-title-input {
+    color: #e7e7e7;
+  }
+
+  :global(body.dark-mode) .rabbithole-title-input:hover,
+  :global(body.dark-mode) .rabbithole-title-input:focus {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 </style>

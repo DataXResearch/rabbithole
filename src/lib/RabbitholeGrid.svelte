@@ -14,6 +14,12 @@
   // features for showing rabbithole grid within a burrow view
   export let burrowShowAddRabbithole = false;
   export let burrowShowRemoveRabbithole = false;
+  
+  // Feature to show a "Create New" card at the start
+  export let allowCreate = false;
+  
+  // Feature to delete the rabbithole itself
+  export let showDelete = false;
 
   const dispatch = createEventDispatcher();
 
@@ -24,6 +30,19 @@
 </script>
 
 <div class="grid" class:horizontal>
+  {#if allowCreate}
+    <button
+      type="button"
+      class="card add-card"
+      on:click={() => dispatch("createRabbithole")}
+      title="Create new rabbithole"
+      aria-label="Create new rabbithole"
+    >
+      <div class="add-plus">+</div>
+      <div class="card-title" style="margin-top: 10px; font-size: 16px;">Create</div>
+    </button>
+  {/if}
+
   {#if burrowShowAddRabbithole}
     <button
       type="button"
@@ -38,6 +57,18 @@
 
   {#each rabbitholes as rabbithole (rabbithole.id)}
     <button type="button" class="card" on:click={() => onSelect(rabbithole)}>
+      {#if showDelete}
+        <button
+          type="button"
+          class="remove-btn"
+          title="Delete Rabbithole"
+          aria-label="Delete Rabbithole"
+          on:click|stopPropagation={() => dispatch("deleteRabbithole", { rabbitholeId: rabbithole.id })}
+        >
+          <Trash size="16" />
+        </button>
+      {/if}
+
       {#if burrowShowRemoveRabbithole}
         <button
           type="button"
@@ -142,6 +173,7 @@
     justify-content: center;
     cursor: pointer;
     color: rgba(0, 0, 0, 0.55);
+    z-index: 2;
   }
 
   .remove-btn:hover {
@@ -188,6 +220,7 @@
 
   .add-card {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 0;

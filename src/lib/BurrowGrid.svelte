@@ -1,7 +1,11 @@
 <script>
+  import { createEventDispatcher } from "svelte";
   export let burrows = [];
   export let selectedBurrowId = null;
   export let onSelect;
+  export let allowCreate = false;
+
+  const dispatch = createEventDispatcher();
 
   function handleSelect(burrow) {
     if (onSelect) {
@@ -11,6 +15,19 @@
 </script>
 
 <div class="grid">
+  {#if allowCreate}
+    <button
+      type="button"
+      class="card add-card"
+      on:click={() => dispatch("createBurrow")}
+      title="Create new burrow"
+      aria-label="Create new burrow"
+    >
+      <div class="add-plus">+</div>
+      <div class="card-title" style="margin-top: 10px; font-size: 16px;">Create</div>
+    </button>
+  {/if}
+
   {#each burrows as burrow (burrow.id)}
     <button
       type="button"
@@ -81,6 +98,22 @@
     font-weight: 600;
   }
 
+  .add-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .add-plus {
+    font-size: 44px;
+    font-weight: 900;
+    color: rgba(17, 133, 254, 0.9);
+    line-height: 1;
+    transform: translateY(-2px);
+  }
+
   @media (max-width: 980px) {
     .grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -114,5 +147,9 @@
 
   :global(body.dark-mode) .meta-item {
     color: #909296;
+  }
+
+  :global(body.dark-mode) .add-plus {
+    color: rgba(77, 171, 247, 0.95);
   }
 </style>
