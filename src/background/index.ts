@@ -568,6 +568,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       break;
 
+    case MessageRequest.UPDATE_WEBSITE:
+      if (!("url" in request)) {
+        sendResponse({ error: "url required" });
+        break;
+      }
+      db.updateWebsite(request.url, request.name, request.description)
+        .then((res) => sendResponse(res))
+        .catch((err) => {
+          console.log(err);
+          sendResponse(err);
+        });
+      break;
+
     case "OPEN_TABS":
       if (!("urls" in request)) {
         sendResponse({ error: "urls required" });

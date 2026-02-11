@@ -32,6 +32,7 @@ export enum MessageRequest {
   DELETE_WEBSITE_FROM_RABBITHOLE_META,
   GET_ALL_RABBITHOLES,
   FETCH_RABBITHOLES_FOR_BURROW,
+  UPDATE_WEBSITE,
 }
 
 export async function getOrderedBurrows(): Promise<Burrow[]> {

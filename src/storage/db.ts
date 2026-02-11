@@ -722,6 +722,34 @@ export class WebsiteStore {
     });
   }
 
+  async updateWebsite(url: string, name?: string, description?: string): Promise<Website> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["websites"], "readwrite");
+      const store = tx.objectStore("websites");
+      const getRequest = store.get(url);
+
+      getRequest.onsuccess = () => {
+        const website = getRequest.result;
+        if (!website) {
+          reject(new Error("Website not found"));
+          return;
+        }
+
+        if (name !== undefined) website.name = name;
+        if (description !== undefined) website.description = description;
+
+        const putRequest = store.put(website);
+        putRequest.onsuccess = () => resolve(website);
+        putRequest.onerror = (event) =>
+          reject(new Error((event.target as IDBRequest).error.message));
+      };
+
+      getRequest.onerror = (event) =>
+        reject(new Error((event.target as IDBRequest).error.message));
+    });
+  }
+
   async deleteWebsiteFromBurrow(burrowId: string, url: string): Promise<void> {
     const db = await this.getDb();
 
