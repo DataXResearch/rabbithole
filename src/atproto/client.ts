@@ -246,6 +246,53 @@ export async function exchangeCodeForTokens(
 
 /* Record operations */
 
+async function authenticatedFetch(url: string, method: string, body: any = null) {
+  const session = await getSession();
+  if (!session) throw new Error("No session found");
+
+  const keyPair = await getDpopKey();
+  if (!keyPair) throw new Error("No DPoP key found");
+
+  const accessTokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(session.accessToken));
+  const ath = base64UrlEncode(new Uint8Array(accessTokenHash));
+
+  let proof = await createDpopProof(method, url, keyPair, null, ath);
+
+  const headers: any = {
+    "Authorization": `DPoP ${session.accessToken}`,
+    "DPoP": proof
+  };
+
+  if (body) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  let response = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  if (response.status === 401) {
+    const nonce = response.headers.get("DPoP-Nonce");
+    if (nonce) {
+      proof = await createDpopProof(method, url, keyPair, nonce, ath);
+      headers["DPoP"] = proof;
+      response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${await response.text()}`);
+  }
+
+  return response.json();
+}
+
 export async function createRecord(
   repo: string,
   collection: string,
@@ -253,9 +300,6 @@ export async function createRecord(
 ): Promise<{ uri: string; cid: string }> {
   const session = await getSession();
   if (!session) throw new Error("No session found");
-
-  const keyPair = await getDpopKey();
-  if (!keyPair) throw new Error("No DPoP key found");
 
   const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
   const url = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
@@ -266,40 +310,51 @@ export async function createRecord(
     record,
   };
 
-  const accessTokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(session.accessToken));
-  const ath = base64UrlEncode(new Uint8Array(accessTokenHash));
+  return authenticatedFetch(url, "POST", body);
+}
 
-  let proof = await createDpopProof("POST", url, keyPair, null, ath);
+export async function listRecords(
+  repo: string,
+  collection: string
+): Promise<{ records: { uri: string; cid: string; value: any }[]; cursor?: string }> {
+  const session = await getSession();
+  if (!session) throw new Error("No session found");
+  
+  const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
+  const url = new URL(`${pdsUrl}/xrpc/com.atproto.repo.listRecords`);
+  url.searchParams.set("repo", repo);
+  url.searchParams.set("collection", collection);
+  url.searchParams.set("limit", "100");
 
-  let response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `DPoP ${session.accessToken}`,
-      "DPoP": proof
-    },
-    body: JSON.stringify(body)
-  });
+  return authenticatedFetch(url.toString(), "GET");
+}
 
-  if (response.status === 401) {
-    const nonce = response.headers.get("DPoP-Nonce");
-    if (nonce) {
-      proof = await createDpopProof("POST", url, keyPair, nonce, ath);
-      response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `DPoP ${session.accessToken}`,
-          "DPoP": proof
-        },
-        body: JSON.stringify(body)
-      });
-    }
-  }
+export async function deleteRecord(
+  repo: string,
+  collection: string,
+  rkey: string
+): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error("No session found");
+  
+  const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
+  const url = `${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`;
+  
+  await authenticatedFetch(url, "POST", { repo, collection, rkey });
+}
 
-  if (!response.ok) {
-    throw new Error(`Create record failed: ${response.status} ${await response.text()}`);
-  }
-
-  return await response.json();
+export async function putRecord(
+  repo: string,
+  collection: string,
+  rkey: string,
+  record: any,
+  swapRecord?: string
+): Promise<{ uri: string; cid: string }> {
+  const session = await getSession();
+  if (!session) throw new Error("No session found");
+  
+  const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
+  const url = `${pdsUrl}/xrpc/com.atproto.repo.putRecord`;
+  
+  return authenticatedFetch(url, "POST", { repo, collection, rkey, record, swapRecord });
 }

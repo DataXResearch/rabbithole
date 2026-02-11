@@ -52,6 +52,7 @@
   let previousWebsitesLength = 0;
   let isPublishing = false;
   let showPublishModal = false;
+  let isSyncing = false;
 
   let hoveredTimestamp = null;
   let hoverX = 0;
@@ -385,6 +386,29 @@
     }
   }
 
+  async function syncBurrow() {
+    if (!activeBurrow?.id || !activeBurrow?.sembleCollectionUri) return;
+
+    isSyncing = true;
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MessageRequest.SYNC_BURROW,
+        burrowId: activeBurrow.id,
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      activeBurrow.lastSembleSync = response.timestamp;
+    } catch (e) {
+      console.error("Sync failed:", e);
+      alert("Sync failed: " + e.message);
+    } finally {
+      isSyncing = false;
+    }
+  }
+
   function formatDate(ts) {
     if (!ts) return "";
     return new Intl.DateTimeFormat("en-US", {
@@ -676,6 +700,27 @@
           on:keydown={(e) => e.key === "Enter" && renameBurrow()}
         />
       </Tooltip>
+
+      {#if sembleUrl}
+        <div class="sync-indicator">
+          <Tooltip
+            label={activeBurrow.lastSembleSync
+              ? `Last synced: ${formatDateTime(activeBurrow.lastSembleSync)}. Click to sync.`
+              : "Click to sync"}
+            withArrow
+          >
+            <ActionIcon
+              variant="transparent"
+              color="orange"
+              size="lg"
+              on:click={syncBurrow}
+              loading={isSyncing}
+            >
+              <Update size={20} />
+            </ActionIcon>
+          </Tooltip>
+        </div>
+      {/if}
     </div>
 
     <div class="action-bar">

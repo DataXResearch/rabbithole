@@ -33,6 +33,7 @@ export enum MessageRequest {
   GET_ALL_RABBITHOLES,
   FETCH_RABBITHOLES_FOR_BURROW,
   UPDATE_WEBSITE,
+  SYNC_BURROW,
 }
 
 export async function getOrderedBurrows(): Promise<Burrow[]> {

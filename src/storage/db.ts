@@ -182,6 +182,7 @@ export class WebsiteStore {
                 show: true,
                 alignment: "right",
                 darkMode: false,
+                hasSeenOnboarding: false,
               },
               currentBurrow: null,
               currentRabbithole: null,

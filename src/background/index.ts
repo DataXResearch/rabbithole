@@ -1,5 +1,7 @@
 import { MessageRequest } from "../utils";
 import { WebsiteStore, type Burrow } from "../storage/db";
+import { getSession } from "../atproto/client";
+import { syncBurrowToCollection } from "../atproto/cosmik";
 
 function extractOpenGraphData(html: string): {
   title: string | null;
@@ -579,6 +581,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.log(err);
           sendResponse(err);
         });
+      break;
+
+    case MessageRequest.SYNC_BURROW:
+      if (!("burrowId" in request)) {
+        sendResponse({ error: "burrowId required" });
+        break;
+      }
+      (async () => {
+        try {
+          const burrow = await db.getBurrow(request.burrowId);
+          if (!burrow.sembleCollectionUri) {
+            throw new Error("Burrow is not published");
+          }
+          const websites = await db.getAllWebsitesForBurrow(request.burrowId);
+          const session = await getSession();
+          if (!session) throw new Error("Not logged in");
+
+          await syncBurrowToCollection(session.did, burrow.sembleCollectionUri, websites);
+          
+          // Update last sync time
+          const timestamp = Date.now();
+          await db.updateBurrowSembleInfo(burrow.id, burrow.sembleCollectionUri, timestamp);
+          
+          sendResponse({ success: true, timestamp });
+        } catch (err) {
+          console.error(err);
+          sendResponse({ error: err.message });
+        }
+      })();
       break;
 
     case "OPEN_TABS":
