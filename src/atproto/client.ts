@@ -33,7 +33,9 @@ export async function clearSession() {
 export async function saveDpopKey(keyPair: CryptoKeyPair) {
   const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
   const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
-  await chrome.storage.local.set({ [DpopKeyStorageKey]: { private: privateJwk, public: publicJwk } });
+  await chrome.storage.local.set({
+    [DpopKeyStorageKey]: { private: privateJwk, public: publicJwk },
+  });
 }
 
 export async function getDpopKey(): Promise<CryptoKeyPair | null> {
@@ -47,14 +49,14 @@ export async function getDpopKey(): Promise<CryptoKeyPair | null> {
       keys.private,
       { name: "ECDSA", namedCurve: "P-256" },
       true,
-      ["sign"]
+      ["sign"],
     );
     const publicKey = await crypto.subtle.importKey(
       "jwk",
       keys.public,
       { name: "ECDSA", namedCurve: "P-256" },
       true,
-      ["verify"]
+      ["verify"],
     );
 
     return { privateKey, publicKey };
@@ -93,12 +95,14 @@ export async function generateDpopKeyPair(): Promise<CryptoKeyPair> {
       namedCurve: "P-256",
     },
     true,
-    ["sign", "verify"]
+    ["sign", "verify"],
   );
   return keyPair;
 }
 
-export async function exportPublicKeyJwk(publicKey: CryptoKey): Promise<JsonWebKey> {
+export async function exportPublicKeyJwk(
+  publicKey: CryptoKey,
+): Promise<JsonWebKey> {
   const jwk = await crypto.subtle.exportKey("jwk", publicKey);
   return {
     kty: jwk.kty,
@@ -113,7 +117,7 @@ export async function createDpopProof(
   httpUri: string,
   keyPair: CryptoKeyPair,
   nonce: string | null = null,
-  ath: string | null = null
+  ath: string | null = null,
 ): Promise<string> {
   const publicJwk = await exportPublicKeyJwk(keyPair.publicKey);
 
@@ -138,14 +142,18 @@ export async function createDpopProof(
     payload.ath = ath;
   }
 
-  const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
-  const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+  const encodedHeader = base64UrlEncode(
+    new TextEncoder().encode(JSON.stringify(header)),
+  );
+  const encodedPayload = base64UrlEncode(
+    new TextEncoder().encode(JSON.stringify(payload)),
+  );
   const signingInput = `${encodedHeader}.${encodedPayload}`;
 
   const signature = await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" },
     keyPair.privateKey,
-    new TextEncoder().encode(signingInput)
+    new TextEncoder().encode(signingInput),
   );
 
   // Convert signature from DER to raw format (r || s)
@@ -157,7 +165,9 @@ export async function createDpopProof(
 
 /* ATProto auth */
 
-export async function resolveHandleAndPds(handle: string): Promise<{ did: string; pdsUrl: string; handle: string }> {
+export async function resolveHandleAndPds(
+  handle: string,
+): Promise<{ did: string; pdsUrl: string; handle: string }> {
   const agent = new Agent("https://bsky.social");
   const resolved = await agent.resolveHandle({ handle });
 
@@ -173,7 +183,8 @@ export async function resolveHandleAndPds(handle: string): Promise<{ did: string
     if (plcResponse.ok) {
       const didDoc = await plcResponse.json();
       const pdsService = didDoc.service?.find(
-        (s: any) => s.id === "#atproto_pds" || s.type === "AtprotoPersonalDataServer"
+        (s: any) =>
+          s.id === "#atproto_pds" || s.type === "AtprotoPersonalDataServer",
       );
       if (pdsService) {
         pdsUrl = pdsService.serviceEndpoint;
@@ -187,7 +198,9 @@ export async function resolveHandleAndPds(handle: string): Promise<{ did: string
 }
 
 export async function getAuthServerMetadata(pdsUrl: string): Promise<any> {
-  const response = await fetch(`${pdsUrl}/.well-known/oauth-authorization-server`);
+  const response = await fetch(
+    `${pdsUrl}/.well-known/oauth-authorization-server`,
+  );
   if (!response.ok) {
     throw new Error("Failed to fetch authorization server metadata");
   }
@@ -200,7 +213,7 @@ export async function exchangeCodeForTokens(
   tokenEndpoint: string,
   keyPair: CryptoKeyPair,
   redirectUri: string,
-  clientId: string
+  clientId: string,
 ): Promise<any> {
   // First attempt without nonce
   let dpopProof = await createDpopProof("POST", tokenEndpoint, keyPair);
@@ -209,7 +222,7 @@ export async function exchangeCodeForTokens(
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "DPoP": dpopProof,
+      DPoP: dpopProof,
     },
     body: new URLSearchParams({
       grant_type: "authorization_code",
@@ -225,13 +238,18 @@ export async function exchangeCodeForTokens(
     const dpopNonce = response.headers.get("DPoP-Nonce");
     if (dpopNonce) {
       console.log("Retrying with DPoP nonce:", dpopNonce);
-      dpopProof = await createDpopProof("POST", tokenEndpoint, keyPair, dpopNonce);
+      dpopProof = await createDpopProof(
+        "POST",
+        tokenEndpoint,
+        keyPair,
+        dpopNonce,
+      );
 
       response = await fetch(tokenEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "DPoP": dpopProof,
+          DPoP: dpopProof,
         },
         body: new URLSearchParams({
           grant_type: "authorization_code",
@@ -255,21 +273,28 @@ export async function exchangeCodeForTokens(
 
 /* Record operations */
 
-async function authenticatedFetch(url: string, method: string, body: any = null) {
+async function authenticatedFetch(
+  url: string,
+  method: string,
+  body: any = null,
+) {
   const session = await getSession();
   if (!session) throw new Error("No session found");
 
   const keyPair = await getDpopKey();
   if (!keyPair) throw new Error("No DPoP key found");
 
-  const accessTokenHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(session.accessToken));
+  const accessTokenHash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(session.accessToken),
+  );
   const ath = base64UrlEncode(new Uint8Array(accessTokenHash));
 
   let proof = await createDpopProof(method, url, keyPair, null, ath);
 
   const headers: any = {
-    "Authorization": `DPoP ${session.accessToken}`,
-    "DPoP": proof
+    Authorization: `DPoP ${session.accessToken}`,
+    DPoP: proof,
   };
 
   if (body) {
@@ -279,7 +304,7 @@ async function authenticatedFetch(url: string, method: string, body: any = null)
   let response = await fetch(url, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   if (response.status === 401) {
@@ -290,13 +315,15 @@ async function authenticatedFetch(url: string, method: string, body: any = null)
       response = await fetch(url, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
       });
     }
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Request failed: ${response.status} ${await response.text()}`,
+    );
   }
 
   return response.json();
@@ -305,7 +332,7 @@ async function authenticatedFetch(url: string, method: string, body: any = null)
 export async function createRecord(
   repo: string,
   collection: string,
-  record: any
+  record: any,
 ): Promise<{ uri: string; cid: string }> {
   const session = await getSession();
   if (!session) throw new Error("No session found");
@@ -324,11 +351,14 @@ export async function createRecord(
 
 export async function listRecords(
   repo: string,
-  collection: string
-): Promise<{ records: { uri: string; cid: string; value: any }[]; cursor?: string }> {
+  collection: string,
+): Promise<{
+  records: { uri: string; cid: string; value: any }[];
+  cursor?: string;
+}> {
   const session = await getSession();
   if (!session) throw new Error("No session found");
-  
+
   const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
   const url = new URL(`${pdsUrl}/xrpc/com.atproto.repo.listRecords`);
   url.searchParams.set("repo", repo);
@@ -341,14 +371,14 @@ export async function listRecords(
 export async function deleteRecord(
   repo: string,
   collection: string,
-  rkey: string
+  rkey: string,
 ): Promise<void> {
   const session = await getSession();
   if (!session) throw new Error("No session found");
-  
+
   const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
   const url = `${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`;
-  
+
   await authenticatedFetch(url, "POST", { repo, collection, rkey });
 }
 
@@ -357,13 +387,19 @@ export async function putRecord(
   collection: string,
   rkey: string,
   record: any,
-  swapRecord?: string
+  swapRecord?: string,
 ): Promise<{ uri: string; cid: string }> {
   const session = await getSession();
   if (!session) throw new Error("No session found");
-  
+
   const pdsUrl = session.pdsUrl || new URL(session.tokenEndpoint).origin;
   const url = `${pdsUrl}/xrpc/com.atproto.repo.putRecord`;
-  
-  return authenticatedFetch(url, "POST", { repo, collection, rkey, record, swapRecord });
+
+  return authenticatedFetch(url, "POST", {
+    repo,
+    collection,
+    rkey,
+    record,
+    swapRecord,
+  });
 }

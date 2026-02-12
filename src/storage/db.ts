@@ -103,7 +103,7 @@ export class WebsiteStore {
             });
             objectStore.createIndex("name", "name", { unique: false });
             objectStore.createIndex("url", "url", { unique: true });
-            objectStore.transaction.oncomplete = () => { };
+            objectStore.transaction.oncomplete = () => {};
           }
           if (event.oldVersion < 2) {
             db.createObjectStore("user", { keyPath: "id" });
@@ -208,7 +208,8 @@ export class WebsiteStore {
             user.currentRabbithole === null ||
             user.currentRabbithole === undefined
           ) {
-            const rabbithole = await store.createNewActiveRabbithole("Homebase");
+            const rabbithole =
+              await store.createNewActiveRabbithole("Homebase");
             await store.changeActiveRabbithole(rabbithole.id);
           }
 
@@ -263,7 +264,9 @@ export class WebsiteStore {
           return;
         }
 
-        rabbithole.burrows = (rabbithole.burrows || []).filter((id) => id !== burrowId);
+        rabbithole.burrows = (rabbithole.burrows || []).filter(
+          (id) => id !== burrowId,
+        );
 
         const putRequest = store.put(rabbithole);
         putRequest.onsuccess = () => resolve(rabbithole);
@@ -723,7 +726,11 @@ export class WebsiteStore {
     });
   }
 
-  async updateWebsite(url: string, name?: string, description?: string): Promise<Website> {
+  async updateWebsite(
+    url: string,
+    name?: string,
+    description?: string,
+  ): Promise<Website> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(["websites"], "readwrite");
@@ -1143,7 +1150,10 @@ export class WebsiteStore {
     });
   }
 
-  async updateBurrowActiveTabs(burrowId: string, urls: string[]): Promise<void> {
+  async updateBurrowActiveTabs(
+    burrowId: string,
+    urls: string[],
+  ): Promise<void> {
     const db = await this.getDb();
     const burrow = await this.getBurrow(burrowId);
     burrow.activeTabs = urls;
