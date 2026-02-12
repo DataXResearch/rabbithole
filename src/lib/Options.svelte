@@ -1,24 +1,16 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Button } from "@svelteuidev/core";
-  import { Bookmark } from "radix-icons-svelte";
 
   const dispatch = createEventDispatcher();
 
-  function save() {
+  function save(): void {
     dispatch("save");
   }
 </script>
 
 <div class="rabbithole-container">
-  <Button
-    on:click={save}
-    size="sm"
-    color="blue"
-    leftIcon={Bookmark}
-  >
-    Save Website
-  </Button>
+  <Button on:click={save} size="sm" color="blue">Save Website</Button>
 </div>
 
 <style>

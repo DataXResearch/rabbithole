@@ -1,44 +1,45 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Button, Card, Group, Tooltip } from "@svelteuidev/core";
-  import { Trash, ExternalLink } from "radix-icons-svelte";
+  import { Trash } from "radix-icons-svelte";
+  import { Website } from "src/storage/db";
 
   const dispatch = createEventDispatcher();
 
-  export let website;
-  export let showDelete = true;
+  export let website: Website;
+  export let showDelete: boolean = true;
 
-  let isHoveringTitle = false;
-  let isHoveringDesc = false;
+  let isHoveringTitle: boolean = false;
+  let isHoveringDesc: boolean = false;
 
-  async function deleteWebsite() {
+  async function deleteWebsite(): Promise<void> {
     dispatch("websiteDelete", {
       url: website.url,
     });
   }
 
-  function handleUpdate() {
+  function handleUpdate(): void {
     dispatch("websiteUpdate", {
       url: website.url,
       name: website.name,
-      description: website.description
+      description: website.description,
     });
   }
 
-  function autoResize(node) {
+  function autoResize(node: HTMLTextAreaElement) {
     const resize = () => {
-      node.style.height = 'auto';
-      node.style.height = node.scrollHeight + 'px';
+      node.style.height = "auto";
+      node.style.height = node.scrollHeight + "px";
     };
-    node.addEventListener('input', resize);
-    
+    node.addEventListener("input", resize);
+
     // Wait for next tick to ensure value is populated and layout is done
     setTimeout(resize, 0);
-    
+
     return {
       destroy() {
-        node.removeEventListener('input', resize);
-      }
+        node.removeEventListener("input", resize);
+      },
     };
   }
 </script>
@@ -53,57 +54,67 @@
         aria-label="Delete"
         on:click={deleteWebsite}
       >
-        <Trash size="16" />
+        <Trash size={16} />
       </button>
     {/if}
 
     <!-- Header: Title -->
-    <Group position="apart" noWrap align="start" style="margin-bottom: 8px; padding-right: 24px;">
-        <div 
-            class="title-wrapper"
-            on:mouseenter={() => isHoveringTitle = true}
-            on:mouseleave={() => isHoveringTitle = false}
+    <Group
+      position="apart"
+      noWrap
+      align="start"
+      style="margin-bottom: 8px; padding-right: 24px;"
+    >
+      <div
+        class="title-wrapper"
+        on:mouseenter={() => (isHoveringTitle = true)}
+        on:mouseleave={() => (isHoveringTitle = false)}
+      >
+        <Tooltip
+          label="Click to change title"
+          withArrow
+          opened={isHoveringTitle}
+          allowPointerEvents={false}
+          style="width: 100%;"
         >
-            <Tooltip label="Click to change title" withArrow opened={isHoveringTitle} allowPointerEvents={false} style="width: 100%;">
-                 <input
-                    type="text"
-                    class="card-title-input"
-                    bind:value={website.name}
-                    on:blur={handleUpdate}
-                    on:keydown={(e) => e.key === "Enter" && e.target.blur()} 
-                 />
-            </Tooltip>
-        </div>
+          <input
+            type="text"
+            class="card-title-input"
+            bind:value={website.name}
+            on:blur={handleUpdate}
+            on:keydown={(e) => e.key === "Enter" && e.target.blur()}
+          />
+        </Tooltip>
+      </div>
     </Group>
 
     <!-- Body: Description -->
-    <div 
-        class="description-container"
-        on:mouseenter={() => isHoveringDesc = true}
-        on:mouseleave={() => isHoveringDesc = false}
+    <div
+      class="description-container"
+      on:mouseenter={() => (isHoveringDesc = true)}
+      on:mouseleave={() => (isHoveringDesc = false)}
     >
-        <Tooltip label="Click to change description" withArrow opened={isHoveringDesc} allowPointerEvents={false} style="width: 100%;">
-             <textarea
-                use:autoResize
-                class="card-desc-input"
-                bind:value={website.description}
-                on:blur={handleUpdate}
-                placeholder="No description available."
-                rows="2"
-             ></textarea>
-        </Tooltip>
+      <Tooltip
+        label="Click to change description"
+        withArrow
+        opened={isHoveringDesc}
+        allowPointerEvents={false}
+        style="width: 100%;"
+      >
+        <textarea
+          use:autoResize
+          class="card-desc-input"
+          bind:value={website.description}
+          on:blur={handleUpdate}
+          placeholder="No description available."
+          rows="2"
+        ></textarea>
+      </Tooltip>
     </div>
 
     <!-- Footer: Action Button -->
     <div style="margin-top: 24px;">
-      <Button
-        variant="light"
-        color="blue"
-        href={website.url}
-        target="_blank"
-        fullWidth
-        rightIcon={ExternalLink}
-      >
+      <Button variant="light" color="blue" href={website.url} target="_blank">
         Open
       </Button>
     </div>
@@ -171,50 +182,50 @@
   }
 
   .title-wrapper {
-      flex: 1;
-      width: 100%;
+    flex: 1;
+    width: 100%;
   }
 
   .card-title-input {
-      width: 100%;
-      border: none;
-      background: transparent;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: 1.25rem; /* 20px */
-      color: #1a1b1e;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-      text-overflow: ellipsis;
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1.25rem; /* 20px */
+    color: #1a1b1e;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    text-overflow: ellipsis;
   }
 
   .card-title-input:hover,
   .card-title-input:focus {
-      background-color: rgba(0, 0, 0, 0.05);
-      outline: none;
+    background-color: rgba(0, 0, 0, 0.05);
+    outline: none;
   }
 
   .card-desc-input {
-      width: 100%;
-      border: none;
-      background: transparent;
-      font-family: inherit;
-      font-size: 0.95rem;
-      color: #868e96;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-      resize: none;
-      line-height: 1.5;
-      display: block;
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: #868e96;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    resize: none;
+    line-height: 1.5;
+    display: block;
   }
 
   .card-desc-input:hover,
   .card-desc-input:focus {
-      background-color: rgba(0, 0, 0, 0.05);
-      outline: none;
-      color: #495057; /* Darker text on focus/hover for better readability */
+    background-color: rgba(0, 0, 0, 0.05);
+    outline: none;
+    color: #495057; /* Darker text on focus/hover for better readability */
   }
 
   /* Dark mode styles */
@@ -225,22 +236,22 @@
   }
 
   :global(body.dark-mode) .card-title-input {
-      color: #e7e7e7;
+    color: #e7e7e7;
   }
 
   :global(body.dark-mode) .card-title-input:hover,
   :global(body.dark-mode) .card-title-input:focus {
-      background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
   }
-  
+
   :global(body.dark-mode) .card-desc-input {
-      color: #909296;
+    color: #909296;
   }
 
   :global(body.dark-mode) .card-desc-input:hover,
   :global(body.dark-mode) .card-desc-input:focus {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: #c1c2c5;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #c1c2c5;
   }
 
   :global(body.dark-mode) .remove-btn {

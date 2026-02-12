@@ -1,16 +1,17 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Button } from "@svelteuidev/core";
   import { OpenInNewWindow } from "radix-icons-svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
+  import { Burrow } from "src/storage/db";
 
-  export let activeBurrow = {};
-  export let websites = [];
+  export let activeBurrow: Burrow | null = null;
+  export let websites: any[] = [];
 
   const dispatch = createEventDispatcher();
 
-  let isOpen = true;
+  let isOpen: boolean = true;
 
   $: burrowHomeWebsites = (() => {
     if (!activeBurrow?.activeTabs || activeBurrow.activeTabs.length === 0) {
@@ -30,7 +31,7 @@
     isOpen = true;
   }
 
-  async function openAllBurrowHomeTabs() {
+  async function openAllBurrowHomeTabs(): Promise<void> {
     if (activeBurrow.activeTabs && activeBurrow.activeTabs.length > 0) {
       await chrome.runtime.sendMessage({
         type: "OPEN_TABS",
@@ -39,7 +40,7 @@
     }
   }
 
-  async function removeFromBurrowHome(url) {
+  async function removeFromBurrowHome(url: string): Promise<void> {
     await chrome.runtime.sendMessage({
       type: "REMOVE_FROM_ACTIVE_TABS",
       burrowId: activeBurrow.id,
@@ -49,18 +50,18 @@
     activeBurrow.activeTabs = activeBurrow.activeTabs.filter((u) => u !== url);
   }
 
-  function handleToggle(e) {
+  function handleToggle(e: CustomEvent<any>): void {
     isOpen = e.detail.open;
   }
 
-  function handleOpenAllClick(event) {
+  function handleOpenAllClick(e: CustomEvent<any>): void {
     // Prevent toggling collapse when clicking "Open All"
-    event.stopPropagation();
+    e.stopPropagation();
     openAllBurrowHomeTabs();
   }
 
-  function handleWebsiteUpdate(event) {
-    dispatch("websiteUpdate", event.detail);
+  function handleWebsiteUpdate(e: CustomEvent<any>): void {
+    dispatch("websiteUpdate", e.detail);
   }
 </script>
 
@@ -68,7 +69,6 @@
   <div class="burrow-home-wrapper">
     <CollapsibleContainer
       title="Pinned Websites"
-      titleClass="burrow-home-title"
       open={isOpen}
       on:toggle={handleToggle}
       defaultOpen={true}
@@ -105,14 +105,6 @@
 <style>
   .burrow-home-wrapper {
     margin-bottom: 40px;
-  }
-
-  /* Keep the title styling you liked */
-  :global(.burrow-home-title) {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: rgba(0, 0, 0, 0.55);
-    letter-spacing: 0;
   }
 
   :global(body.dark-mode .burrow-home-title) {

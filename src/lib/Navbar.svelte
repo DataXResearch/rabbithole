@@ -1,10 +1,9 @@
-<script>
+<script lang="ts">
   import { onMount, createEventDispatcher } from "svelte";
   import { Button, ActionIcon, Menu } from "@svelteuidev/core";
   import { Agent } from "@atproto/api";
   import {
     MagnifyingGlass,
-    InfoCircled,
     Person,
     Sun,
     Moon,
@@ -26,16 +25,15 @@
 
   const dispatch = createEventDispatcher();
 
-  let showSearchModal = false;
-  let showAuthModal = false;
-  let showInfoModal = false;
-  let showOnboardingModal = false;
-  let isMac = false;
-  let isLoggedIn = false;
-  let userHandle = "";
-  let userAvatar = "";
-  let isDark = false;
-  let fileInput;
+  let showSearchModal: boolean = false;
+  let showAuthModal: boolean = false;
+  let showOnboardingModal: boolean = false;
+  let isMac = navigator.userAgent.includes("Mac");
+  let isLoggedIn: boolean = false;
+  let userHandle: string = "";
+  let userAvatar: string = "";
+  let isDark: boolean = false;
+  let fileInput: HTMLInputElement;
 
   let settings = {
     show: false,
@@ -45,9 +43,6 @@
   };
 
   onMount(async () => {
-    isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-
-    // Get settings for dark mode
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
@@ -57,7 +52,6 @@
       showOnboardingModal = true;
     }
 
-    // Check if user is logged in
     const session = await getSession();
     if (session) {
       isLoggedIn = true;
@@ -65,7 +59,7 @@
       loadUserProfile(session);
     }
 
-    function handleKeydown(e) {
+    function handleKeydown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         openSearchModal();
@@ -78,7 +72,7 @@
     };
   });
 
-  async function loadUserProfile(session) {
+  async function loadUserProfile(session): Promise<void> {
     try {
       const agent = new Agent("https://public.api.bsky.app");
       const response = await agent.getProfile({ actor: session.did });
@@ -91,15 +85,15 @@
     }
   }
 
-  function openSearchModal() {
+  function openSearchModal(): void {
     showSearchModal = true;
   }
 
-  function handleSignIn() {
+  function handleSignIn(): void {
     showAuthModal = true;
   }
 
-  async function toggleTheme() {
+  async function toggleTheme(): Promise<void> {
     isDark = !isDark;
     document.body.classList.toggle("dark-mode", isDark);
     settings.darkMode = isDark;
@@ -109,7 +103,7 @@
     });
   }
 
-  async function handleAuthSuccess() {
+  async function handleAuthSuccess(): Promise<void> {
     // Refresh login state
     const session = await getSession();
     if (session) {
@@ -120,14 +114,14 @@
     showAuthModal = false;
   }
 
-  async function handleSignOut() {
+  async function handleSignOut(): Promise<void> {
     await clearSession();
     isLoggedIn = false;
     userHandle = "";
     userAvatar = "";
   }
 
-  async function exportData() {
+  async function exportData(): Promise<void> {
     const burrows = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_BURROWS,
     });
@@ -156,12 +150,12 @@
     link.click();
   }
 
-  async function handleImport(event) {
+  async function handleImport(event: CustomEvent<any>): Promise<void> {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = async (e: CustomEvent<any>) => {
       try {
         const data = JSON.parse(e.target.result);
 
@@ -188,15 +182,15 @@
     event.target.value = "";
   }
 
-  function triggerImport() {
+  function triggerImport(): void {
     fileInput.click();
   }
 
-  function handleSearchSelect(event) {
+  function handleSearchSelect(event: CustomEvent<any>): void {
     dispatch("navigate", event.detail);
   }
 
-  async function handleOnboardingClose() {
+  async function handleOnboardingClose(): Promise<void> {
     showOnboardingModal = false;
     if (!settings.hasSeenOnboarding) {
       settings.hasSeenOnboarding = true;
@@ -270,7 +264,6 @@
 
   <div class="navbar-right">
     <ActionIcon
-      variant="subtle"
       color="gray"
       size="xl"
       radius="xl"
@@ -281,7 +274,6 @@
     </ActionIcon>
 
     <ActionIcon
-      variant="subtle"
       color="gray"
       size="xl"
       radius="xl"
@@ -296,7 +288,7 @@
     </ActionIcon>
 
     {#if isLoggedIn}
-      <Menu placement="bottom-end" withArrow>
+      <Menu placement="end" withArrow>
         <ActionIcon
           slot="control"
           variant="light"
@@ -448,20 +440,6 @@
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-
-  .semble-link {
-    color: #228be6;
-    text-decoration: none;
-    font-weight: 600;
-    padding: 8px 16px;
-    border-radius: 4px;
-    background-color: rgba(34, 139, 230, 0.1);
-    transition: background-color 0.2s;
-  }
-
-  .semble-link:hover {
-    background-color: rgba(34, 139, 230, 0.2);
   }
 
   /* Dark mode */

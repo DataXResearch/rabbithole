@@ -1,29 +1,26 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Trash } from "radix-icons-svelte";
+  import { Burrow, Rabbithole } from "src/storage/db";
 
-  export let rabbitholes = [];
-  export let burrows = [];
-  export let onSelect;
+  export let rabbitholes: Rabbithole[] = [];
+  export let burrows: Burrow[] = [];
+  export let onSelect: (rabbithole: Rabbithole) => Promise<void>;
 
-  export let horizontal = false;
-  export let addTooltip = "add this burrow to another rabbithole";
-  export let showBurrows = true;
-  export let removeTooltip = "Remove this burrow from this rabbithole";
+  export let horizontal: boolean = false;
+  export let addTooltip: string = "add this burrow to another rabbithole";
+  export let showBurrows: boolean = true;
+  export let removeTooltip: string = "Remove this burrow from this rabbithole";
+  export let allowCreate: boolean = false;
+  export let showDelete: boolean = false;
 
   // features for showing rabbithole grid within a burrow view
-  export let burrowShowAddRabbithole = false;
-  export let burrowShowRemoveRabbithole = false;
-  
-  // Feature to show a "Create New" card at the start
-  export let allowCreate = false;
-  
-  // Feature to delete the rabbithole itself
-  export let showDelete = false;
+  export let burrowShowAddRabbithole: boolean = false;
+  export let burrowShowRemoveRabbithole: boolean = false;
 
   const dispatch = createEventDispatcher();
 
-  function burrowsFor(rabbithole) {
+  function burrowsFor(rabbithole: Rabbithole | null): any[] {
     if (!rabbithole?.burrows) return [];
     return burrows.filter((b) => rabbithole.burrows.includes(b.id));
   }
@@ -39,7 +36,9 @@
       aria-label="Create new rabbithole"
     >
       <div class="add-plus">+</div>
-      <div class="card-title" style="margin-top: 10px; font-size: 16px;">Create</div>
+      <div class="card-title" style="margin-top: 10px; font-size: 16px;">
+        Create
+      </div>
     </button>
   {/if}
 
@@ -63,9 +62,10 @@
           class="remove-btn"
           title="Delete Rabbithole"
           aria-label="Delete Rabbithole"
-          on:click|stopPropagation={() => dispatch("deleteRabbithole", { rabbitholeId: rabbithole.id })}
+          on:click|stopPropagation={() =>
+            dispatch("deleteRabbithole", { rabbitholeId: rabbithole.id })}
         >
-          <Trash size="16" />
+          <Trash size={16} />
         </button>
       {/if}
 
@@ -82,7 +82,7 @@
             });
           }}
         >
-          <Trash size="16" />
+          <Trash size={16} />
         </button>
       {/if}
 

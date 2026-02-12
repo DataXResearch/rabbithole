@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount, tick, afterUpdate } from "svelte";
   import { createEventDispatcher } from "svelte";
   import {
@@ -15,20 +15,21 @@
   import BurrowGrid from "src/lib/BurrowGrid.svelte";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import { MessageRequest } from "../utils";
+  import { Burrow, Rabbithole, Website } from "src/storage/db";
 
-  export let isOpen = false;
+  export let isOpen: boolean = false;
 
   const dispatch = createEventDispatcher();
 
-  let searchQuery = "";
-  let allWebsites = [];
-  let allRabbitholes = [];
-  let allBurrows = [];
-  let websiteResults = [];
-  let rabbitholeResults = [];
-  let burrowResults = [];
-  let isLoading = true;
-  let inputRef;
+  let searchQuery: string = "";
+  let allWebsites: Website[] = [];
+  let allRabbitholes: Rabbithole[] = [];
+  let allBurrows: Burrow[] = [];
+  let websiteResults: Website[] = [];
+  let rabbitholeResults: Rabbithole[] = [];
+  let burrowResults: Burrow[] = [];
+  let isLoading: boolean = true;
+  let inputRef: HTMLDivElement;
 
   // Track collapse state for each section
   let sectionStates = {
@@ -50,7 +51,7 @@
     }
   });
 
-  async function loadAllData() {
+  async function loadAllData(): Promise<void> {
     isLoading = true;
     try {
       const [websites, rabbitholes, burrows] = await Promise.all([
@@ -74,7 +75,7 @@
     isLoading = false;
   }
 
-  function close() {
+  function close(): void {
     isOpen = false;
     searchQuery = "";
     websiteResults = [];
@@ -82,13 +83,13 @@
     burrowResults = [];
   }
 
-  function handleKeydown(e) {
+  function handleKeydown(e: KeyboardEvent): void {
     if (e.key === "Escape" && isOpen) {
       close();
     }
   }
 
-  function performSearch() {
+  function performSearch(): void {
     if (searchQuery.length < 2) {
       websiteResults = [];
       rabbitholeResults = [];
@@ -124,12 +125,11 @@
     burrowResults = burrowMatches.map((res) => res.item);
   }
 
-  function handleToggleSection(section, event) {
+  function handleToggleSection(section: string, event: CustomEvent<any>): void {
     sectionStates[section] = event.detail.open;
   }
 
-  async function handleSelectRabbithole(rabbithole) {
-    // Navigate to the rabbithole
+  async function handleSelectRabbithole(rabbithole: Rabbithole): Promise<void> {
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
       rabbitholeId: rabbithole.id,
@@ -138,7 +138,7 @@
     close();
   }
 
-  async function handleSelectBurrow(burrow) {
+  async function handleSelectBurrow(burrow: Burrow): Promise<void> {
     // Navigate to the burrow
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
@@ -164,7 +164,7 @@
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
         <h2 class="modal-title">Search Everywhere</h2>
-        <ActionIcon variant="subtle" on:click={close}>
+        <ActionIcon on:click={close}>
           <Cross2 />
         </ActionIcon>
       </div>

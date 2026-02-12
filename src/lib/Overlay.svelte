@@ -1,67 +1,75 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Group, Tooltip, ActionIcon, Text, Button, Input, Textarea } from "@svelteuidev/core";
+  import {
+    Group,
+    Tooltip,
+    ActionIcon,
+    Text,
+    Button,
+    Input,
+    Textarea,
+  } from "@svelteuidev/core";
   import Options from "./Options.svelte";
   import BurrowSelector from "src/lib/BurrowSelector.svelte";
-  import { MessageRequest, getOrderedBurrows, NotificationDuration } from "../utils.ts";
-  import type { Settings } from "../storage/db";
+  import {
+    MessageRequest,
+    getOrderedBurrows,
+    NotificationDuration,
+  } from "../utils";
   import { Move, EyeNone, Update, Check, Cross2 } from "radix-icons-svelte";
+  import { Settings } from "src/storage/db";
 
-  export let isPopup = false;
+  export let isPopup: boolean = false;
 
-  let settings: Settings = {
-    show: false,
-    alignment: "right",
-    darkMode: false,
-  };
-  let burrows = [];
-  let isHovering = false;
-  let isSyncingWindow = false;
-  let syncWindowSuccess = false;
-  let isHoveringOverSync = false;
-  let isHoveringOverMove = false;
+  let settings: Settings | null = null;
+  let alignment: "left" | "right" = "right";
+  let show: boolean = false;
+  let burrows: any[] = [];
+  let isSyncingWindow: boolean = false;
+  let syncWindowSuccess: boolean = false;
 
   // Save Page State
-  let isSavingPage = false;
-  let pageTitle = "";
-  let pageDescription = "";
-  let isSaving = false;
-  let saveSuccess = false;
+  let isSavingPage: boolean = false;
+  let pageTitle: string = "";
+  let pageDescription: string = "";
+  let isSaving: boolean = false;
+  let saveSuccess: boolean = false;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
+    alignment = settings.alignment;
+    show = settings.show;
     burrows = await getOrderedBurrows();
   });
 
-  function changeAlignment(event) {
-    settings.alignment = settings.alignment === "left" ? "right" : "left";
+  function changeAlignment(): void {
+    alignment = alignment === "left" ? "right" : "left";
     chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
-      settings,
+      settings: { ...settings, alignment },
     });
   }
 
-  async function hideOverlay(event) {
-    settings.show = false;
+  async function hideOverlay(): Promise<void> {
+    show = false;
     chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
-      settings,
+      settings: { ...settings, show },
     });
   }
 
-  async function handleBurrowChange(event) {
-    const newBurrowId = event.detail || event.target?.value;
+  async function handleBurrowChange(burrowId: string): Promise<void> {
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
-      burrowId: newBurrowId,
+      burrowId: burrowId,
     });
     // Refresh the burrows list to reflect the new active burrow
     burrows = await getOrderedBurrows();
   }
 
-  async function saveAllTabsToActiveBurrow() {
+  async function saveAllTabsToActiveBurrow(): Promise<void> {
     isSyncingWindow = true;
     try {
       await chrome.runtime.sendMessage({
@@ -78,25 +86,29 @@
     }
   }
 
-  function initSavePage() {
+  function initSavePage(): void {
     // Pre-fill with current page data
     pageTitle = document.title;
-    
+
     // Try to find description
     const metaDesc = document.querySelector('meta[name="description"]');
     const ogDesc = document.querySelector('meta[property="og:description"]');
-    pageDescription = metaDesc ? metaDesc.getAttribute("content") : (ogDesc ? ogDesc.getAttribute("content") : "");
-    
+    pageDescription = metaDesc
+      ? metaDesc.getAttribute("content")
+      : ogDesc
+        ? ogDesc.getAttribute("content")
+        : "";
+
     isSavingPage = true;
   }
 
-  function cancelSavePage() {
+  function cancelSavePage(): void {
     isSavingPage = false;
     pageTitle = "";
     pageDescription = "";
   }
 
-  async function savePage() {
+  async function savePage(): Promise<void> {
     isSaving = true;
     try {
       // 1. Save the tab (this creates the record if needed)
@@ -109,7 +121,7 @@
         type: MessageRequest.UPDATE_WEBSITE,
         url: window.location.href,
         name: pageTitle,
-        description: pageDescription
+        description: pageDescription,
       });
 
       saveSuccess = true;
@@ -125,23 +137,20 @@
   }
 </script>
 
-{#if settings.show || isPopup}
-  <div id="rabbithole-overlay-container" class="rabbithole-overlay rabbithole-{settings.alignment}" class:rabbithole-popup={isPopup}>
+{#if show || isPopup}
+  <div
+    id="rabbithole-overlay-container"
+    class="rabbithole-overlay rabbithole-{alignment}"
+    class:rabbithole-popup={isPopup}
+  >
     {#if !isPopup}
       <div class="rabbithole-header">
         <Text size="sm" weight="bold" class="rabbithole-icon">Rabbithole</Text>
         <Group spacing="xs">
-          <Tooltip
-            {isHoveringOverSync}
-            label="Save all tabs in window to current burrow"
-            withArrow
-          >
+          <Tooltip label="Save all tabs in window to current burrow" withArrow>
             <div class="icon-wrapper">
               <ActionIcon
                 on:click={saveAllTabsToActiveBurrow}
-                on:mouseenter={() => isHoveringOverSync = true}
-                on:mouseleave={() => isHoveringOverSync = false}
-                variant="subtle"
                 size="sm"
                 class="rabbithole-icon header-icon"
                 disabled={isSyncingWindow}
@@ -155,28 +164,18 @@
               {/if}
             </div>
           </Tooltip>
-          <Tooltip
-            {isHoveringOverMove}
-            label="Move Position"
-            withArrow
-          >
+          <Tooltip label="Move Position" withArrow>
             <ActionIcon
               on:click={changeAlignment}
-              on:mouseenter={() => isHoveringOverMove = true}
-              on:mouseleave={() => isHoveringOverMove = false}
-              variant="subtle"
               size="sm"
               class="rabbithole-icon header-icon"
             >
               <Move />
             </ActionIcon>
           </Tooltip>
-          <Tooltip {isHovering} label="Hide Overlay" withArrow>
+          <Tooltip label="Hide Overlay" withArrow>
             <ActionIcon
               on:click={hideOverlay}
-              on:mouseenter={() => isHovering = true}
-              on:mouseleave={() => isHovering = false}
-              variant="subtle"
               size="sm"
               class="rabbithole-icon header-icon"
             >
@@ -192,18 +191,18 @@
         <div class="save-page-form">
           <div class="form-header">
             <Text size="xs" weight="bold" color="dimmed">Save to Burrow</Text>
-            <ActionIcon size="xs" variant="subtle" on:click={cancelSavePage}>
+            <ActionIcon size="xs" on:click={cancelSavePage}>
               <Cross2 />
             </ActionIcon>
           </div>
-          
+
           <Input
             placeholder="Title"
             bind:value={pageTitle}
             size="xs"
             class="save-input"
           />
-          
+
           <Textarea
             placeholder="Description"
             bind:value={pageDescription}
@@ -213,11 +212,10 @@
             autosize
             class="save-input"
           />
-          
-          <Button 
-            size="xs" 
-            fullWidth 
-            on:click={savePage} 
+
+          <Button
+            size="xs"
+            on:click={savePage}
             loading={isSaving}
             color={saveSuccess ? "green" : "blue"}
           >
@@ -226,7 +224,12 @@
         </div>
       {:else}
         <div class="rabbithole-selector-wrapper">
-          <BurrowSelector {burrows} {handleBurrowChange} dropdownDirection={isPopup ? "down" : "up"} allowCreate={true} />
+          <BurrowSelector
+            {burrows}
+            {handleBurrowChange}
+            dropdownDirection={isPopup ? "down" : "up"}
+            allowCreate={true}
+          />
         </div>
         <div class="rabbithole-options-wrapper">
           <Options on:save={initSavePage} />
@@ -336,7 +339,8 @@
     margin-bottom: 4px;
   }
 
-  :global(.save-input input), :global(.save-input textarea) {
+  :global(.save-input input),
+  :global(.save-input textarea) {
     background-color: rgba(255, 255, 255, 0.8) !important;
   }
 
@@ -401,7 +405,8 @@
       border-color: rgba(255, 255, 255, 0.1);
     }
 
-    :global(.save-input input), :global(.save-input textarea) {
+    :global(.save-input input),
+    :global(.save-input textarea) {
       background-color: rgba(0, 0, 0, 0.3) !important;
       color: white !important;
       border-color: rgba(255, 255, 255, 0.1) !important;

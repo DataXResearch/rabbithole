@@ -1,19 +1,19 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { ActionIcon } from "@svelteuidev/core";
   import { Cross2 } from "radix-icons-svelte";
 
-  export let isOpen = false;
-  export let title = "";
-  export let titleLink = "";
+  export let isOpen: boolean = false;
+  export let title: string = "";
+  export let titleLink: string = "";
 
   const dispatch = createEventDispatcher();
 
-  function close() {
+  function close(): void {
     dispatch("close");
   }
 
-  function handleKeydown(e) {
+  function handleKeydown(e: KeyboardEvent): void {
     if (e.key === "Escape" && isOpen) {
       close();
     }
@@ -29,12 +29,17 @@
       <div class="modal-header">
         {#if titleLink}
           <h2 class="modal-title">
-            Sign in with <a href={titleLink} target="_blank" rel="noopener noreferrer" class="modal-title-link">Internet Handle</a>
+            Sign in with <a
+              href={titleLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="modal-title-link">Internet Handle</a
+            >
           </h2>
         {:else}
           <h2 class="modal-title">{title}</h2>
         {/if}
-        <ActionIcon variant="subtle" on:click={close}>
+        <ActionIcon on:click={close}>
           <Cross2 />
         </ActionIcon>
       </div>
@@ -101,7 +106,9 @@
     color: #1a1b1e;
     text-decoration: none;
     border-bottom: 1px dotted #1a1b1e;
-    transition: color 0.2s ease, border-bottom-color 0.2s ease;
+    transition:
+      color 0.2s ease,
+      border-bottom-color 0.2s ease;
   }
 
   .modal-title-link:hover {

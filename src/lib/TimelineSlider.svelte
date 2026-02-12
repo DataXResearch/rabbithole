@@ -1,38 +1,26 @@
-<script>
+<script lang="ts">
+  import { Website } from "src/storage/db";
   import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();
 
-  export let websites = [];
-  export let startDate = null;
-  export let endDate = null;
+  export let websites: Website[] = [];
+  export let startDate: Date = null;
+  export let endDate: Date = null;
 
-  let sliderEl;
-  let isDragging = false;
-  let dragMode = null;
-  let dragStartX = 0;
-  let dragStartStart = 0;
-  let dragStartEnd = 0;
+  let sliderEl: HTMLDivElement;
+  let isDragging: boolean = false;
+  let dragMode: string = null;
+  let dragStartX: number = 0;
+  let dragStartStart: number = 0;
+  let dragStartEnd: number = 0;
 
-  const DAY_MS = 24 * 60 * 60 * 1000;
+  const DAY_MS: number = 24 * 60 * 60 * 1000;
 
   // Get timestamp from website object
-  function getTimestamp(w) {
-    const fields = [
-      "savedAt",
-      "saved_at",
-      "createdAt",
-      "created_at",
-      "timestamp",
-      "date",
-    ];
-    for (const f of fields) {
-      if (w[f]) {
-        const d = new Date(w[f]);
-        if (!isNaN(d)) return d.getTime();
-      }
-    }
-    return null;
+  function getTimestamp(w: Website): number {
+    const d = new Date(w.savedAt);
+    return d.getTime();
   }
 
   // Calculate min/max dates from websites
@@ -58,23 +46,23 @@
   $: startPct = totalDays ? (startDay / totalDays) * 100 : 0;
   $: endPct = totalDays ? (endDay / totalDays) * 100 : 100;
 
-  function dayToDate(day) {
+  function dayToDate(day: number): Date {
     return new Date(minDate.getTime() + day * DAY_MS);
   }
 
-  function xToDay(clientX) {
+  function xToDay(clientX: number): number {
     const rect = sliderEl.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
     return Math.round((x / rect.width) * totalDays);
   }
 
-  function updateRange(newStart, newEnd) {
+  function updateRange(newStart: number, newEnd: number): void {
     startDate = dayToDate(Math.max(0, Math.min(totalDays, newStart)));
     endDate = dayToDate(Math.max(0, Math.min(totalDays, newEnd)));
     dispatch("dateRangeChange", { startDate, endDate });
   }
 
-  function onPointerDown(e, mode) {
+  function onPointerDown(e: PointerEvent, mode: string): void {
     e.preventDefault();
     isDragging = true;
     dragMode = mode;
@@ -86,7 +74,7 @@
     window.addEventListener("pointerup", onPointerUp);
   }
 
-  function onPointerMove(e) {
+  function onPointerMove(e: PointerEvent): void {
     if (!isDragging) return;
 
     const rect = sliderEl.getBoundingClientRect();
@@ -121,13 +109,13 @@
     }
   }
 
-  function onPointerUp() {
+  function onPointerUp(): void {
     isDragging = false;
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("pointerup", onPointerUp);
   }
 
-  function onTrackClick(e) {
+  function onTrackClick(e: MouseEvent): void {
     const clickDay = xToDay(e.clientX);
     const span = endDay - startDay;
     let newStart = clickDay - Math.floor(span / 2);
@@ -148,7 +136,7 @@
 
 <div class="timeline-slider-wrap">
   {#if minDate && maxDate}
-    <div class="timeline-slider" bind:this={sliderEl} on:click={onTrackClick}>
+    <div class="timeline-slider" bind:this={sliderEl} on:keydown={onTrackClick}>
       <div class="slider-track"></div>
 
       <div
