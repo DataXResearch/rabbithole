@@ -1,10 +1,19 @@
 import { Agent } from "@atproto/api";
 
-export const ClientMetadataUrl = "https://rabbithole.to/oauth/client-metadata.json";
+export const ClientMetadataUrl =
+  "https://rabbithole.to/oauth/client-metadata.json";
 const SessionStorageKey = "rabbithole_bsky_session";
 const DpopKeyStorageKey = "rabbithole_dpop_key";
 
 /* Session Manager */
+
+export interface ATProtoSession {
+  did: string;
+  handle: string;
+  pdsUrl: string;
+  accessToken: string;
+  tokenEndpoint: string;
+}
 
 export async function getSession() {
   const result = await chrome.storage.local.get(SessionStorageKey);

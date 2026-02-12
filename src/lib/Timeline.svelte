@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Fuse from "fuse.js";
   import { createEventDispatcher, onMount, tick } from "svelte";
   import {
@@ -13,13 +13,11 @@
   } from "@svelteuidev/core";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
-  import TimelineSlider from "src/lib/TimelineSlider.svelte";
   import Modal from "src/lib/Modal.svelte";
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import BurrowHome from "src/lib/BurrowHome.svelte";
   import AddToRabbitholeModal from "src/lib/AddToRabbitholeModal.svelte";
   import {
-    Pencil1,
     MagnifyingGlass,
     Globe,
     Rocket,
@@ -36,54 +34,55 @@
     createCollectionLink,
   } from "../atproto/cosmik";
   import { MessageRequest } from "../utils";
+  import { Burrow, Rabbithole, Website } from "src/storage/db";
 
   const dispatch = createEventDispatcher();
 
-  export let activeBurrow = {};
-  export let websites = [];
-  export let isLoading = false;
-  export let selectRabbithole;
-  export let autoFocusTitle = false;
+  export let activeBurrow: Burrow | null = null;
+  export let websites: any[] = [];
+  export let isLoading: boolean = false;
+  export let selectRabbithole: (rabbithole: Rabbithole) => Promise<void>;
+  export let autoFocusTitle: boolean = false;
 
-  let searchResults = [];
-  let isHovering = false;
-  let searchQuery = "";
-  let filteredWebsites = [];
-  let previousWebsitesLength = 0;
-  let isPublishing = false;
-  let showPublishModal = false;
-  let isSyncing = false;
+  let searchResults: Website[] = [];
+  let isHovering: boolean = false;
+  let searchQuery: string = "";
+  let filteredWebsites: Website[] = [];
+  let previousWebsitesLength: number = 0;
+  let isPublishing: boolean = false;
+  let showPublishModal: boolean = false;
+  let isSyncing: boolean = false;
 
-  let hoveredTimestamp = null;
-  let hoverX = 0;
-  let hoverY = 0;
-  let isHoveringTimestamp = false;
+  let hoveredTimestamp: number = null;
+  let hoverX: number = 0;
+  let hoverY: number = 0;
+  let isHoveringTimestamp: boolean = false;
 
   // Slider-controlled date window
-  let startDate = null;
-  let endDate = null;
+  let startDate: Date = null;
+  let endDate: Date = null;
 
-  let rabbitholes = [];
-  let showAddToRabbitholeModal = false;
+  let rabbitholes: Rabbithole[] = [];
+  let showAddToRabbitholeModal: boolean = false;
 
-  let isUpdatingBurrowHome = false;
-  let isSavingWindowToBurrow = false;
-  let isDeletingBurrow = false;
+  let isUpdatingBurrowHome: boolean = false;
+  let isSavingWindowToBurrow: boolean = false;
+  let isDeletingBurrow: boolean = false;
 
-  let showSearchBar = false;
+  let showSearchBar: boolean = false;
 
   onMount(async () => {
     if (autoFocusTitle) {
       await tick();
-      const input = document.querySelector(".project-name-input input");
-      if (input) {
-        input.focus();
-        input.select();
-      }
+      const input = document.querySelector(
+        ".project-name-input input",
+      ) as HTMLInputElement;
+      input?.focus();
+      input?.select();
     }
   });
 
-  async function loadRabbitholesForActiveBurrow() {
+  async function loadRabbitholesForActiveBurrow(): Promise<void> {
     if (!activeBurrow?.id) {
       rabbitholes = [];
       return;
@@ -107,7 +106,7 @@
     }
   }
 
-  async function loadWebsitesForActiveBurrow() {
+  async function loadWebsitesForActiveBurrow(): Promise<void> {
     if (!activeBurrow?.id) {
       websites = [];
       return;
@@ -130,7 +129,7 @@
     }
   }
 
-  async function refreshActiveBurrow() {
+  async function refreshActiveBurrow(): Promise<void> {
     try {
       const b = await chrome.runtime.sendMessage({
         type: MessageRequest.GET_ACTIVE_BURROW,
@@ -141,7 +140,7 @@
     }
   }
 
-  async function refreshAllBurrowState() {
+  async function refreshAllBurrowState(): Promise<void> {
     await refreshActiveBurrow();
     await Promise.all([
       loadWebsitesForActiveBurrow(),
@@ -155,11 +154,13 @@
     rabbitholes = [];
   }
 
-  function openAddToRabbitholeModal() {
+  function openAddToRabbitholeModal(): void {
     showAddToRabbitholeModal = true;
   }
 
-  async function removeBurrowFromRabbithole(rabbitholeId) {
+  async function removeBurrowFromRabbithole(
+    rabbitholeId: string,
+  ): Promise<void> {
     if (!activeBurrow?.id || !rabbitholeId) return;
 
     const res = await chrome.runtime.sendMessage({
@@ -176,7 +177,7 @@
     await loadRabbitholesForActiveBurrow();
   }
 
-  async function updateBurrowHome() {
+  async function updateBurrowHome(): Promise<void> {
     if (!activeBurrow?.id) return;
 
     isUpdatingBurrowHome = true;
@@ -194,7 +195,7 @@
     }
   }
 
-  async function saveWindowToBurrow() {
+  async function saveWindowToBurrow(): Promise<void> {
     if (!activeBurrow?.id) return;
 
     isSavingWindowToBurrow = true;
@@ -212,7 +213,7 @@
     }
   }
 
-  async function deleteBurrow() {
+  async function deleteBurrow(): Promise<void> {
     if (!activeBurrow?.id) return;
 
     isDeletingBurrow = true;
@@ -242,7 +243,7 @@
     }
   }
 
-  async function renameBurrow() {
+  async function renameBurrow(): Promise<void> {
     if (activeBurrow.name === "") {
       return;
     }
@@ -251,13 +252,13 @@
     });
   }
 
-  async function deleteWebsite(event) {
+  async function deleteWebsite(event: CustomEvent<any>): Promise<void> {
     dispatch("websiteDelete", {
       url: event.detail.url,
     });
   }
 
-  async function updateWebsite(event) {
+  async function updateWebsite(event: CustomEvent<any>): Promise<void> {
     const { url, name, description } = event.detail;
     try {
       await chrome.runtime.sendMessage({
@@ -277,37 +278,27 @@
     }
   }
 
-  function checkWebsiteForQuery(items) {
-    const fuse = new Fuse(items, {
+  function applySearchQuery(): void {
+    const fuse = new Fuse(websites, {
       keys: ["name", "description", "url"],
       includeScore: true,
       threshold: 0.3,
     });
 
     const results = fuse.search(searchQuery);
-    return results;
-  }
-
-  function applySearchQuery() {
-    const results = checkWebsiteForQuery(websites);
     searchResults = results.map((res) => res.item);
   }
 
-  function handleDateRangeChange(event) {
-    startDate = event.detail.startDate;
-    endDate = event.detail.endDate;
-  }
-
-  function openPublishModal() {
+  function openPublishModal(): void {
     showPublishModal = true;
   }
 
-  async function confirmPublish() {
+  async function confirmPublish(): Promise<void> {
     await publishRabbithole();
     showPublishModal = false;
   }
 
-  async function publishRabbithole() {
+  async function publishRabbithole(): Promise<void> {
     if (websites.length === 0) {
       alert("Rabbithole is empty!");
       return;
@@ -386,7 +377,7 @@
     }
   }
 
-  async function syncBurrow() {
+  async function syncBurrow(): Promise<void> {
     if (!activeBurrow?.id || !activeBurrow?.sembleCollectionUri) return;
 
     isSyncing = true;
@@ -409,7 +400,7 @@
     }
   }
 
-  function formatDate(ts) {
+  function formatDate(ts: number): string {
     if (!ts) return "";
     return new Intl.DateTimeFormat("en-US", {
       month: "long",
@@ -418,7 +409,7 @@
     }).format(new Date(ts));
   }
 
-  function formatDateTime(ts) {
+  function formatDateTime(ts: number): string {
     if (!ts) return "";
     return new Intl.DateTimeFormat("en-US", {
       month: "long",
@@ -430,7 +421,7 @@
     }).format(new Date(ts));
   }
 
-  function toTimeMs(value) {
+  function toTimeMs(value: Date): number {
     if (value === null || value === undefined) return null;
 
     if (typeof value === "number") {
@@ -452,7 +443,7 @@
     return null;
   }
 
-  function getWebsiteTimeMs(w) {
+  function getWebsiteTimeMs(w): number {
     if (!w || typeof w !== "object") return null;
 
     const candidates = [
@@ -478,7 +469,7 @@
     return null;
   }
 
-  function dateKeyFromMs(ms) {
+  function dateKeyFromMs(ms: number): string {
     if (!ms) return "";
     const d = new Date(ms);
     const y = d.getFullYear();
@@ -487,7 +478,7 @@
     return `${y}-${m}-${day}`;
   }
 
-  function groupByDate(items) {
+  function groupByDate(items): any[] {
     const map = new Map();
     for (const site of items) {
       const t = getWebsiteTimeMs(site);
@@ -509,14 +500,14 @@
     }));
   }
 
-  function isWithinRange(site) {
+  function isWithinRange(site): boolean {
     if (!startDate || !endDate) return true;
     const t = getWebsiteTimeMs(site);
     if (t === null) return false;
     return t >= startDate.getTime() && t <= endDate.getTime();
   }
 
-  function getFullRange(items) {
+  function getFullRange(items): { min: Date; max: Date } {
     if (!items || items.length === 0) return { min: null, max: null };
     const times = items.map(getWebsiteTimeMs).filter((t) => t !== null);
     if (times.length === 0) return { min: null, max: null };
@@ -559,50 +550,33 @@
     return null;
   })();
 
-  function openSemble() {
+  function openSemble(): void {
     if (sembleUrl) {
       window.open(sembleUrl, "_blank");
     }
   }
 
-  function showTimestamp(ts) {
+  function showTimestamp(ts: number): void {
     hoveredTimestamp = ts;
     isHoveringTimestamp = true;
   }
 
-  function clearTimestamp() {
+  function clearTimestamp(): void {
     isHoveringTimestamp = false;
     hoveredTimestamp = null;
   }
 
-  function updateHoverPosition(e) {
+  function updateHoverPosition(e: MouseEvent): void {
     hoverX = e.clientX;
     hoverY = e.clientY;
   }
-
-  function isSameDay(a, b) {
-    if (!a || !b) return false;
-    return (
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate()
-    );
-  }
-
-  $: sliderIsActive =
-    !!fullRange.min &&
-    !!fullRange.max &&
-    !!startDate &&
-    !!endDate &&
-    (!isSameDay(startDate, fullRange.min) ||
-      !isSameDay(endDate, fullRange.max));
 
   $: shouldShowRabbitholes = !showSearchBar;
   $: shouldShowBurrowHome = !showSearchBar;
 
   $: rabbitholesForActiveBurrow = rabbitholes;
 
-  function toggleSearchBar() {
+  function toggleSearchBar(): void {
     showSearchBar = !showSearchBar;
     if (!showSearchBar) {
       searchQuery = "";
@@ -952,7 +926,7 @@
         {/if}
       </div>
 
-      {#if websitesToDisplay.length === 0 && (searchQuery.length > 0 || sliderIsActive)}
+      {#if websitesToDisplay.length === 0 && searchQuery.length > 0}
         <Text align="center" color="dimmed" size="sm" style="margin-top: 2rem;"
           >No results found.</Text
         >

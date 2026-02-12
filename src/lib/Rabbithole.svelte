@@ -1,50 +1,33 @@
-<script>
+<script lang="ts">
   import { onMount, tick } from "svelte";
   import Timeline from "src/lib/Timeline.svelte";
   import Navbar from "src/lib/Navbar.svelte";
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import BurrowGrid from "src/lib/BurrowGrid.svelte";
-  import {
-    MessageRequest,
-    getOrderedBurrows,
-    NotificationDuration,
-  } from "../utils";
+  import { MessageRequest, getOrderedBurrows } from "../utils";
   import {
     SvelteUIProvider,
-    AppShell,
-    Navbar as MantineNavbar,
-    ActionIcon,
-    Button,
     Loader,
     Text,
-    Input,
     Tooltip,
+    AppShell,
   } from "@svelteuidev/core";
-  import { HamburgerMenu, Sun, Moon, Pencil1 } from "radix-icons-svelte";
+  import { Burrow, Rabbithole } from "src/storage/db";
 
-  let activeBurrow = {};
-  let websites = [];
-  let burrows = [];
-  let rabbitholes = [];
+  let activeBurrow: Burrow | null = null;
+  let websites: any[] = [];
+  let burrows: any[] = [];
+  let rabbitholes: any[] = [];
   let activeRabbithole = null;
-  let viewingAllBurrows = false;
+  let viewingAllBurrows: boolean = false;
 
-  let isDark = false;
-  let opened = true;
+  let isDark: boolean = false;
+  let opened: boolean = true;
 
-  let syncWindowSuccess = false;
-  let isSyncingWindow = false;
-  let updateBurrowHomeSuccess = false;
-  let isUpdatingBurrowHome = false;
-  let createAndSyncSuccess = false;
-  let isCreatingAndSyncing = false;
+  let isLoadingWebsites: boolean = false;
+  let isLoadingHome: boolean = true;
 
-  let isLoadingWebsites = false;
-  let isLoadingHome = true;
-
-  let autoFocusTimelineTitle = false;
-  let autoFocusRabbitholeTitle = false;
-  let isHoveringRabbitholeTitle = false;
+  let autoFocusTimelineTitle: boolean = false;
 
   let settings = {
     show: false,
@@ -67,7 +50,7 @@
     }
   });
 
-  async function refreshHomeState() {
+  async function refreshHomeState(): Promise<void> {
     try {
       const [rh, allRh, allBurrows, activeB] = await Promise.all([
         chrome.runtime.sendMessage({
@@ -83,7 +66,7 @@
       activeRabbithole = rh || null;
       rabbitholes = Array.isArray(allRh) ? allRh : [];
       burrows = Array.isArray(allBurrows) ? allBurrows : [];
-      activeBurrow = activeB || {};
+      activeBurrow = activeB || null;
     } catch (e) {
       const [allRh, allBurrows] = await Promise.all([
         chrome.runtime.sendMessage({
@@ -93,7 +76,7 @@
       ]);
 
       activeRabbithole = null;
-      activeBurrow = {};
+      activeBurrow = null;
       websites = [];
       rabbitholes = Array.isArray(allRh) ? allRh : [];
       burrows = Array.isArray(allBurrows) ? allBurrows : [];
@@ -111,7 +94,7 @@
     return "Rabbithole";
   })();
 
-  async function goHome() {
+  async function goHome(): Promise<void> {
     await Promise.all([
       chrome.runtime.sendMessage({
         type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
@@ -124,12 +107,12 @@
     ]);
 
     activeRabbithole = null;
-    activeBurrow = {};
+    activeBurrow = null;
     websites = [];
     viewingAllBurrows = false;
   }
 
-  async function goToAllBurrows() {
+  async function goToAllBurrows(): Promise<void> {
     await Promise.all([
       chrome.runtime.sendMessage({
         type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
@@ -142,12 +125,12 @@
     ]);
 
     activeRabbithole = null;
-    activeBurrow = {};
+    activeBurrow = null;
     websites = [];
     viewingAllBurrows = true;
   }
 
-  async function selectRabbithole(rabbithole) {
+  async function selectRabbithole(rabbithole: Rabbithole): Promise<void> {
     if (!rabbithole?.id) return;
 
     await chrome.runtime.sendMessage({
@@ -166,12 +149,12 @@
     if (activeB?.id && activeRabbithole?.burrows?.includes(activeB.id)) {
       activeBurrow = activeB;
     } else {
-      activeBurrow = {};
+      activeBurrow = null;
       websites = [];
     }
   }
 
-  async function selectBurrow(burrow) {
+  async function selectBurrow(burrow: Burrow): Promise<void> {
     if (!burrow?.id) return;
 
     await chrome.runtime.sendMessage({
@@ -187,16 +170,7 @@
     updateWebsites();
   }
 
-  async function createNewBurrow(event) {
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.CREATE_NEW_BURROW,
-      newBurrowName: event.detail.newBurrowName,
-    });
-    burrows = await getOrderedBurrows();
-    updateWebsites();
-  }
-
-  async function handleCreateBurrow() {
+  async function handleCreateBurrow(): Promise<void> {
     activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_BURROW,
       newBurrowName: "New Burrow",
@@ -206,7 +180,7 @@
     autoFocusTimelineTitle = true;
   }
 
-  async function handleCreateRabbithole() {
+  async function handleCreateRabbithole(): Promise<void> {
     const newRabbithole = await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_RABBITHOLE,
       title: "New Rabbithole",
@@ -214,8 +188,6 @@
 
     await selectRabbithole(newRabbithole);
     await refreshHomeState();
-
-    autoFocusRabbitholeTitle = true;
 
     // Focus the input after render
     await tick();
@@ -226,7 +198,7 @@
     }
   }
 
-  async function renameActiveRabbithole() {
+  async function renameActiveRabbithole(): Promise<void> {
     if (!activeRabbithole?.id) {
       return;
     }
@@ -242,7 +214,7 @@
     });
   }
 
-  async function deleteRabbithole(event) {
+  async function deleteRabbithole(event): Promise<void> {
     const { rabbitholeId } = event.detail;
     if (confirm("Are you sure you want to delete this rabbithole?")) {
       await chrome.runtime.sendMessage({
@@ -253,96 +225,7 @@
     }
   }
 
-  async function createNewBurrowFromWindow(event) {
-    isCreatingAndSyncing = true;
-    isLoadingWebsites = true;
-
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.SAVE_WINDOW_TO_NEW_BURROW,
-      newBurrowName: event.detail.newBurrowName,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_BURROW,
-    });
-    burrows = await getOrderedBurrows();
-    updateWebsites();
-
-    createAndSyncSuccess = true;
-    isCreatingAndSyncing = false;
-    isLoadingWebsites = false;
-
-    setTimeout(() => {
-      createAndSyncSuccess = false;
-    }, NotificationDuration);
-  }
-
-  async function updateActiveBurrow(event) {
-    const newBurrowId = event.detail.newBurrowId;
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.CHANGE_ACTIVE_BURROW,
-      burrowId: newBurrowId,
-    });
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_BURROW,
-      burrowId: newBurrowId,
-    });
-    updateWebsites();
-  }
-
-  async function saveWindowToActiveBurrow(event) {
-    isSyncingWindow = true;
-    isLoadingWebsites = true;
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
-    });
-
-    // Wait for websites to be stored in the background
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Fetch fresh state
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_BURROW,
-    });
-    burrows = await getOrderedBurrows();
-    updateWebsites();
-
-    syncWindowSuccess = true;
-    isSyncingWindow = false;
-    isLoadingWebsites = false;
-
-    setTimeout(() => {
-      syncWindowSuccess = false;
-    }, NotificationDuration);
-  }
-
-  async function updateBurrowHome(event) {
-    isUpdatingBurrowHome = true;
-    isLoadingWebsites = true;
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.UPDATE_ACTIVE_TABS,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_BURROW,
-    });
-    burrows = await getOrderedBurrows();
-    updateWebsites();
-
-    updateBurrowHomeSuccess = true;
-    isUpdatingBurrowHome = false;
-    isLoadingWebsites = false;
-
-    setTimeout(() => {
-      updateBurrowHomeSuccess = false;
-    }, NotificationDuration);
-  }
-
-  async function renameActiveBurrow(event) {
+  async function renameActiveBurrow(event): Promise<void> {
     activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.RENAME_BURROW,
       newName: event.detail.newActiveBurrowName,
@@ -351,16 +234,7 @@
     burrows = await getOrderedBurrows();
   }
 
-  async function deleteActiveBurrow(event) {
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.DELETE_BURROW,
-      burrowId: activeBurrow.id,
-    });
-    burrows = await getOrderedBurrows();
-    updateWebsites();
-  }
-
-  async function deleteWebsite(event) {
+  async function deleteWebsite(event): Promise<void> {
     await chrome.runtime.sendMessage({
       type: MessageRequest.DELETE_WEBSITE,
       burrowId: activeBurrow.id,
@@ -369,7 +243,7 @@
     updateWebsites();
   }
 
-  async function updateWebsites() {
+  async function updateWebsites(): Promise<void> {
     if (!activeBurrow?.id) {
       websites = [];
       return;
@@ -385,76 +259,15 @@
     );
   }
 
-  async function exportRabbitholes(event) {
-    const burrows = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ALL_BURROWS,
-    });
-    const websites = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ALL_ITEMS,
-    });
-
-    const exportData = {
-      burrows,
-      websites,
-    };
-
-    const blob = new Blob([JSON.stringify(exportData)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const date = new Date();
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    const filename = `rabbithole-${day}-${month}-${year}.json`;
-
-    link.href = url;
-    link.setAttribute("download", filename);
-    link.click();
-  }
-
-  async function importRabbitholes(event) {
-    const importData = event.detail.data;
-
-    let burrowsToImport = [];
-    let websitesToImport = [];
-
-    if (Array.isArray(importData)) {
-      burrowsToImport = importData;
-    } else if (importData && typeof importData === "object") {
-      // TODO: supporting legacy data imports for now, deprecate in a few version
-      burrowsToImport = importData.burrows ?? importData.projects ?? [];
-      websitesToImport = importData.websites ?? importData.savedWebsites ?? [];
-    }
-
-    await chrome.runtime.sendMessage({
-      type: "IMPORT_DATA",
-      burrows: burrowsToImport,
-      websites: websitesToImport,
-    });
-
-    // Refresh state
-    burrows = await getOrderedBurrows();
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.GET_ACTIVE_BURROW,
-    });
-    updateWebsites();
-  }
-
-  function handleToggleSidebar() {
-    opened = !opened;
-  }
-
-  function handleRabbitholesClick() {
+  function handleRabbitholesClick(): void {
     goHome();
   }
 
-  function handleBurrowsClick() {
+  function handleBurrowsClick(): void {
     goToAllBurrows();
   }
 
-  async function handleNavigation() {
+  async function handleNavigation(): Promise<void> {
     viewingAllBurrows = false;
     await refreshHomeState();
     if (activeBurrow?.id) {
@@ -488,12 +301,6 @@
                   <input
                     id="rabbithole-name"
                     class="project-name-input rabbithole-title-input"
-                    on:mouseenter={() => {
-                      isHoveringRabbitholeTitle = true;
-                    }}
-                    on:mouseleave={() => {
-                      isHoveringRabbitholeTitle = false;
-                    }}
                     bind:value={activeRabbithole.title}
                     on:blur={renameActiveRabbithole}
                     on:keydown={(e) => e.key === "Enter" && e.target.blur()}
@@ -602,15 +409,6 @@
     padding-left: 0 !important;
   }
 
-  .hamburger-only {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 100;
-    background: transparent;
-    padding: 20px;
-  }
-
   :global(.hamburger-only .sidebar-wrapper) {
     background: transparent !important;
     width: auto !important;
@@ -639,26 +437,6 @@
   }
 
   :global(body.dark-mode) .home-title {
-    color: #e7e7e7;
-  }
-
-  .burrow-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 0 18px 0;
-  }
-
-  .burrow-title {
-    margin: 0;
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: #1a1b1e;
-    text-align: center;
-    line-height: 1.15;
-  }
-
-  :global(body.dark-mode) .burrow-title {
     color: #e7e7e7;
   }
 

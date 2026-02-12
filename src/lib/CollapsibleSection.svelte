@@ -1,12 +1,12 @@
-<script>
+<script lang="ts">
   import { Text, ActionIcon } from "@svelteuidev/core";
   import { ChevronDown, ChevronUp } from "radix-icons-svelte";
   import { slide } from "svelte/transition";
 
-  export let title = "";
-  export let open = true;
+  export let title: string = "";
+  export let open: boolean = true;
 
-  function toggle() {
+  function toggle(): void {
     open = !open;
   }
 </script>

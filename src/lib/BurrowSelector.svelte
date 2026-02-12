@@ -1,29 +1,30 @@
-<script>
-  import { TextInput, Paper, Button } from "@svelteuidev/core";
+<script lang="ts">
+  import { TextInput, Paper } from "@svelteuidev/core";
   import { MessageRequest } from "../utils";
+  import { Burrow } from "src/storage/db";
 
-  export let handleBurrowChange;
-  export let burrows = [];
+  export let handleBurrowChange: (burrowId: string) => Promise<void>;
+  export let burrows: any[] = [];
   // "down" or "up"
-  export let dropdownDirection = "down";
+  export let dropdownDirection: string = "down";
   // Allow creating new burrows when no results found
-  export let allowCreate = false;
+  export let allowCreate: boolean = false;
 
-  let searchValue = "";
-  let isOpen = false;
+  let searchValue: string = "";
+  let isOpen: boolean = false;
 
   $: selectedBurrow = burrows.length > 0 ? burrows[0] : null;
-  $: displayValue = isOpen ? searchValue : (selectedBurrow?.name || "");
+  $: displayValue = isOpen ? searchValue : selectedBurrow?.name || "";
   $: filteredBurrows = burrows.filter((b) =>
-    b.name.toLowerCase().includes(searchValue.toLowerCase().trim())
+    b.name.toLowerCase().includes(searchValue.toLowerCase().trim()),
   );
 
-  function handleFocus() {
+  function handleFocus(): void {
     isOpen = true;
     searchValue = "";
   }
 
-  function handleBlur(event) {
+  function handleBlur(): void {
     // Delay closing to allow click events on dropdown items
     setTimeout(() => {
       isOpen = false;
@@ -31,23 +32,22 @@
     }, 150);
   }
 
-  function handleInput(event) {
-    searchValue = event.target.value;
+  function handleInput(e: CustomEvent<any>): void {
+    searchValue = e.target.value;
   }
 
-  function selectBurrow(burrow) {
+  function selectBurrow(burrow: Burrow): void {
     selectedBurrow = burrow;
     isOpen = false;
     searchValue = "";
-    // Create a synthetic event similar to what Select would dispatch
-    handleBurrowChange({ detail: burrow.id });
+    handleBurrowChange(burrow.id);
 
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
   }
 
-  async function createNewBurrow() {
+  async function createNewBurrow(): Promise<void> {
     const burrowName = searchValue.trim();
     if (!burrowName) return;
 
@@ -70,15 +70,17 @@
     }
   }
 
-  function handleKeydown(event) {
-    if (event.key === "Escape") {
+  function handleKeydown(e: CustomEvent<any>): void {
+    // FIXME: on:keydown annoyingly only takes a CustomEvent
+    const ke = e as unknown as KeyboardEvent;
+    if (ke.key === "Escape") {
       isOpen = false;
       searchValue = "";
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
     }
-    if (event.key === "Enter") {
+    if (ke.key === "Enter") {
       if (filteredBurrows.length > 0) {
         selectBurrow(filteredBurrows[0]);
       } else if (allowCreate && searchValue.trim()) {
@@ -102,7 +104,14 @@
   />
 
   {#if isOpen}
-    <Paper class="project-dropdown {dropdownDirection === 'up' ? 'dropdown-up' : 'dropdown-down'}" shadow="md" radius="md" padding="xs">
+    <Paper
+      class="project-dropdown {dropdownDirection === 'up'
+        ? 'dropdown-up'
+        : 'dropdown-down'}"
+      shadow="md"
+      radius="md"
+      padding="xs"
+    >
       {#if filteredBurrows.length > 0}
         {#each filteredBurrows as burrow}
           <button

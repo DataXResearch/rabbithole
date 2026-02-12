@@ -1,13 +1,14 @@
-<script>
+<script lang="ts">
+  import { Burrow } from "src/storage/db";
   import { createEventDispatcher } from "svelte";
-  export let burrows = [];
-  export let selectedBurrowId = null;
-  export let onSelect;
-  export let allowCreate = false;
+  export let burrows: any[] = [];
+  export let selectedBurrowId: string = null;
+  export let onSelect: (burrow: Burrow) => Promise<void>;
+  export let allowCreate: boolean = false;
 
   const dispatch = createEventDispatcher();
 
-  function handleSelect(burrow) {
+  function handleSelect(burrow: Burrow): void {
     if (onSelect) {
       onSelect(burrow);
     }
@@ -24,7 +25,9 @@
       aria-label="Create new burrow"
     >
       <div class="add-plus">+</div>
-      <div class="card-title" style="margin-top: 10px; font-size: 16px;">Create</div>
+      <div class="card-title" style="margin-top: 10px; font-size: 16px;">
+        Create
+      </div>
     </button>
   {/if}
 
@@ -38,7 +41,10 @@
       <div class="card-title">{burrow.name || "Untitled"}</div>
       <div class="card-meta">
         <div class="meta-item">
-          {burrow.websites?.length || 0} website{(burrow.websites?.length || 0) === 1 ? "" : "s"}
+          {burrow.websites?.length || 0} website{(burrow.websites?.length ||
+            0) === 1
+            ? ""
+            : "s"}
         </div>
       </div>
     </button>

@@ -1,9 +1,7 @@
-<script>
+<script lang="ts">
   import { onMount, createEventDispatcher } from "svelte";
   import { Agent } from "@atproto/api";
   import { InfoCircled } from "radix-icons-svelte";
-  import { Tooltip } from "@svelteuidev/core";
-  import Modal from "./Modal.svelte";
   import CollapsibleContainer from "./CollapsibleContainer.svelte";
   import {
     ClientMetadataUrl,
@@ -18,31 +16,30 @@
     clearSession,
     saveDpopKey,
     getDpopKey,
+    ATProtoSession,
   } from "../atproto/client";
 
-  export let showWhyBluesky = false;
+  export let showWhyBluesky: boolean = false;
 
   const dispatch = createEventDispatcher();
 
-  let isLoading = false;
-  let error = null;
-  let isAuthenticated = false;
-  let userDisplayName = null;
-  let userHandle = null;
-  let userAvatar = null;
-  let handleInput = "";
-  let inputElement;
+  let isLoading: boolean = false;
+  let error: string = null;
+  let isAuthenticated: boolean = false;
+  let userDisplayName: string = null;
+  let userHandle: string = null;
+  let userAvatar: string = null;
+  let handleInput: string = "";
   let dpopKeyPair = null;
-  let showWhyBlueskyModal = false;
 
-  const RedirectUri = chrome.identity.getRedirectURL("callback");
+  const RedirectUri: string = chrome.identity.getRedirectURL("callback");
 
   onMount(async () => {
     console.log("Redirect URI:", RedirectUri);
     await restoreSession();
   });
 
-  async function restoreSession() {
+  async function restoreSession(): Promise<void> {
     try {
       const stored = await getSession();
       if (stored) {
@@ -63,7 +60,7 @@
     }
   }
 
-  async function fetchProfile(session) {
+  async function fetchProfile(session: ATProtoSession): Promise<void> {
     const agent = new Agent("https://public.api.bsky.app");
     const response = await agent.getProfile({ actor: session.did });
 
@@ -78,7 +75,7 @@
     console.log(response);
   }
 
-  async function submitHandle() {
+  async function submitHandle(): Promise<void> {
     if (!handleInput.trim()) {
       error = "Please enter your handle";
       return;
@@ -128,7 +125,7 @@
 
       console.log("Opening auth URL:", authUrl.toString());
 
-      // Use chrome.identity.launchWebAuthFlow
+      // FIXME: why does eslint get the types wrong here?
       const callbackUrl = await chrome.identity.launchWebAuthFlow({
         url: authUrl.toString(),
         interactive: true,
@@ -193,13 +190,13 @@
     handleInput = "";
   }
 
-  function handleKeydown(event) {
+  function handleKeydown(event: KeyboardEvent): void {
     if (event.key === "Enter") {
       submitHandle();
     }
   }
 
-  async function handleLogout() {
+  async function handleLogout(): Promise<void> {
     await clearSession();
     isAuthenticated = false;
     userDisplayName = null;
@@ -239,7 +236,6 @@
         class="handle-input"
         placeholder="user.bsky.social"
         bind:value={handleInput}
-        bind:this={inputElement}
         on:keydown={handleKeydown}
       />
       <button

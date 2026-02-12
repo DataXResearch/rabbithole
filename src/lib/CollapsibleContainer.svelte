@@ -1,28 +1,21 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  export let title = "";
-  export let defaultOpen = true;
-  export let open = undefined; // optional controlled mode
-  export let collapsible = true;
-
-  // Optional: allow consumers to override title styling without breaking defaults
-  export let titleClass = "";
+  export let title: string = "";
+  export let defaultOpen: boolean = true;
+  export let open: boolean = undefined;
+  export let collapsible: boolean = true;
 
   const dispatch = createEventDispatcher();
 
-  let internalOpen = defaultOpen;
+  let internalOpen: boolean = defaultOpen;
 
   $: isOpen = typeof open === "boolean" ? open : internalOpen;
 
-  function toggle() {
+  function toggle(): void {
     if (!collapsible) return;
 
-    const next = !isOpen;
-    if (typeof open !== "boolean") {
-      internalOpen = next;
-    }
-    dispatch("toggle", { open: next });
+    dispatch("toggle", { open: !isOpen });
   }
 </script>
 
@@ -34,7 +27,7 @@
     aria-expanded={isOpen}
     disabled={!collapsible}
   >
-    <div class="title {titleClass}">{title}</div>
+    <div class="title">{title}</div>
     {#if collapsible}
       <div class="chevron" aria-hidden="true">
         {#if isOpen}

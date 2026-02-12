@@ -1,13 +1,13 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { ChevronLeft, ChevronRight, Check } from "radix-icons-svelte";
   import Modal from "./Modal.svelte";
 
-  export let isOpen = false;
+  export let isOpen: boolean = false;
 
   const dispatch = createEventDispatcher();
 
-  let currentSlide = 0;
+  let currentSlide: number = 0;
 
   const slides = [
     {
@@ -41,7 +41,7 @@
     },
   ];
 
-  function next() {
+  function next(): void {
     if (currentSlide < slides.length - 1) {
       currentSlide++;
     } else {
@@ -49,13 +49,13 @@
     }
   }
 
-  function prev() {
+  function prev(): void {
     if (currentSlide > 0) {
       currentSlide--;
     }
   }
 
-  function close() {
+  function close(): void {
     dispatch("close");
     // Reset slide after a delay so it doesn't jump while closing
     setTimeout(() => {
@@ -63,7 +63,7 @@
     }, 300);
   }
 
-  function goToSlide(index) {
+  function goToSlide(index: number): void {
     currentSlide = index;
   }
 </script>

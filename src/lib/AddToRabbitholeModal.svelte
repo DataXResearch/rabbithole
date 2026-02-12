@@ -1,25 +1,32 @@
-<script>
+<script lang="ts">
   import { onMount, afterUpdate, createEventDispatcher } from "svelte";
-  import { ActionIcon, TextInput, Text, Stack, Loader } from "@svelteuidev/core";
+  import {
+    ActionIcon,
+    TextInput,
+    Text,
+    Stack,
+    Loader,
+  } from "@svelteuidev/core";
   import { Cross2, MagnifyingGlass, Trash } from "radix-icons-svelte";
   import Fuse from "fuse.js";
   import { MessageRequest } from "../utils";
+  import { Rabbithole } from "src/storage/db";
 
-  export let isOpen = false;
+  export let isOpen: boolean = false;
   export let activeBurrow = null;
-  export let existingRabbitholes = []; // rabbitholes the burrow is already in
+  export let existingRabbitholes: any[] = []; // rabbitholes the burrow is already in
 
   const dispatch = createEventDispatcher();
 
-  let searchQuery = "";
-  let allRabbitholes = [];
-  let filtered = [];
-  let isLoading = false;
-  let isAdding = false;
-  let inputRef;
+  let searchQuery: string = "";
+  let allRabbitholes: any[] = [];
+  let filtered: any[] = [];
+  let isLoading: boolean = false;
+  let isAdding: boolean = false;
+  let inputRef: HTMLElement;
 
-  let wasOpen = false;
-  let hoveredAddedId = null;
+  let wasOpen: boolean = false;
+  let hoveredAddedId: string = null;
 
   onMount(async () => {
     // no-op; we lazy-load on open
@@ -32,24 +39,24 @@
     }
   });
 
-  function close() {
+  function close(): void {
     isOpen = false;
     searchQuery = "";
     filtered = [];
     hoveredAddedId = null;
   }
 
-  function handleKeydown(e) {
+  function handleKeydown(e: KeyboardEvent): void {
     if (e.key === "Escape" && isOpen) {
       close();
     }
   }
 
-  function isAlreadyMember(rabbitholeId) {
+  function isAlreadyMember(rabbitholeId: string): boolean {
     return (existingRabbitholes || []).some((rh) => rh?.id === rabbitholeId);
   }
 
-  async function loadAllRabbitholes() {
+  async function loadAllRabbitholes(): Promise<void> {
     isLoading = true;
     try {
       const res = await chrome.runtime.sendMessage({
@@ -64,7 +71,7 @@
     }
   }
 
-  function performSearch() {
+  function performSearch(): void {
     const q = searchQuery.trim();
     if (q.length < 1) {
       filtered = allRabbitholes;
@@ -80,7 +87,7 @@
     filtered = fuse.search(q).map((r) => r.item);
   }
 
-  async function addToRabbithole(rabbithole) {
+  async function addToRabbithole(rabbithole: Rabbithole): Promise<void> {
     if (!activeBurrow?.id || !rabbithole?.id) return;
     if (isAlreadyMember(rabbithole.id)) return;
 
@@ -106,7 +113,7 @@
     }
   }
 
-  async function removeFromRabbithole(rabbitholeId) {
+  async function removeFromRabbithole(rabbitholeId: string): Promise<void> {
     if (!activeBurrow?.id || !rabbitholeId) return;
 
     isAdding = true;
@@ -131,7 +138,7 @@
     }
   }
 
-  async function onOpen() {
+  async function onOpen(): Promise<void> {
     searchQuery = "";
     filtered = [];
     hoveredAddedId = null;
@@ -161,7 +168,7 @@
     <div class="modal-content" on:click|stopPropagation>
       <div class="modal-header">
         <h2 class="modal-title">Add to Rabbithole</h2>
-        <ActionIcon variant="subtle" on:click={close}>
+        <ActionIcon on:click={close}>
           <Cross2 />
         </ActionIcon>
       </div>
@@ -208,8 +215,11 @@
                   type="button"
                   class="result-row"
                   disabled={isAdding}
-                  on:click={() => (!isAlreadyMember(rh.id) ? addToRabbithole(rh) : null)}
-                  title={isAlreadyMember(rh.id) ? "Already in this rabbithole" : "Add to this rabbithole"}
+                  on:click={() =>
+                    !isAlreadyMember(rh.id) ? addToRabbithole(rh) : null}
+                  title={isAlreadyMember(rh.id)
+                    ? "Already in this rabbithole"
+                    : "Add to this rabbithole"}
                 >
                   <div class="row-main">
                     <div class="row-title">{rh.title || "Untitled"}</div>
@@ -225,19 +235,22 @@
                         class="added-pill"
                         on:mouseenter={() => (hoveredAddedId = rh.id)}
                         on:mouseleave={() => (hoveredAddedId = null)}
-                        on:click|stopPropagation={() => removeFromRabbithole(rh.id)}
+                        on:click|stopPropagation={() =>
+                          removeFromRabbithole(rh.id)}
                         title="Remove from this rabbithole"
                         aria-label="Remove from this rabbithole"
                         disabled={isAdding}
                       >
                         {#if hoveredAddedId === rh.id}
-                          <Trash size="14" />
+                          <Trash size={14} />
                         {:else}
                           Added
                         {/if}
                       </button>
                     {:else}
-                      <span class="add-label">{isAdding ? "Working..." : "Add"}</span>
+                      <span class="add-label"
+                        >{isAdding ? "Working..." : "Add"}</span
+                      >
                     {/if}
                   </div>
                 </button>
@@ -373,7 +386,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
 
