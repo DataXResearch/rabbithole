@@ -6,33 +6,41 @@ import { syncBurrowToCollection } from "../atproto/cosmik";
 function extractOpenGraphData(html: string): {
   title: string | null;
   image: string | null;
-  description: string | null
+  description: string | null;
 } {
   let title: string | null = null;
   let image: string | null = null;
   let description: string | null = null;
 
   // Extract Open Graph title
-  const titleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i);
+  const titleMatch = html.match(
+    /<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i,
+  );
   if (titleMatch) {
     title = titleMatch[1];
   }
 
   // Extract Open Graph image
-  const imageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+  const imageMatch = html.match(
+    /<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i,
+  );
   if (imageMatch) {
     image = imageMatch[1];
   }
 
   // Extract Open Graph description
-  const descriptionMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i);
+  const descriptionMatch = html.match(
+    /<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i,
+  );
   if (descriptionMatch) {
     description = descriptionMatch[1];
   }
 
   // Fallback 1: Standard meta description
   if (!description) {
-    const metaDescriptionMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+    const metaDescriptionMatch = html.match(
+      /<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i,
+    );
     if (metaDescriptionMatch) {
       description = metaDescriptionMatch[1];
     }
@@ -40,7 +48,9 @@ function extractOpenGraphData(html: string): {
 
   // Fallback 2: Twitter card description
   if (!description) {
-    const twitterDescMatch = html.match(/<meta\s+name=["']twitter:description["']\s+content=["']([^"']+)["']/i);
+    const twitterDescMatch = html.match(
+      /<meta\s+name=["']twitter:description["']\s+content=["']([^"']+)["']/i,
+    );
     if (twitterDescMatch) {
       description = twitterDescMatch[1];
     }
@@ -66,28 +76,38 @@ function extractOpenGraphData(html: string): {
 
 function extractFirstParagraph(html: string): string | null {
   // Remove script and style tags
-  let cleaned = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  cleaned = cleaned.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  let cleaned = html.replace(
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    "",
+  );
+  cleaned = cleaned.replace(
+    /<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,
+    "",
+  );
 
   // Try to find first paragraph
-  const pMatch = cleaned.match(/<p[^>]*>([^<]+(?:<[^/][^>]*>[^<]*<\/[^>]+>[^<]*)*)<\/p>/i);
+  const pMatch = cleaned.match(
+    /<p[^>]*>([^<]+(?:<[^/][^>]*>[^<]*<\/[^>]+>[^<]*)*)<\/p>/i,
+  );
   if (pMatch) {
     // Strip remaining HTML tags and clean up
-    const text = pMatch[1].replace(/<[^>]+>/g, '').trim();
+    const text = pMatch[1].replace(/<[^>]+>/g, "").trim();
     // Limit to reasonable length (e.g., 160 characters)
-    return text.length > 160 ? text.substring(0, 157) + '...' : text;
+    return text.length > 160 ? text.substring(0, 157) + "..." : text;
   }
 
   // Fallback: Get any substantial text from body
   const bodyMatch = cleaned.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) {
     const bodyText = bodyMatch[1]
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
 
     if (bodyText.length > 20) {
-      return bodyText.length > 160 ? bodyText.substring(0, 157) + '...' : bodyText;
+      return bodyText.length > 160
+        ? bodyText.substring(0, 157) + "..."
+        : bodyText;
     }
   }
 
@@ -127,7 +147,7 @@ function storeWebsites(
   sendResponse: any,
 ): Promise<void[]> {
   // Filter out newtab pages
-  const validTabs = tabs.filter(tab => !isNewtabPage(tab.url));
+  const validTabs = tabs.filter((tab) => !isNewtabPage(tab.url));
 
   if (validTabs.length === 0) {
     sendResponse({ error: "No valid tabs to save" });
@@ -310,7 +330,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case MessageRequest.SAVE_WINDOW_TO_NEW_BURROW:
       chrome.tabs.query({ windowId: sender.tab.windowId }).then((tabs) => {
-        let websites: string[] = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
+        let websites: string[] = tabs
+          .filter((tab) => !isNewtabPage(tab.url))
+          .map((tab) => tab.url);
         // store websites async
         storeWebsites(tabs, db, sendResponse);
 
@@ -341,14 +363,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.UPDATE_ACTIVE_TABS:
-      chrome.tabs.query({ windowId: sender.tab.windowId }).then(async (tabs) => {
-        const websites = tabs.filter(tab => !isNewtabPage(tab.url)).map((tab) => tab.url);
-        const activeBurrow = await db.getActiveBurrow();
-        await db.updateBurrowActiveTabs(activeBurrow.id, websites);
+      chrome.tabs
+        .query({ windowId: sender.tab.windowId })
+        .then(async (tabs) => {
+          const websites = tabs
+            .filter((tab) => !isNewtabPage(tab.url))
+            .map((tab) => tab.url);
+          const activeBurrow = await db.getActiveBurrow();
+          await db.updateBurrowActiveTabs(activeBurrow.id, websites);
 
-        // store websites async
-        storeWebsites(tabs, db, sendResponse);
-      });
+          // store websites async
+          storeWebsites(tabs, db, sendResponse);
+        });
 
       break;
 
@@ -398,13 +424,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.PUBLISH_BURROW:
-      if (!("burrowId" in request) || !("uri" in request) || !("timestamp" in request)) {
+      if (
+        !("burrowId" in request) ||
+        !("uri" in request) ||
+        !("timestamp" in request)
+      ) {
         sendResponse({
           error: "burrowId, uri, and timestamp required",
         });
         break;
       }
-      db.updateBurrowSembleInfo(request.burrowId, request.uri, request.timestamp)
+      db.updateBurrowSembleInfo(
+        request.burrowId,
+        request.uri,
+        request.timestamp,
+      )
         .then(() => sendResponse({ success: true }))
         .catch((err) => {
           console.log(err);
@@ -457,7 +491,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.CHANGE_ACTIVE_RABBITHOLE:
-      db.changeActiveRabbithole("rabbitholeId" in request ? request.rabbitholeId : null)
+      db.changeActiveRabbithole(
+        "rabbitholeId" in request ? request.rabbitholeId : null,
+      )
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -487,7 +523,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
         break;
       }
-      db.updateRabbithole(request.rabbitholeId, request.title, request.description)
+      db.updateRabbithole(
+        request.rabbitholeId,
+        request.title,
+        request.description,
+      )
         .then((res) => sendResponse(res))
         .catch((err) => {
           console.log(err);
@@ -598,12 +638,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const session = await getSession();
           if (!session) throw new Error("Not logged in");
 
-          await syncBurrowToCollection(session.did, burrow.sembleCollectionUri, websites);
-          
+          await syncBurrowToCollection(
+            session.did,
+            burrow.sembleCollectionUri,
+            websites,
+          );
+
           // Update last sync time
           const timestamp = Date.now();
-          await db.updateBurrowSembleInfo(burrow.id, burrow.sembleCollectionUri, timestamp);
-          
+          await db.updateBurrowSembleInfo(
+            burrow.id,
+            burrow.sembleCollectionUri,
+            timestamp,
+          );
+
           sendResponse({ success: true, timestamp });
         } catch (err) {
           console.error(err);
@@ -641,7 +689,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ error: "projects required" });
         break;
       }
-      const burrowsToImport = request.burrows as (Burrow & { savedWebsites?: string[] })[];
+      const burrowsToImport = request.burrows as (Burrow & {
+        savedWebsites?: string[];
+      })[];
       const websitesToImport = request.websites || [];
 
       (async () => {
@@ -655,7 +705,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           // FIXME: how much scale is this required to support?
           const existingUrls = new Set(allWebsites.map((w) => w.url));
-          const existingBurrowMap = new Map(existingBurrows.map((b) => [b.name, b]));
+          const existingBurrowMap = new Map(
+            existingBurrows.map((b) => [b.name, b]),
+          );
 
           for (const burrow of burrowsToImport) {
             const missingWebsites = [];
@@ -699,7 +751,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
 
               if (isConsistent) {
-                console.log(`Project ${burrowName} already exists and is consistent. Skipping creation.`);
+                console.log(
+                  `Project ${burrowName} already exists and is consistent. Skipping creation.`,
+                );
                 continue;
               } else {
                 let counter = 1;
@@ -716,7 +770,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               id: "temp",
               createdAt: Date.now(),
               name: burrowName,
-              websites: websites
+              websites: websites,
             });
           }
           sendResponse({ success: true });

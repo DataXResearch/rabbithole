@@ -29,7 +29,10 @@
     });
 
     // Reload the active tab
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     if (tab?.id) {
       await chrome.tabs.reload(tab.id);
     }
@@ -58,12 +61,16 @@
     <div class="popup-header">
       <span class="popup-title">Rabbithole</span>
       <div class="header-actions">
-        <Tooltip {isHoveringOverSync} label="Save all tabs in window to current project" withArrow>
+        <Tooltip
+          {isHoveringOverSync}
+          label="Save all tabs in window to current project"
+          withArrow
+        >
           <button
             class="link-button"
             on:click={saveAllTabsToActiveProject}
-            on:mouseenter={() => isHoveringOverSync = true}
-            on:mouseleave={() => isHoveringOverSync = false}
+            on:mouseenter={() => (isHoveringOverSync = true)}
+            on:mouseleave={() => (isHoveringOverSync = false)}
             disabled={isSyncingWindow}
           >
             {syncWindowSuccess ? "Synced!" : "Sync Window"}
@@ -73,8 +80,8 @@
           <button
             class="link-button"
             on:click={toggleOverlay}
-            on:mouseenter={() => isHovering = true}
-            on:mouseleave={() => isHovering = false}
+            on:mouseenter={() => (isHovering = true)}
+            on:mouseleave={() => (isHovering = false)}
           >
             {settings.show ? "Hide" : "Show"} Overlay
           </button>
