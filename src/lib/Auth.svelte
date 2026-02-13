@@ -16,8 +16,8 @@
     clearSession,
     saveDpopKey,
     getDpopKey,
-    ATProtoSession,
   } from "../atproto/client";
+  import type { ATProtoSession } from "../atproto/client";
 
   export let showWhyBluesky: boolean = false;
 

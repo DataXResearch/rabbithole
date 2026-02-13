@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Burrow } from "src/storage/db";
+  import type { Burrow } from "src/storage/db";
   import { createEventDispatcher } from "svelte";
   export let burrows: any[] = [];
   export let selectedBurrowId: string = null;
