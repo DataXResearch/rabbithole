@@ -15,7 +15,7 @@
   import BurrowGrid from "src/lib/BurrowGrid.svelte";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import { MessageRequest } from "../utils";
-  import { Burrow, Rabbithole, Website } from "src/storage/db";
+  import type { Burrow, Rabbithole, Website } from "src/storage/db";
 
   export let isOpen: boolean = false;
 

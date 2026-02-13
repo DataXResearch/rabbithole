@@ -1,7 +1,7 @@
 <script lang="ts">
   import { TextInput, Paper } from "@svelteuidev/core";
   import { MessageRequest } from "../utils";
-  import { Burrow } from "src/storage/db";
+  import type { Burrow } from "src/storage/db";
 
   export let handleBurrowChange: (burrowId: string) => Promise<void>;
   export let burrows: any[] = [];

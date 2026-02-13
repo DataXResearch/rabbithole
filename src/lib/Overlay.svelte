@@ -17,7 +17,7 @@
     NotificationDuration,
   } from "../utils";
   import { Move, EyeNone, Update, Check, Cross2 } from "radix-icons-svelte";
-  import { Settings } from "src/storage/db";
+  import type { Settings } from "src/storage/db";
 
   export let isPopup: boolean = false;
 
