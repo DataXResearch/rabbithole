@@ -45,7 +45,6 @@
   export let autoFocusTitle: boolean = false;
 
   let searchResults: Website[] = [];
-  let isHovering: boolean = false;
   let searchQuery: string = "";
   let filteredWebsites: Website[] = [];
   let previousWebsitesLength: number = 0;
@@ -657,18 +656,12 @@
 <div class="timeline">
   <div class="header-section">
     <div class="title-row">
-      <Tooltip {isHovering} label="Click to rename burrow" withArrow>
+      <Tooltip label="Click to rename burrow" withArrow>
         <Input
           id="project-name"
           variant="unstyled"
           size="xl"
           class="project-name-input"
-          on:mouseenter={() => {
-            isHovering = true;
-          }}
-          on:mouseleave={() => {
-            isHovering = false;
-          }}
           bind:value={activeBurrow.name}
           on:blur={renameBurrow}
           on:keydown={(e) => e.key === "Enter" && renameBurrow()}
@@ -989,11 +982,15 @@
   }
 
   :global(.project-name-input input) {
-    text-align: center;
+    text-align: center !important;
     font-weight: 700;
     font-size: 2rem !important;
     height: auto !important;
     padding: 0 !important;
+  }
+
+  :global(.project-name-input) {
+    text-align: center;
   }
 
   .search-bar {

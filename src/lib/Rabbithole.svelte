@@ -12,16 +12,16 @@
     Tooltip,
     AppShell,
   } from "@svelteuidev/core";
-  import type { Burrow, Rabbithole } from "src/storage/db";
+  import type { Burrow, Rabbithole, Settings, Website } from "src/storage/db";
 
   let activeBurrow: Burrow | null = null;
-  let websites: any[] = [];
-  let burrows: any[] = [];
-  let rabbitholes: any[] = [];
-  let activeRabbithole = null;
+  let websites: Website[] = [];
+  let burrows: Burrow[] = [];
+  let rabbitholes: Rabbithole[] = [];
+  let activeRabbithole: string | null = null;
   let viewingAllBurrows: boolean = false;
 
-  let isDark: boolean = false;
+  let isDark: boolean = true;
   let opened: boolean = true;
 
   let isLoadingWebsites: boolean = false;
@@ -29,17 +29,13 @@
 
   let autoFocusTimelineTitle: boolean = false;
 
-  let settings = {
-    show: false,
-    alignment: "right",
-    darkMode: false,
-  };
+  let settings: Settings | null = null;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
-    isDark = settings.darkMode;
+    isDark = settings?.darkMode ?? false;
     document.body.classList.toggle("dark-mode", isDark);
 
     await refreshHomeState();
