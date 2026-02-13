@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 
-const version = 7;
+const version = 8;
 
 export interface Settings {
   alignment: "show" | "hide";
@@ -162,6 +162,17 @@ export class WebsiteStore {
                   unique: false,
                   multiEntry: true,
                 });
+              }
+            }
+          }
+
+          if (event.oldVersion < 8) {
+            const txn = (event.target as IDBOpenDBRequest).transaction;
+            if (txn.objectStoreNames.contains("burrows")) {
+              const store = txn.objectStore("burrows");
+              if (store.indexNames.contains("name")) {
+                store.deleteIndex("name");
+                store.createIndex("name", "name", { unique: false });
               }
             }
           }
@@ -1075,6 +1086,7 @@ export class WebsiteStore {
       websites: [...new Set(websites)],
       activeTabs: [],
     };
+    console.log(burrow);
 
     return new Promise((resolve, reject) => {
       // FIXME: when rabbithole is installed, the first time a session is saved
@@ -1104,7 +1116,7 @@ export class WebsiteStore {
       };
 
       burrowReq.onerror = (event) => {
-        console.log(`getAll error: ${event.target}`);
+        console.log(event.target);
         reject(new Error("Failed to retrieve items"));
       };
     });
