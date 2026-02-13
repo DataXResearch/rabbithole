@@ -43,6 +43,7 @@
   export let isLoading: boolean = false;
   export let selectRabbithole: (rabbithole: Rabbithole) => Promise<void>;
   export let autoFocusTitle: boolean = false;
+  export let burrowsInActiveRabbithole: Burrow[] = [];
 
   let searchResults: Website[] = [];
   let searchQuery: string = "";
@@ -242,12 +243,28 @@
     }
   }
 
+  let burrowNameError: string | null = null;
+
   async function renameBurrow(): Promise<void> {
-    if (activeBurrow.name === "") {
+    const name = activeBurrow.name.trim();
+    if (name === "") {
+      burrowNameError = "Burrow name cannot be empty";
       return;
     }
+
+    if (
+      burrowsInActiveRabbithole.some(
+        (b) => b.id !== activeBurrow.id && b.name === name,
+      )
+    ) {
+      burrowNameError = "Burrow name must be unique in this rabbithole";
+      return;
+    }
+
+    burrowNameError = null;
+
     dispatch("burrowRename", {
-      newActiveBurrowName: activeBurrow.name,
+      newActiveBurrowName: name,
     });
   }
 
@@ -656,14 +673,20 @@
 <div class="timeline">
   <div class="header-section">
     <div class="title-row">
-      <Tooltip label="Click to rename burrow" withArrow>
+      <Tooltip
+        label={burrowNameError || "Click to rename burrow"}
+        withArrow
+        color={burrowNameError ? "red" : "gray"}
+        opened={!!burrowNameError || undefined}
+      >
         <Input
           id="project-name"
           variant="unstyled"
           size="xl"
-          class="project-name-input"
+          class="project-name-input {burrowNameError ? 'input-error' : ''}"
           bind:value={activeBurrow.name}
           on:blur={renameBurrow}
+          on:input={() => (burrowNameError = null)}
           on:keydown={(e) => e.key === "Enter" && renameBurrow()}
         />
       </Tooltip>
@@ -991,6 +1014,16 @@
 
   :global(.project-name-input) {
     text-align: center;
+  }
+
+  :global(.input-error input) {
+    color: #fa5252 !important;
+  }
+
+  :global(.input-error) {
+    border: 1px solid #fa5252 !important;
+    border-radius: 4px;
+    background-color: rgba(250, 82, 82, 0.1) !important;
   }
 
   .search-bar {

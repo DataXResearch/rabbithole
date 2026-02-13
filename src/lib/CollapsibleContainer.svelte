@@ -13,8 +13,7 @@
   $: isOpen = typeof open === "boolean" ? open : internalOpen;
 
   function toggle(): void {
-    if (!collapsible) return;
-
+    internalOpen = !isOpen;
     dispatch("toggle", { open: !isOpen });
   }
 </script>

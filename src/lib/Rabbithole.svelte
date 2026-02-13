@@ -167,9 +167,19 @@
   }
 
   async function handleCreateBurrow(): Promise<void> {
+    let baseName = "New Burrow";
+    let newName = baseName;
+    let counter = 1;
+
+    const listToCheck = viewingAllBurrows ? burrows : burrowsInActiveRabbithole;
+    while (listToCheck.some((b) => b.name === newName)) {
+      counter++;
+      newName = `${baseName} ${counter}`;
+    }
+
     activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.CREATE_NEW_BURROW,
-      newBurrowName: "New Burrow",
+      newBurrowName: newName,
     });
     burrows = await getOrderedBurrows();
     updateWebsites();
@@ -194,15 +204,34 @@
     }
   }
 
+  let rabbitholeNameError: string | null = null;
+
   async function renameActiveRabbithole(): Promise<void> {
     if (!activeRabbithole?.id) {
       return;
     }
 
+    const title = activeRabbithole.title.trim();
+    if (title === "") {
+      rabbitholeNameError = "Rabbithole name cannot be empty";
+      return;
+    }
+
+    if (
+      rabbitholes.some(
+        (r) => r.id !== activeRabbithole.id && r.title === title,
+      )
+    ) {
+      rabbitholeNameError = "Rabbithole name must be unique";
+      return;
+    }
+
+    rabbitholeNameError = null;
+
     await chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_RABBITHOLE,
       rabbitholeId: activeRabbithole.id,
-      title: activeRabbithole.title,
+      title: title,
     });
 
     rabbitholes = await chrome.runtime.sendMessage({
@@ -293,12 +322,19 @@
           <div class="home-header" role="button" tabindex="0">
             {#if !activeBurrow?.id}
               {#if activeRabbithole && !viewingAllBurrows}
-                <Tooltip label="Click to rename rabbithole" withArrow>
+                <Tooltip
+                  label={rabbitholeNameError || "Click to rename rabbithole"}
+                  withArrow
+                  color={rabbitholeNameError ? "red" : "gray"}
+                  opened={!!rabbitholeNameError || undefined}
+                >
                   <input
                     id="rabbithole-name"
                     class="project-name-input rabbithole-title-input"
+                    class:input-error={!!rabbitholeNameError}
                     bind:value={activeRabbithole.title}
                     on:blur={renameActiveRabbithole}
+                    on:input={() => (rabbitholeNameError = null)}
                     on:keydown={(e) => e.key === "Enter" && e.target.blur()}
                   />
                 </Tooltip>
@@ -317,6 +353,7 @@
               {selectRabbithole}
               isLoading={isLoadingWebsites}
               autoFocusTitle={autoFocusTimelineTitle}
+              {burrowsInActiveRabbithole}
             />
           {:else if viewingAllBurrows}
             <div class="timeline-placeholder timeline-placeholder-grid">
@@ -548,5 +585,10 @@
   :global(body.dark-mode) .rabbithole-title-input:hover,
   :global(body.dark-mode) .rabbithole-title-input:focus {
     background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .input-error {
+    border: 1px solid #fa5252 !important;
+    background-color: rgba(250, 82, 82, 0.1) !important;
   }
 </style>
