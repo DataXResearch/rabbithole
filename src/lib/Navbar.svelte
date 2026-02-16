@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from "svelte";
-  import { Button, ActionIcon, Menu } from "@svelteuidev/core";
+  import { Button, ActionIcon, Menu, Tooltip } from "@svelteuidev/core";
   import { Agent } from "@atproto/api";
   import {
     MagnifyingGlass,
@@ -28,6 +28,7 @@
   let showSearchModal: boolean = false;
   let showAuthModal: boolean = false;
   let showOnboardingModal: boolean = false;
+  let showHelpTooltip: boolean = false;
   let isMac = navigator.userAgent.includes("Mac");
   let isLoggedIn: boolean = false;
   let userHandle: string = "";
@@ -198,6 +199,10 @@
         type: MessageRequest.UPDATE_SETTINGS,
         settings,
       });
+      showHelpTooltip = true;
+      setTimeout(() => {
+        showHelpTooltip = false;
+      }, 5000);
     }
   }
 </script>
@@ -263,15 +268,20 @@
   </div>
 
   <div class="navbar-right">
-    <ActionIcon
-      color="gray"
-      size="xl"
-      radius="xl"
-      on:click={() => (showOnboardingModal = true)}
-      title="Help"
+    <Tooltip
+      label={showHelpTooltip ? "Click here to see the tour again" : "Help"}
+      opened={showHelpTooltip || undefined}
+      withArrow
     >
-      <QuestionMarkCircled size={22} />
-    </ActionIcon>
+      <ActionIcon
+        color="gray"
+        size="xl"
+        radius="xl"
+        on:click={() => (showOnboardingModal = true)}
+      >
+        <QuestionMarkCircled size={22} />
+      </ActionIcon>
+    </Tooltip>
 
     <ActionIcon
       color="gray"
