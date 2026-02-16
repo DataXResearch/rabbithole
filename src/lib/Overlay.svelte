@@ -128,7 +128,7 @@
       setTimeout(() => {
         saveSuccess = false;
         isSavingPage = false;
-      }, 1500);
+      }, 500);
     } catch (e) {
       console.error("Failed to save page:", e);
     } finally {
