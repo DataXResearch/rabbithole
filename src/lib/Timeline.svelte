@@ -149,6 +149,7 @@
   }
 
   $: if (activeBurrow?.id) {
+    rabbitholes = [];
     loadRabbitholesForActiveBurrow();
   } else {
     rabbitholes = [];
@@ -234,8 +235,7 @@
         burrowId: null,
       });
 
-      // Reload the page to refresh state and show the grid view
-      window.location.reload();
+      dispatch("burrowDeleted");
     } catch (e) {
       console.error("Failed to delete burrow:", e);
     } finally {
@@ -1014,6 +1014,7 @@
 
   :global(.project-name-input) {
     text-align: center;
+    width: 100%;
   }
 
   :global(.input-error input) {

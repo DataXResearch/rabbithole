@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Burrow } from "src/storage/db";
   import { createEventDispatcher } from "svelte";
+  import { Trash } from "radix-icons-svelte";
+
   export let burrows: any[] = [];
   export let selectedBurrowId: string = null;
   export let onSelect: (burrow: Burrow) => Promise<void>;
   export let allowCreate: boolean = false;
+  export let showDelete: boolean = false;
 
   const dispatch = createEventDispatcher();
 
@@ -38,6 +41,19 @@
       class:selected={burrow.id === selectedBurrowId}
       on:click={() => handleSelect(burrow)}
     >
+      {#if showDelete}
+        <button
+          type="button"
+          class="remove-btn"
+          title="Delete Burrow"
+          aria-label="Delete Burrow"
+          on:click|stopPropagation={() =>
+            dispatch("deleteBurrow", { burrowId: burrow.id })}
+        >
+          <Trash size={16} />
+        </button>
+      {/if}
+
       <div class="card-title">{burrow.name || "Untitled"}</div>
       <div class="card-meta">
         <div class="meta-item">
@@ -60,6 +76,7 @@
   }
 
   .card {
+    position: relative;
     text-align: left;
     border: 1px solid rgba(0, 0, 0, 0.08);
     background: #ffffff;
@@ -120,6 +137,29 @@
     transform: translateY(-2px);
   }
 
+  .remove-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.55);
+    z-index: 2;
+  }
+
+  .remove-btn:hover {
+    color: #e03131;
+    border-color: rgba(224, 49, 49, 0.35);
+    background: rgba(255, 245, 245, 0.9);
+  }
+
   @media (max-width: 980px) {
     .grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -157,5 +197,17 @@
 
   :global(body.dark-mode) .add-plus {
     color: rgba(77, 171, 247, 0.95);
+  }
+
+  :global(body.dark-mode) .remove-btn {
+    background: rgba(26, 27, 30, 0.9);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  :global(body.dark-mode) .remove-btn:hover {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.35);
+    background: rgba(66, 0, 0, 0.25);
   }
 </style>

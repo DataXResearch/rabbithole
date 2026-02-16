@@ -18,7 +18,7 @@
   let websites: Website[] = [];
   let burrows: Burrow[] = [];
   let rabbitholes: Rabbithole[] = [];
-  let activeRabbithole: string | null = null;
+  let activeRabbithole: Rabbithole | null = null;
   let viewingAllBurrows: boolean = false;
 
   let isDark: boolean = true;
@@ -48,21 +48,19 @@
 
   async function refreshHomeState(): Promise<void> {
     try {
-      const [rh, allRh, allBurrows, activeB] = await Promise.all([
-        chrome.runtime.sendMessage({
-          type: MessageRequest.GET_ACTIVE_RABBITHOLE,
-        }),
-        chrome.runtime.sendMessage({
-          type: MessageRequest.GET_ALL_RABBITHOLES,
-        }),
-        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
-        chrome.runtime.sendMessage({ type: MessageRequest.GET_ACTIVE_BURROW }),
-      ]);
-
-      activeRabbithole = rh || null;
-      rabbitholes = Array.isArray(allRh) ? allRh : [];
-      burrows = Array.isArray(allBurrows) ? allBurrows : [];
-      activeBurrow = activeB || null;
+      [activeRabbithole, rabbitholes, burrows, activeBurrow] =
+        await Promise.all([
+          chrome.runtime.sendMessage({
+            type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+          }),
+          chrome.runtime.sendMessage({
+            type: MessageRequest.GET_ALL_RABBITHOLES,
+          }),
+          chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
+          chrome.runtime.sendMessage({
+            type: MessageRequest.GET_ACTIVE_BURROW,
+          }),
+        ]);
     } catch (e) {
       const [allRh, allBurrows] = await Promise.all([
         chrome.runtime.sendMessage({
@@ -177,10 +175,20 @@
       newName = `${baseName} ${counter}`;
     }
 
-    activeBurrow = await chrome.runtime.sendMessage({
-      type: MessageRequest.CREATE_NEW_BURROW,
-      newBurrowName: newName,
-    });
+    if (!viewingAllBurrows && activeRabbithole) {
+      activeBurrow = await chrome.runtime.sendMessage({
+        type: MessageRequest.CREATE_NEW_BURROW_IN_RABBITHOLE,
+        burrowName: newName,
+      });
+      activeRabbithole = await chrome.runtime.sendMessage({
+        type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+      });
+    } else {
+      activeBurrow = await chrome.runtime.sendMessage({
+        type: MessageRequest.CREATE_NEW_BURROW,
+        newBurrowName: newName,
+      });
+    }
     burrows = await getOrderedBurrows();
     updateWebsites();
     autoFocusTimelineTitle = true;
@@ -218,9 +226,7 @@
     }
 
     if (
-      rabbitholes.some(
-        (r) => r.id !== activeRabbithole.id && r.title === title,
-      )
+      rabbitholes.some((r) => r.id !== activeRabbithole.id && r.title === title)
     ) {
       rabbitholeNameError = "Rabbithole name must be unique";
       return;
@@ -250,6 +256,27 @@
     }
   }
 
+  async function handleDeleteBurrowFromGrid(event): Promise<void> {
+    const { burrowId } = event.detail;
+    if (confirm("Are you sure you want to delete this burrow?")) {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.DELETE_BURROW,
+        burrowId,
+      });
+
+      if (activeBurrow?.id === burrowId) {
+        await chrome.runtime.sendMessage({
+          type: MessageRequest.CHANGE_ACTIVE_BURROW,
+          burrowId: null,
+        });
+      }
+
+      await refreshHomeState();
+      activeBurrow = null;
+      websites = [];
+    }
+  }
+
   async function renameActiveBurrow(event): Promise<void> {
     activeBurrow = await chrome.runtime.sendMessage({
       type: MessageRequest.RENAME_BURROW,
@@ -268,6 +295,12 @@
     updateWebsites();
   }
 
+  async function handleBurrowDeleted(): Promise<void> {
+    websites = [];
+    await refreshHomeState();
+    activeBurrow = null;
+  }
+
   async function updateWebsites(): Promise<void> {
     if (!activeBurrow?.id) {
       websites = [];
@@ -284,14 +317,6 @@
     );
   }
 
-  function handleRabbitholesClick(): void {
-    goHome();
-  }
-
-  function handleBurrowsClick(): void {
-    goToAllBurrows();
-  }
-
   async function handleNavigation(): Promise<void> {
     viewingAllBurrows = false;
     await refreshHomeState();
@@ -303,8 +328,8 @@
 
 <SvelteUIProvider>
   <Navbar
-    onRabbitholesClick={handleRabbitholesClick}
-    onBurrowsClick={handleBurrowsClick}
+    onRabbitholesClick={goHome}
+    onBurrowsClick={goToAllBurrows}
     on:navigate={handleNavigation}
   />
 
@@ -348,6 +373,7 @@
             <Timeline
               on:websiteDelete={deleteWebsite}
               on:burrowRename={renameActiveBurrow}
+              on:burrowDeleted={handleBurrowDeleted}
               {activeBurrow}
               {websites}
               {selectRabbithole}
@@ -363,6 +389,8 @@
                 onSelect={selectBurrow}
                 allowCreate={true}
                 on:createBurrow={handleCreateBurrow}
+                showDelete={true}
+                on:deleteBurrow={handleDeleteBurrowFromGrid}
               />
             </div>
           {:else if !activeRabbithole}
@@ -385,6 +413,8 @@
                 onSelect={selectBurrow}
                 allowCreate={true}
                 on:createBurrow={handleCreateBurrow}
+                showDelete={true}
+                on:deleteBurrow={handleDeleteBurrowFromGrid}
               />
             </div>
           {/if}
