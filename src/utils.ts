@@ -46,7 +46,7 @@ export async function getOrderedBurrows(): Promise<Burrow[]> {
 
   if (activeBurrow) {
     for (let i = 0; i < burrows.length; i++) {
-      if (burrows[i].id === activeBurrow.name) {
+      if (burrows[i].id === activeBurrow.id) {
         const temp = burrows[0];
         burrows[0] = burrows[i];
         burrows[i] = temp;
