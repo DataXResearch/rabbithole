@@ -46,8 +46,25 @@
     }
   });
 
-  async function refreshHomeState(): Promise<void> {
-    try {
+  async function refreshHomeState(options?: {
+    skipActive: boolean;
+  }): Promise<void> {
+    if (options?.skipActive) {
+      const [allRh, allBurrows] = await Promise.all([
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_RABBITHOLES,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_BURROWS,
+        }),
+      ]);
+
+      activeRabbithole = null;
+      activeBurrow = null;
+      websites = [];
+      rabbitholes = Array.isArray(allRh) ? allRh : [];
+      burrows = Array.isArray(allBurrows) ? allBurrows : [];
+    } else {
       [activeRabbithole, rabbitholes, burrows, activeBurrow] =
         await Promise.all([
           chrome.runtime.sendMessage({
@@ -56,24 +73,13 @@
           chrome.runtime.sendMessage({
             type: MessageRequest.GET_ALL_RABBITHOLES,
           }),
-          chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
+          chrome.runtime.sendMessage({
+            type: MessageRequest.GET_ALL_BURROWS,
+          }),
           chrome.runtime.sendMessage({
             type: MessageRequest.GET_ACTIVE_BURROW,
           }),
         ]);
-    } catch (e) {
-      const [allRh, allBurrows] = await Promise.all([
-        chrome.runtime.sendMessage({
-          type: MessageRequest.GET_ALL_RABBITHOLES,
-        }),
-        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
-      ]);
-
-      activeRabbithole = null;
-      activeBurrow = null;
-      websites = [];
-      rabbitholes = Array.isArray(allRh) ? allRh : [];
-      burrows = Array.isArray(allBurrows) ? allBurrows : [];
     }
   }
 
@@ -252,7 +258,7 @@
         type: MessageRequest.DELETE_RABBITHOLE,
         rabbitholeId,
       });
-      await refreshHomeState();
+      await refreshHomeState({ skipActive: true });
     }
   }
 
@@ -271,9 +277,7 @@
         });
       }
 
-      await refreshHomeState();
-      activeBurrow = null;
-      websites = [];
+      await refreshHomeState({ skipActive: true });
     }
   }
 
