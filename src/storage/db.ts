@@ -3,7 +3,7 @@ import { v4 as uuid } from "uuid";
 const version = 8;
 
 export interface Settings {
-  alignment: "show" | "hide";
+  alignment: "left" | "right";
   show: boolean;
   darkMode: boolean;
   hasSeenOnboarding: boolean;
