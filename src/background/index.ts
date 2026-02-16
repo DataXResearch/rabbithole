@@ -693,6 +693,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         savedWebsites?: string[];
       })[];
       const websitesToImport = request.websites || [];
+      const rabbitholesToImport = (request.rabbitholes || []) as any[];
 
       (async () => {
         try {
@@ -708,6 +709,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const existingBurrowMap = new Map(
             existingBurrows.map((b) => [b.name, b]),
           );
+          const oldIdToNewId = new Map<string, string>();
 
           for (const burrow of burrowsToImport) {
             const missingWebsites = [];
@@ -754,6 +756,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log(
                   `Project ${burrowName} already exists and is consistent. Skipping creation.`,
                 );
+                oldIdToNewId.set(burrow.id, existingBurrow.id);
                 continue;
               } else {
                 let counter = 1;
@@ -764,15 +767,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             }
 
-            await db.createNewActiveBurrow(burrowName, websites);
+            const newBurrow = await db.createNewActiveBurrow(
+              burrowName,
+              websites,
+            );
+            if (burrow.activeTabs && burrow.activeTabs.length > 0) {
+              await db.updateBurrowActiveTabs(newBurrow.id, burrow.activeTabs);
+            }
+            oldIdToNewId.set(burrow.id, newBurrow.id);
 
             existingBurrowMap.set(burrowName, {
-              id: "temp",
+              id: newBurrow.id,
               createdAt: Date.now(),
               name: burrowName,
               websites: websites,
             });
           }
+
+          // Import Rabbitholes
+          const existingRabbitholes = await db.getAllRabbitholes();
+          const existingRabbitholeMap = new Map(
+            existingRabbitholes.map((r) => [r.title, r]),
+          );
+
+          for (const rh of rabbitholesToImport) {
+            if (existingRabbitholeMap.has(rh.title)) {
+              console.log(
+                `Rabbithole ${rh.title} already exists. Skipping creation.`,
+              );
+              continue;
+            }
+
+            const newRh = await db.createNewActiveRabbithole(
+              rh.title,
+              rh.description,
+            );
+            const newBurrowIds = (rh.burrows || [])
+              .map((oldId) => oldIdToNewId.get(oldId))
+              .filter((id) => id !== undefined);
+
+            if (newBurrowIds.length > 0) {
+              await db.addBurrowsToRabbithole(newRh.id, newBurrowIds);
+            }
+          }
+
           sendResponse({ success: true });
         } catch (err) {
           console.error(err);
