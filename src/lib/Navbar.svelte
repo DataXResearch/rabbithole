@@ -129,10 +129,14 @@
     const websites = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_ALL_ITEMS,
     });
+    const rabbitholes = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ALL_RABBITHOLES,
+    });
 
     const exportData = {
       burrows,
       websites,
+      rabbitholes,
     };
 
     const blob = new Blob([JSON.stringify(exportData)], {
@@ -162,19 +166,24 @@
 
         let burrowsToImport = [];
         let websitesToImport = [];
+        let rabbitholesToImport = [];
 
         if (Array.isArray(data)) {
           burrowsToImport = data;
         } else if (data && typeof data === "object") {
           burrowsToImport = data.burrows ?? data.projects ?? [];
           websitesToImport = data.websites ?? data.savedWebsites ?? [];
+          rabbitholesToImport = data.rabbitholes ?? [];
         }
 
         await chrome.runtime.sendMessage({
           type: "IMPORT_DATA",
           burrows: burrowsToImport,
           websites: websitesToImport,
+          rabbitholes: rabbitholesToImport,
         });
+
+        onBurrowsClick();
       } catch (err) {
         console.error("Failed to parse import file", err);
       }
