@@ -85,9 +85,9 @@
       : [];
 
   $: pageTitle = (() => {
-    if (viewingAllBurrows) return "All Burrows";
+    if (viewingAllBurrows) return "Burrows";
     if (activeRabbithole?.title) return activeRabbithole.title;
-    return "Rabbithole";
+    return "Rabbitholes";
   })();
 
   async function goHome(): Promise<void> {
