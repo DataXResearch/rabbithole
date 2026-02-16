@@ -5,15 +5,10 @@
   import { MessageRequest, NotificationDuration } from "../utils";
   import type { Settings } from "../storage/db";
 
-  let isHovering = false;
-  let isHoveringOverSync = false;
   let isSyncingWindow = false;
   let syncWindowSuccess = false;
-  let settings: Settings = {
-    show: false,
-    alignment: "right",
-    darkMode: false,
-  };
+  let settings: Settings | null = null;
+  let show: boolean = true;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
@@ -22,10 +17,10 @@
   });
 
   async function toggleOverlay() {
-    settings.show = !settings.show;
+    show = !settings?.show;
     await chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
-      settings,
+      settings: { ...settings, show },
     });
 
     // Reload the active tab
@@ -61,29 +56,18 @@
     <div class="popup-header">
       <span class="popup-title">Rabbithole</span>
       <div class="header-actions">
-        <Tooltip
-          {isHoveringOverSync}
-          label="Save all tabs in window to current project"
-          withArrow
-        >
+        <Tooltip label="Save all tabs in window to current project" withArrow>
           <button
             class="link-button"
             on:click={saveAllTabsToActiveProject}
-            on:mouseenter={() => (isHoveringOverSync = true)}
-            on:mouseleave={() => (isHoveringOverSync = false)}
             disabled={isSyncingWindow}
           >
             {syncWindowSuccess ? "Synced!" : "Sync Window"}
           </button>
         </Tooltip>
-        <Tooltip {isHovering} label="This will refresh the page" withArrow>
-          <button
-            class="link-button"
-            on:click={toggleOverlay}
-            on:mouseenter={() => (isHovering = true)}
-            on:mouseleave={() => (isHovering = false)}
-          >
-            {settings.show ? "Hide" : "Show"} Overlay
+        <Tooltip label="This will refresh the page" withArrow>
+          <button class="link-button" on:click={toggleOverlay}>
+            {show ? "Hide" : "Show"} Overlay
           </button>
         </Tooltip>
       </div>
