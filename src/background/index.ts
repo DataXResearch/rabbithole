@@ -1,5 +1,6 @@
 import { MessageRequest } from "../utils";
-import { WebsiteStore, type Burrow } from "../storage/db";
+import { WebsiteStore } from "../storage/db";
+import type { Burrow } from "../utils/types";
 import { getSession } from "../atproto/client";
 import { syncBurrowToCollection } from "../atproto/cosmik";
 

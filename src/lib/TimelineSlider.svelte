@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Website } from "src/storage/db";
+  import type { Website } from "src/utils/types";
   import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();

@@ -10,7 +10,7 @@
   import { Cross2, MagnifyingGlass, Trash } from "radix-icons-svelte";
   import Fuse from "fuse.js";
   import { MessageRequest } from "../utils";
-  import type { Rabbithole } from "src/storage/db";
+  import type { Rabbithole } from "src/utils/types";
 
   export let isOpen: boolean = false;
   export let activeBurrow = null;

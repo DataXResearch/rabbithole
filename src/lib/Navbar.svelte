@@ -19,7 +19,7 @@
   import OnboardingModal from "src/lib/OnboardingModal.svelte";
   import { getSession, clearSession } from "../atproto/client";
   import { MessageRequest } from "../utils";
-  import { Settings } from "src/storage/db";
+  import type { Settings } from "src/utils/types";
 
   export let onRabbitholesClick = () => {};
   export let onBurrowsClick = () => {};

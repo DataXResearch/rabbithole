@@ -2,7 +2,7 @@
   import { createEventDispatcher } from "svelte";
   import { Button, Card, Group, Tooltip } from "@svelteuidev/core";
   import { Trash } from "radix-icons-svelte";
-  import type { Website } from "src/storage/db";
+  import type { Website } from "src/utils/types";
 
   const dispatch = createEventDispatcher();
 

@@ -1,48 +1,13 @@
 import { v4 as uuid } from "uuid";
+import type {
+  Settings,
+  Website,
+  Burrow,
+  Rabbithole,
+  User,
+} from "../utils/types";
 
 const version = 8;
-
-export interface Settings {
-  alignment: "left" | "right";
-  show: boolean;
-  darkMode: boolean;
-  hasSeenOnboarding: boolean;
-}
-
-export interface Website {
-  url: string;
-  name: string;
-  savedAt: number;
-  faviconUrl: string;
-  openGraphImageUrl?: string;
-  description?: string;
-}
-
-export interface Burrow {
-  id: string;
-  createdAt: number;
-  websites: string[]; // urls
-  name: string;
-  sembleCollectionUri?: string;
-  lastSembleSync?: number;
-  activeTabs?: string[];
-}
-
-export interface Rabbithole {
-  id: string;
-  createdAt: number;
-  burrows: string[]; // burrow IDs
-  title: string;
-  description?: string;
-  meta: string[]; // urls
-}
-
-export interface User {
-  id: string;
-  currentRabbithole: string;
-  currentBurrow: string;
-  settings: Settings;
-}
 
 export class WebsiteStore {
   factory: IDBFactory;
