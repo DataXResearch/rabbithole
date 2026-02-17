@@ -19,6 +19,7 @@
   import OnboardingModal from "src/lib/OnboardingModal.svelte";
   import { getSession, clearSession } from "../atproto/client";
   import { MessageRequest } from "../utils";
+  import { Settings } from "src/storage/db";
 
   export let onRabbitholesClick = () => {};
   export let onBurrowsClick = () => {};
@@ -36,12 +37,7 @@
   let isDark: boolean = false;
   let fileInput: HTMLInputElement;
 
-  let settings = {
-    show: false,
-    alignment: "right",
-    darkMode: false,
-    hasSeenOnboarding: false,
-  };
+  let settings: Settings | null = null;
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
@@ -97,10 +93,9 @@
   async function toggleTheme(): Promise<void> {
     isDark = !isDark;
     document.body.classList.toggle("dark-mode", isDark);
-    settings.darkMode = isDark;
     chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
-      settings,
+      settings: { ...settings, darkMode: isDark },
     });
   }
 
@@ -203,15 +198,14 @@
   async function handleOnboardingClose(): Promise<void> {
     showOnboardingModal = false;
     if (!settings.hasSeenOnboarding) {
-      settings.hasSeenOnboarding = true;
       await chrome.runtime.sendMessage({
         type: MessageRequest.UPDATE_SETTINGS,
-        settings,
+        settings: { ...settings, hasSeenOnboarding: true },
       });
       showHelpTooltip = true;
       setTimeout(() => {
         showHelpTooltip = false;
-      }, 5000);
+      }, 3000);
     }
   }
 </script>
