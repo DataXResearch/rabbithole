@@ -14,7 +14,7 @@
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import BurrowGrid from "src/lib/BurrowGrid.svelte";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
-  import { MessageRequest } from "../utils";
+  import { MessageRequest, logger } from "../utils";
   import type { Burrow, Rabbithole, Website } from "src/utils/types";
 
   export let isOpen: boolean = false;
@@ -70,7 +70,7 @@
       allRabbitholes = rabbitholes || [];
       allBurrows = burrows || [];
     } catch (err) {
-      console.error("Failed to load data:", err);
+      logger.error("Failed to load data:", err);
     }
     isLoading = false;
   }

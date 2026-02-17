@@ -15,6 +15,7 @@
     MessageRequest,
     getOrderedBurrows,
     NotificationDuration,
+    logger,
   } from "../utils";
   import { Move, EyeNone, Update, Check, Cross2 } from "radix-icons-svelte";
   import type { Settings } from "src/utils/types";
@@ -81,7 +82,7 @@
         syncWindowSuccess = false;
       }, NotificationDuration);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       isSyncingWindow = false;
     }
@@ -102,7 +103,7 @@
           pageUrl = tab.url || "";
         }
       } catch (e) {
-        console.error("Failed to read active tab metadata:", e);
+        logger.error("Failed to read active tab metadata:", e);
       }
     } else {
       // Content-script overlay: we have direct access to the page DOM.
@@ -149,7 +150,7 @@
         isSavingPage = false;
       }, 500);
     } catch (e) {
-      console.error("Failed to save page:", e);
+      logger.error("Failed to save page:", e);
     } finally {
       isSaving = false;
     }

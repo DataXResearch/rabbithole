@@ -33,7 +33,7 @@
     createUrlCard,
     createCollectionLink,
   } from "../atproto/cosmik";
-  import { MessageRequest } from "../utils";
+  import { MessageRequest, logger } from "../utils";
   import type { Burrow, Rabbithole, Website } from "src/utils/types";
 
   const dispatch = createEventDispatcher();
@@ -95,13 +95,13 @@
       });
 
       if (res && typeof res === "object" && "error" in res) {
-        console.error("Failed to fetch rabbitholes for burrow:", res.error);
+        logger.error("Failed to fetch rabbitholes for burrow:", res.error);
         rabbitholes = [];
       } else {
         rabbitholes = Array.isArray(res) ? res : [];
       }
     } catch (e) {
-      console.error("Failed to fetch rabbitholes for burrow:", e);
+      logger.error("Failed to fetch rabbitholes for burrow:", e);
       rabbitholes = [];
     }
   }
@@ -124,7 +124,7 @@
           index === self.findIndex((t) => t.url === value.url),
       );
     } catch (e) {
-      console.error("Failed to fetch websites for burrow:", e);
+      logger.error("Failed to fetch websites for burrow:", e);
       websites = [];
     }
   }
@@ -136,7 +136,7 @@
       });
       activeBurrow = b || {};
     } catch (e) {
-      console.error("Failed to refresh active burrow:", e);
+      logger.error("Failed to refresh active burrow:", e);
     }
   }
 
@@ -171,7 +171,7 @@
     });
 
     if (res && typeof res === "object" && "error" in res) {
-      console.error("Failed to remove burrow from rabbithole:", res.error);
+      logger.error("Failed to remove burrow from rabbithole:", res.error);
       return;
     }
 
@@ -190,7 +190,7 @@
       await new Promise((resolve) => setTimeout(resolve, 800));
       await refreshAllBurrowState();
     } catch (e) {
-      console.error("Failed to update burrow home:", e);
+      logger.error("Failed to update burrow home:", e);
     } finally {
       isUpdatingBurrowHome = false;
     }
@@ -208,7 +208,7 @@
       await new Promise((resolve) => setTimeout(resolve, 800));
       await refreshAllBurrowState();
     } catch (e) {
-      console.error("Failed to save window to burrow:", e);
+      logger.error("Failed to save window to burrow:", e);
     } finally {
       isSavingWindowToBurrow = false;
     }
@@ -225,7 +225,7 @@
       });
 
       if (res && typeof res === "object" && "error" in res) {
-        console.error("Failed to delete burrow:", res.error);
+        logger.error("Failed to delete burrow:", res.error);
         return;
       }
 
@@ -237,7 +237,7 @@
 
       dispatch("burrowDeleted");
     } catch (e) {
-      console.error("Failed to delete burrow:", e);
+      logger.error("Failed to delete burrow:", e);
     } finally {
       isDeletingBurrow = false;
     }
@@ -290,7 +290,7 @@
         websites[index] = { ...websites[index], name, description };
       }
     } catch (e) {
-      console.error("Failed to update website:", e);
+      logger.error("Failed to update website:", e);
     }
   }
 
@@ -344,7 +344,7 @@
 
           successCount++;
         } catch (err) {
-          console.error(`Failed to create card/link for ${site.url}`, err);
+          logger.error(`Failed to create card/link for ${site.url}`, err);
           lastError = err;
         }
       }
@@ -365,7 +365,7 @@
         });
 
         if (response && response.error) {
-          console.error("Failed to save publish info:", response.error);
+          logger.error("Failed to save publish info:", response.error);
           alert(
             "Published to Cosmik, but failed to save sync status locally: " +
               response.error,
@@ -380,7 +380,7 @@
         }
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e);
       if (e.message.includes("ScopeMissingError")) {
         alert(
           "Permission denied. Please log out and log back in to grant the necessary permissions.",
@@ -409,7 +409,7 @@
 
       activeBurrow.lastSembleSync = response.timestamp;
     } catch (e) {
-      console.error("Sync failed:", e);
+      logger.error("Sync failed:", e);
       alert("Sync failed: " + e.message);
     } finally {
       isSyncing = false;
