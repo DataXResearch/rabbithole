@@ -1,5 +1,5 @@
 import { createRecord, listRecords, deleteRecord, putRecord } from "./client";
-import type { Website } from "../storage/db";
+import type { Website } from "../utils/types";
 
 export interface CosmikRef {
   uri: string;

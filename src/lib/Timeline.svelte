@@ -34,7 +34,7 @@
     createCollectionLink,
   } from "../atproto/cosmik";
   import { MessageRequest } from "../utils";
-  import type { Burrow, Rabbithole, Website } from "src/storage/db";
+  import type { Burrow, Rabbithole, Website } from "src/utils/types";
 
   const dispatch = createEventDispatcher();
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Burrow } from "src/storage/db";
+  import type { Burrow } from "src/utils/types";
   import { createEventDispatcher } from "svelte";
   import { Trash } from "radix-icons-svelte";
 

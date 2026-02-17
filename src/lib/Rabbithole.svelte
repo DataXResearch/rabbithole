@@ -12,7 +12,7 @@
     Tooltip,
     AppShell,
   } from "@svelteuidev/core";
-  import type { Burrow, Rabbithole, Settings, Website } from "src/storage/db";
+  import type { Burrow, Rabbithole, Settings, Website } from "src/utils/types";
 
   let activeBurrow: Burrow | null = null;
   let websites: Website[] = [];

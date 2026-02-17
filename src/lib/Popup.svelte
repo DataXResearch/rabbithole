@@ -3,7 +3,7 @@
   import { Tooltip } from "@svelteuidev/core";
   import { onMount } from "svelte";
   import { MessageRequest, NotificationDuration } from "../utils";
-  import type { Settings } from "../storage/db";
+  import type { Settings } from "../utils/types";
 
   let isSyncingWindow = false;
   let syncWindowSuccess = false;

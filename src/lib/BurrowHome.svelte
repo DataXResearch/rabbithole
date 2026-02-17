@@ -4,7 +4,7 @@
   import { OpenInNewWindow } from "radix-icons-svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
-  import type { Burrow } from "src/storage/db";
+  import type { Burrow } from "src/utils/types";
 
   export let activeBurrow: Burrow | null = null;
   export let websites: any[] = [];
