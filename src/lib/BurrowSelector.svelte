@@ -66,7 +66,7 @@
       // Select the new burrow
       selectBurrow(newBurrow);
     } catch (err) {
-      console.error("Failed to create burrow:", err);
+      // Error handling handled by UI state if needed, or ignored for now
     }
   }
 

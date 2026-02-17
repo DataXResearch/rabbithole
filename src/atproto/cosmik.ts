@@ -137,7 +137,6 @@ export async function syncBurrowToCollection(
         metadata.description !== (site.description || undefined);
 
       if (needsUpdate) {
-        console.log(`Updating card for ${site.url}`);
         const updatedCard = {
           ...card,
           content: {
@@ -163,7 +162,6 @@ export async function syncBurrowToCollection(
       remoteItems.delete(site.url);
     } else {
       // Create new
-      console.log(`Creating new card for ${site.url}`);
       const cardRef = await createUrlCard(did, site);
       await createCollectionLink(
         did,
@@ -175,7 +173,6 @@ export async function syncBurrowToCollection(
 
   // 3. Delete remaining remote items
   for (const [url, remote] of remoteItems) {
-    console.log(`Deleting card for ${url}`);
     await deleteRecord(did, "network.cosmik.collectionLink", remote.linkRkey);
     await deleteRecord(did, "network.cosmik.card", remote.cardRkey);
   }
