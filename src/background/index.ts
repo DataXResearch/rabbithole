@@ -1,4 +1,4 @@
-import { MessageRequest } from "../utils";
+import { MessageRequest, logger } from "../utils";
 import { WebsiteStore } from "../storage/db";
 import type { Burrow } from "../utils/types";
 import { getSession } from "../atproto/client";
@@ -174,10 +174,12 @@ function storeWebsites(
         db.saveWebsitesToBurrow([website])
           .then((res) => sendResponse(res))
           .catch((err) => {
+            logger.error("Failed to save website (OG fetch)", err);
             sendResponse({ error: err.message || "Failed to save website" });
           });
       })
       .catch((error) => {
+        logger.warn("OG fetch failed, using fallback", error);
         // just use info at hand if OG information cannot be retrieved
         // TODO: are there cases when it's preferable to do this?
         db.saveWebsitesToBurrow([
@@ -192,6 +194,7 @@ function storeWebsites(
         ])
           .then((res) => sendResponse(res))
           .catch((err) => {
+            logger.error("Failed to save website (fallback)", err);
             sendResponse({ error: err.message || "Failed to save website" });
           });
       }),
@@ -209,8 +212,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({
       error: "request type required",
     });
+    // arcane incantation required for async `sendResponse`s to work
+    // https://developer.chrome.com/docs/extensions/mv3/messaging/#simple
+    return true;
   }
+
+  const requestName = MessageRequest[request.type] || "UNKNOWN_REQUEST";
+
+  logger.info(`Background received: ${requestName}`, {
+    request,
+    sender: sender.tab ? `Tab ${sender.tab.id}` : "Extension",
+  });
+
   const db = new WebsiteStore(indexedDB);
+
+  const handleError = (err: any) => {
+    logger.error(`${requestName} failed`, err);
+    sendResponse({ error: err.message || "Unknown error" });
+  };
 
   // ugly callback/.then syntax because of listener function quirks
   // see https://stackoverflow.com/questions/70353944/chrome-runtime-onmessage-returns-undefined-even-when-value-is-known-for-asynch
@@ -224,17 +243,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case MessageRequest.GET_ALL_ITEMS:
       db.getAllWebsites()
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_SETTINGS:
       db.getSettings()
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.UPDATE_SETTINGS:
@@ -246,17 +261,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.updateSettings(request.settings)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_ALL_BURROWS:
       db.getAllBurrows()
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_BURROW_WEBSITES:
@@ -268,9 +279,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.getAllWebsitesForBurrow(request.burrowId)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.CREATE_NEW_BURROW:
@@ -282,25 +291,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.createNewActiveBurrow(request.newBurrowName)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.CHANGE_ACTIVE_BURROW:
       db.changeActiveBurrow("burrowId" in request ? request.burrowId : null)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_ACTIVE_BURROW:
       db.getActiveBurrow()
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_BURROW:
@@ -312,9 +315,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.getBurrow(request.burrowId)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.SAVE_WINDOW_TO_NEW_BURROW:
@@ -335,9 +336,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             await db.updateBurrowActiveTabs(burrow.id, websites);
             sendResponse(burrow);
           })
-          .catch((err) => {
-            sendResponse({ error: err.message });
-          });
+          .catch(handleError);
       });
 
       break;
@@ -375,9 +374,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.renameBurrow(request.burrowId, request.newName)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.DELETE_BURROW:
@@ -389,9 +386,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.deleteBurrow(request.burrowId)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.DELETE_WEBSITE:
@@ -403,9 +398,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.deleteWebsiteFromBurrow(request.burrowId, request.url)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.PUBLISH_BURROW:
@@ -425,25 +418,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         request.timestamp,
       )
         .then(() => sendResponse({ success: true }))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_ACTIVE_RABBITHOLE:
       db.getActiveRabbithole()
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.GET_ALL_RABBITHOLES:
       db.getAllRabbitholes()
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.FETCH_RABBITHOLES_FOR_BURROW:
@@ -453,9 +440,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.fetchRabbitholesForBurrow(request.burrowId)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.DELETE_BURROW_FROM_RABBITHOLE:
@@ -465,9 +450,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.deleteBurrowFromRabbithole(request.rabbitholeId, request.burrowId)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.CHANGE_ACTIVE_RABBITHOLE:
@@ -475,9 +458,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         "rabbitholeId" in request ? request.rabbitholeId : null,
       )
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.CREATE_NEW_RABBITHOLE:
@@ -489,9 +470,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.createNewActiveRabbithole(request.title, request.description)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.UPDATE_RABBITHOLE:
@@ -507,9 +486,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         request.description,
       )
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.DELETE_RABBITHOLE:
@@ -521,9 +498,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.deleteRabbithole(request.rabbitholeId)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.ADD_BURROWS_TO_RABBITHOLE:
@@ -535,9 +510,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.addBurrowsToRabbithole(request.rabbitholeId, request.burrowIds)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.CREATE_NEW_BURROW_IN_RABBITHOLE:
@@ -549,9 +522,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.createNewBurrowInActiveRabbithole(request.burrowName)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.ADD_WEBSITES_TO_RABBITHOLE_META:
@@ -563,9 +534,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.addWebsitesToRabbitholeMeta(request.rabbitholeId, request.urls)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.DELETE_WEBSITE_FROM_RABBITHOLE_META:
@@ -577,9 +546,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.deleteWebsiteFromRabbitholeMeta(request.rabbitholeId, request.url)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.UPDATE_WEBSITE:
@@ -589,9 +556,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.updateWebsite(request.url, request.name, request.description)
         .then((res) => sendResponse(res))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case MessageRequest.SYNC_BURROW:
@@ -625,7 +590,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           sendResponse({ success: true, timestamp });
         } catch (err) {
-          sendResponse({ error: err.message });
+          handleError(err);
         }
       })();
       break;
@@ -648,9 +613,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       db.removeWebsiteFromActiveTabs(request.burrowId, request.url)
         .then(() => sendResponse({ success: true }))
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
+        .catch(handleError);
       break;
 
     case "IMPORT_DATA":
@@ -775,12 +738,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           sendResponse({ success: true });
         } catch (err) {
-          sendResponse({ error: err.message });
+          handleError(err);
         }
       })();
       break;
 
     default:
+      logger.warn(`Unknown message type: ${request.type}`);
   }
 
   // arcane incantation required for async `sendResponse`s to work

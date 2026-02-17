@@ -1,4 +1,5 @@
 import { Agent } from "@atproto/api";
+import { logger } from "../utils";
 
 export const ClientMetadataUrl =
   "https://rabbithole.to/oauth/client-metadata.json";
@@ -61,7 +62,7 @@ export async function getDpopKey(): Promise<CryptoKeyPair | null> {
 
     return { privateKey, publicKey };
   } catch (e) {
-    console.error("Invalid DPoP keys in storage, clearing...", e);
+    logger.error("Invalid DPoP keys in storage, clearing...", e);
     await chrome.storage.local.remove(DpopKeyStorageKey);
     return null;
   }
@@ -191,7 +192,7 @@ export async function resolveHandleAndPds(
       }
     }
   } catch (err) {
-    console.warn("Failed to resolve PDS, using default:", err);
+    logger.warn("Failed to resolve PDS, using default:", err);
   }
 
   return { did, pdsUrl, handle };
@@ -263,7 +264,10 @@ export async function exchangeCodeForTokens(
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error("Token exchange failed:", response.status, errText);
+    logger.error("Token exchange failed:", {
+      status: response.status,
+      errText,
+    });
     throw new Error("Failed to exchange code for tokens");
   }
 

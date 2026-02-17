@@ -12,13 +12,14 @@
     Download,
     Upload,
     QuestionMarkCircled,
+    FileText,
   } from "radix-icons-svelte";
   import SearchEverywhereModal from "src/lib/SearchEverywhereModal.svelte";
   import Modal from "src/lib/Modal.svelte";
   import Auth from "src/lib/Auth.svelte";
   import OnboardingModal from "src/lib/OnboardingModal.svelte";
   import { getSession, clearSession } from "../atproto/client";
-  import { MessageRequest } from "../utils";
+  import { MessageRequest, logger } from "../utils";
   import type { Settings } from "src/utils/types";
 
   export let onRabbitholesClick = () => {};
@@ -115,6 +116,10 @@
     isLoggedIn = false;
     userHandle = "";
     userAvatar = "";
+  }
+
+  async function handleDownloadLogs(): Promise<void> {
+    await logger.downloadLogs();
   }
 
   async function exportData(): Promise<void> {
@@ -326,6 +331,9 @@
           Import Data
         </Menu.Item>
         <Menu.Item icon={Download} on:click={exportData}>Export Data</Menu.Item>
+        <Menu.Item icon={FileText} on:click={handleDownloadLogs}>
+          Download Logs
+        </Menu.Item>
         <Menu.Item icon={Exit} color="red" on:click={handleSignOut}>
           Sign Out
         </Menu.Item>
@@ -352,6 +360,9 @@
           </Menu.Item>
           <Menu.Item icon={Download} on:click={exportData}>
             Export Data
+          </Menu.Item>
+          <Menu.Item icon={FileText} on:click={handleDownloadLogs}>
+            Download Logs
           </Menu.Item>
         </Menu>
       </div>
