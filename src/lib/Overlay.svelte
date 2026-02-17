@@ -32,6 +32,7 @@
   let isSavingPage: boolean = false;
   let pageTitle: string = "";
   let pageDescription: string = "";
+  let pageUrl: string = "";
   let isSaving: boolean = false;
   let saveSuccess: boolean = false;
 
@@ -86,18 +87,36 @@
     }
   }
 
-  function initSavePage(): void {
-    // Pre-fill with current page data
-    pageTitle = document.title;
+  async function initSavePage(): Promise<void> {
+    if (isPopup) {
+      // in the popup context, the DOM is the extension popup
+      // so ask the active tab for its title/meta instead
+      try {
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
 
-    // Try to find description
-    const metaDesc = document.querySelector('meta[name="description"]');
-    const ogDesc = document.querySelector('meta[property="og:description"]');
-    pageDescription = metaDesc
-      ? metaDesc.getAttribute("content")
-      : ogDesc
-        ? ogDesc.getAttribute("content")
-        : "";
+        if (tab) {
+          pageTitle = tab.title || "";
+          pageUrl = tab.url || "";
+        }
+      } catch (e) {
+        console.error("Failed to read active tab metadata:", e);
+      }
+    } else {
+      // Content-script overlay: we have direct access to the page DOM.
+      pageTitle = document.title;
+      pageUrl = window.location.href;
+
+      const metaDesc = document.querySelector('meta[name="description"]');
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      pageDescription = metaDesc
+        ? metaDesc.getAttribute("content")
+        : ogDesc
+          ? ogDesc.getAttribute("content")
+          : "";
+    }
 
     isSavingPage = true;
   }
@@ -119,7 +138,7 @@
       // 2. Update with user's custom metadata
       await chrome.runtime.sendMessage({
         type: MessageRequest.UPDATE_WEBSITE,
-        url: window.location.href,
+        url: pageUrl,
         name: pageTitle,
         description: pageDescription,
       });
