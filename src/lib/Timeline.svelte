@@ -327,7 +327,7 @@
       const session = await getSession();
 
       if (!session) {
-        alert("Please log in via the sidebar first.");
+        alert("Please log in first.");
         return;
       }
 
@@ -618,7 +618,8 @@
   <p>
     {sembleUrl
       ? "Update this collection on Semble with the latest changes?"
-      : "Publish this rabbithole as a collection on Semble?"}
+      : "Publish this rabbithole as a collection on Semble?"} Note that it might take
+    a few minutes for your changes to show up.
   </p>
 
   <div style="margin: 20px 0;">
