@@ -73,7 +73,6 @@ export class WebsiteStore {
         resolve(db);
       };
       request.onerror = () => {
-        console.error("Please allow Rabbithole to use storage!");
         reject(new Error("Insufficient permissions"));
       };
     });
@@ -82,15 +81,10 @@ export class WebsiteStore {
   static async init(factory: IDBFactory): Promise<void> {
     await new Promise((resolve, reject) => {
       if (factory === undefined) {
-        console.error(
-          "This browser doesn't support Rabbithole! You should uninstall it :(",
-        );
         reject(new Error("indexedDB not supported"));
       } else {
         let request = factory.open("rabbithole", version);
         request.onerror = (e) => {
-          console.error(e);
-          console.error("Please allow Rabbithole to use storage!");
           reject(new Error("Insufficient permissions"));
         };
 
@@ -707,20 +701,15 @@ export class WebsiteStore {
         });
 
         tx.oncomplete = async () => {
-          console.log(`store item success`);
           resolve(items);
         };
 
         tx.onerror = (event) => {
-          console.error(`store item error`);
-          console.error(event.target);
           reject(new Error((event.target as IDBRequest).error.message));
         };
       };
 
       burrowRequest.onerror = (event) => {
-        console.error(`store item error`);
-        console.error(event.target);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
@@ -738,12 +727,10 @@ export class WebsiteStore {
       });
 
       tx.oncomplete = () => {
-        console.log(`saveWebsites success`);
         resolve();
       };
 
       tx.onerror = (event) => {
-        console.log(`saveWebsites error`);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
@@ -797,14 +784,11 @@ export class WebsiteStore {
         .put(burrow);
 
       burrowRequest.onsuccess = (event) => {
-        console.log(`delete item success`);
         resolve();
       };
 
       burrowRequest.onerror = (event) => {
         if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
-          console.log(`store item error`);
-          console.log(event.target);
           reject(new Error((event.target as IDBRequest).error.message));
         }
       };
@@ -820,12 +804,10 @@ export class WebsiteStore {
         .get(url);
 
       request.onsuccess = () => {
-        console.log("getWebsite success");
         resolve(request.result);
       };
 
       request.onerror = (event) => {
-        console.log(`getWebsite error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       };
     });
@@ -840,12 +822,10 @@ export class WebsiteStore {
         .getAll();
 
       request.onsuccess = (_) => {
-        console.log("getAll success");
         resolve(request.result);
       };
 
       request.onerror = (event) => {
-        console.log(`getAll error:`, (event.target as IDBRequest).error);
         reject(new Error("Failed to retrieve items"));
       };
     });
@@ -864,13 +844,10 @@ export class WebsiteStore {
         .put(burrow);
 
       burrowRequest.onsuccess = (event) => {
-        console.log(`rename burrow success`);
         resolve(burrow);
       };
 
       burrowRequest.onerror = (event) => {
-        console.log(`rename burrow error`);
-        console.log(event.target);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
@@ -886,15 +863,12 @@ export class WebsiteStore {
         .delete(burrowId);
 
       burrowRequest.onsuccess = async () => {
-        console.log(`delete burrow success`);
         const burrows = await this.getAllBurrows();
         await this.changeActiveBurrow(burrows[0].id);
         resolve(burrows[0]);
       };
 
       burrowRequest.onerror = (event) => {
-        console.log(`delete burrow error`);
-        console.log(event.target);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
@@ -912,12 +886,10 @@ export class WebsiteStore {
         .put(user);
 
       request.onsuccess = (event) => {
-        console.log(`update settings success: ${JSON.stringify(event.target)}`);
         resolve(settings);
       };
 
       request.onerror = (event) => {
-        console.log(`update settings error`);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
@@ -930,12 +902,10 @@ export class WebsiteStore {
 
       request.onsuccess = (_) => {
         const [user] = request.result;
-        console.log("getSettings success");
         resolve(user.settings);
       };
 
       request.onerror = (event) => {
-        console.log(`getSettings error: ${event.target}`);
         reject(new Error("Failed to retrieve settings"));
       };
     });
@@ -948,12 +918,10 @@ export class WebsiteStore {
 
       request.onsuccess = (_) => {
         const [user] = request.result;
-        console.log("getUser success");
         resolve(user);
       };
 
       request.onerror = (event) => {
-        console.log(`getUser error: ${event.target}`);
         reject(new Error("Failed to retrieve user"));
       };
     });
@@ -979,18 +947,15 @@ export class WebsiteStore {
 
         burrowRequest.onsuccess = () => {
           const burrow = burrowRequest.result;
-          console.log("getBurrow success");
           resolve(burrow);
         };
 
         burrowRequest.onerror = (event) => {
-          console.log(`getBurrow error: ${event.target}`);
           reject(new Error("Failed to retrieve settings"));
         };
       };
 
       userRequest.onerror = (event) => {
-        console.log(`getBurrow error: ${event.target}`);
         reject(new Error("Failed to retrieve settings"));
       };
     });
@@ -1005,12 +970,10 @@ export class WebsiteStore {
         .getAll();
 
       request.onsuccess = (_) => {
-        console.log("getAll success");
         resolve(request.result);
       };
 
       request.onerror = (event) => {
-        console.log(`getAll error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       };
     });
@@ -1025,12 +988,10 @@ export class WebsiteStore {
         .get(burrowId);
 
       request.onsuccess = () => {
-        console.log("getBurrow success");
         resolve(request.result);
       };
 
       request.onerror = (event) => {
-        console.log(`getBurrow error: ${event.target}`);
         reject(new Error("Failed to retrieve items"));
       };
     });
@@ -1045,7 +1006,6 @@ export class WebsiteStore {
           const website = await this.getWebsite(url);
           websites.push(website);
         }
-        console.log("getAllWebsitesForBurrow successful");
         resolve(websites);
       } catch (err) {
         reject(err);
@@ -1068,18 +1028,15 @@ export class WebsiteStore {
           .put(user);
 
         userPutRequest.onsuccess = () => {
-          console.log("changeActiveBurrow success");
           resolve();
         };
 
         userPutRequest.onerror = (event) => {
-          console.log(`changeActiveBurrow error: ${event.target}`);
           reject(new Error("Failed to retrieve settings"));
         };
       };
 
       userRequest.onerror = (event) => {
-        console.log(`getBurrow error: ${event.target}`);
         reject(new Error("Failed to retrieve settings"));
       };
     });
@@ -1098,7 +1055,6 @@ export class WebsiteStore {
       websites: [...new Set(websites)],
       activeTabs: [],
     };
-    console.log(burrow);
 
     return new Promise((resolve, reject) => {
       // FIXME: when rabbithole is installed, the first time a session is saved
@@ -1128,7 +1084,6 @@ export class WebsiteStore {
       };
 
       burrowReq.onerror = (event) => {
-        console.log(event.target);
         reject(new Error("Failed to retrieve items"));
       };
     });
@@ -1159,7 +1114,6 @@ export class WebsiteStore {
         const putRequest = store.put(burrow);
 
         putRequest.onsuccess = () => {
-          console.log("updateBurrowSembleInfo success");
           resolve();
         };
 
@@ -1193,7 +1147,6 @@ export class WebsiteStore {
       };
 
       burrowRequest.onerror = (event) => {
-        console.error(`update active tabs error`);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });
@@ -1219,12 +1172,10 @@ export class WebsiteStore {
         .put(burrow);
 
       burrowRequest.onsuccess = (event) => {
-        console.log(`remove from active tabs success`);
         resolve();
       };
 
       burrowRequest.onerror = (event) => {
-        console.error(`remove from active tabs error`);
         reject(new Error((event.target as IDBRequest).error.message));
       };
     });

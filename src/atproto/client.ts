@@ -237,7 +237,6 @@ export async function exchangeCodeForTokens(
   if (response.status === 400 || response.status === 401) {
     const dpopNonce = response.headers.get("DPoP-Nonce");
     if (dpopNonce) {
-      console.log("Retrying with DPoP nonce:", dpopNonce);
       dpopProof = await createDpopProof(
         "POST",
         tokenEndpoint,

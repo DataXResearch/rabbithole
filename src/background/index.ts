@@ -173,8 +173,7 @@ function storeWebsites(
         db.saveWebsitesToBurrow([website])
           .then((res) => sendResponse(res))
           .catch((err) => {
-            console.log(err);
-            sendResponse(err);
+            sendResponse({ error: err.message || "Failed to save website" });
           });
       })
       .catch((error) => {
@@ -192,8 +191,7 @@ function storeWebsites(
         ])
           .then((res) => sendResponse(res))
           .catch((err) => {
-            console.log(err);
-            sendResponse(err);
+            sendResponse({ error: err.message || "Failed to save website" });
           });
       }),
   );
@@ -202,7 +200,6 @@ function storeWebsites(
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log("just installed!");
   WebsiteStore.init(indexedDB);
 });
 
@@ -227,8 +224,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getAllWebsites()
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -236,8 +232,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getSettings()
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -251,8 +246,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.updateSettings(request.settings)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -260,8 +254,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getAllBurrows()
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -275,8 +268,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getAllWebsitesForBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -290,8 +282,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.createNewActiveBurrow(request.newBurrowName)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -299,8 +290,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.changeActiveBurrow("burrowId" in request ? request.burrowId : null)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -308,8 +298,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getActiveBurrow()
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -323,8 +312,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -347,8 +335,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse(burrow);
           })
           .catch((err) => {
-            console.log(err);
-            sendResponse(err);
+            sendResponse({ error: err.message });
           });
       });
 
@@ -388,8 +375,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.renameBurrow(request.burrowId, request.newName)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -403,8 +389,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.deleteBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -418,8 +403,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.deleteWebsiteFromBurrow(request.burrowId, request.url)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -441,7 +425,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       )
         .then(() => sendResponse({ success: true }))
         .catch((err) => {
-          console.log(err);
           sendResponse({ error: err.message });
         });
       break;
@@ -450,8 +433,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getActiveRabbithole()
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -459,8 +441,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.getAllRabbitholes()
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -472,7 +453,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.fetchRabbitholesForBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
           sendResponse({ error: err.message });
         });
       break;
@@ -485,7 +465,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.deleteBurrowFromRabbithole(request.rabbitholeId, request.burrowId)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
           sendResponse({ error: err.message });
         });
       break;
@@ -496,8 +475,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       )
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -511,8 +489,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.createNewActiveRabbithole(request.title, request.description)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -530,8 +507,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       )
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -545,8 +521,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.deleteRabbithole(request.rabbitholeId)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -560,8 +535,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.addBurrowsToRabbithole(request.rabbitholeId, request.burrowIds)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -575,8 +549,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.createNewBurrowInActiveRabbithole(request.burrowName)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -590,8 +563,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.addWebsitesToRabbitholeMeta(request.rabbitholeId, request.urls)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -605,8 +577,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.deleteWebsiteFromRabbitholeMeta(request.rabbitholeId, request.url)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -618,8 +589,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.updateWebsite(request.url, request.name, request.description)
         .then((res) => sendResponse(res))
         .catch((err) => {
-          console.log(err);
-          sendResponse(err);
+          sendResponse({ error: err.message });
         });
       break;
 
@@ -654,7 +624,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           sendResponse({ success: true, timestamp });
         } catch (err) {
-          console.error(err);
           sendResponse({ error: err.message });
         }
       })();
@@ -679,7 +648,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       db.removeWebsiteFromActiveTabs(request.burrowId, request.url)
         .then(() => sendResponse({ success: true }))
         .catch((err) => {
-          console.log(err);
           sendResponse({ error: err.message });
         });
       break;
@@ -730,7 +698,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             if (missingWebsites.length > 0) {
-              console.log("saving missing websites", missingWebsites);
               await db.saveWebsites(missingWebsites);
             }
 
@@ -753,9 +720,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
 
               if (isConsistent) {
-                console.log(
-                  `Project ${burrowName} already exists and is consistent. Skipping creation.`,
-                );
                 oldIdToNewId.set(burrow.id, existingBurrow.id);
                 continue;
               } else {
@@ -792,9 +756,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           for (const rh of rabbitholesToImport) {
             if (existingRabbitholeMap.has(rh.title)) {
-              console.log(
-                `Rabbithole ${rh.title} already exists. Skipping creation.`,
-              );
               continue;
             }
 
@@ -813,7 +774,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           sendResponse({ success: true });
         } catch (err) {
-          console.error(err);
           sendResponse({ error: err.message });
         }
       })();

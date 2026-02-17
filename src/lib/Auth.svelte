@@ -35,7 +35,6 @@
   const RedirectUri: string = chrome.identity.getRedirectURL("callback");
 
   onMount(async () => {
-    console.log("Redirect URI:", RedirectUri);
     await restoreSession();
   });
 
@@ -46,16 +45,12 @@
         // Verify we have valid DPoP keys
         const keys = await getDpopKey();
         if (!keys) {
-          console.warn(
-            "Session exists but DPoP keys are missing or invalid. Clearing session.",
-          );
           await clearSession();
           return;
         }
         await fetchProfile(stored);
       }
     } catch (err) {
-      console.error("Failed to restore session:", err);
       await clearSession();
     }
   }
@@ -72,7 +67,6 @@
     userDisplayName = response.data.displayName || response.data.handle;
     userHandle = response.data.handle;
     userAvatar = response.data.avatar;
-    console.log(response);
   }
 
   async function submitHandle(): Promise<void> {
@@ -91,21 +85,15 @@
       }
 
       const { did, pdsUrl } = await resolveHandleAndPds(handle);
-      console.log("Resolved handle:", { did, pdsUrl, handle });
-
       const authServer = await getAuthServerMetadata(pdsUrl);
-      console.log("Auth server metadata:", authServer);
 
       // Generate DPoP key pair
       dpopKeyPair = await generateDpopKeyPair();
       await saveDpopKey(dpopKeyPair);
-      console.log("Generated and saved DPoP key pair");
 
       const codeVerifier = generateRandomString(32);
       const codeChallenge = await generateCodeChallenge(codeVerifier);
       const state = generateRandomString(16);
-
-      console.log("PKCE - state:", state);
 
       const authUrl = new URL(authServer.authorization_endpoint);
       authUrl.searchParams.set("response_type", "code");
@@ -123,15 +111,11 @@
       authUrl.searchParams.set("code_challenge_method", "S256");
       authUrl.searchParams.set("login_hint", handle);
 
-      console.log("Opening auth URL:", authUrl.toString());
-
       // FIXME: why does eslint get the types wrong here?
       const callbackUrl = await chrome.identity.launchWebAuthFlow({
         url: authUrl.toString(),
         interactive: true,
       });
-
-      console.log("Callback URL:", callbackUrl);
 
       if (!callbackUrl) {
         throw new Error("Authentication was cancelled");
@@ -156,7 +140,6 @@
         throw new Error("No authorization code received");
       }
 
-      console.log("Exchanging code for tokens...");
       const tokenResponse = await exchangeCodeForTokens(
         code,
         codeVerifier,
@@ -165,7 +148,6 @@
         RedirectUri,
         ClientMetadataUrl,
       );
-      console.log("Token response received");
 
       const session = {
         did,
@@ -182,7 +164,6 @@
       error = null;
       dispatch("authSuccess");
     } catch (err) {
-      console.error("OAuth error:", err);
       error = err.message || "Failed to start authentication";
     }
 
