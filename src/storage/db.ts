@@ -692,7 +692,19 @@ export class WebsiteStore {
 
       burrowRequest.onsuccess = (event) => {
         const tx = db.transaction(["websites"], "readwrite");
-        items.forEach((item) => tx.objectStore("websites").put(item));
+        const store = tx.objectStore("websites");
+
+        items.forEach((item) => {
+          // Use add instead of put to avoid overwriting existing websites
+          // This preserves original savedAt, title, description etc.
+          const req = store.add(item);
+          req.onerror = (e) => {
+            // Ignore ConstraintError (duplicate key) to prevent transaction abort
+            // This means the website already exists, which is what we want
+            e.preventDefault();
+            e.stopPropagation();
+          };
+        });
 
         tx.oncomplete = async () => {
           console.log(`store item success`);
