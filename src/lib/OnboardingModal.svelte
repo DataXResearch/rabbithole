@@ -2,12 +2,12 @@
   import { createEventDispatcher } from "svelte";
   import { ChevronLeft, ChevronRight, Check } from "radix-icons-svelte";
   import Modal from "./Modal.svelte";
-  import tutorial1 from "../assets/tutorial-1-burrows-rabbitholes.gif";
-  import tutorial2 from "../assets/tutorial-2-overlay-popup.gif";
-  import tutorial3 from "../assets/tutorial-3-sync.gif";
-  import tutorial4 from "../assets/tutorial-4-pinned.gif";
-  import tutorial5 from "../assets/tutorial-5-search.gif";
-  import tutorial6 from "../assets/tutorial-6-semble.gif";
+  import tutorial1 from "../assets/tutorial-1-burrows-rabbitholes.mp4";
+  import tutorial2 from "../assets/tutorial-2-overlay-popup.mp4";
+  import tutorial3 from "../assets/tutorial-3-sync.mp4";
+  import tutorial4 from "../assets/tutorial-4-pinned.mp4";
+  import tutorial5 from "../assets/tutorial-5-search.mp4";
+  import tutorial6 from "../assets/tutorial-6-semble.mp4";
 
   export let isOpen: boolean = false;
 
@@ -96,11 +96,18 @@
 <Modal {isOpen} title={slides[currentSlide].title} on:close={close}>
   <div class="onboarding-container">
     <div class="slide-image-container">
-      <img
-        src={slides[currentSlide].image}
-        alt={slides[currentSlide].title}
-        class="slide-image"
-      />
+      {#key currentSlide}
+        <video
+          src={slides[currentSlide].image}
+          class="slide-image"
+          autoplay
+          loop
+          muted
+          playsinline
+        >
+          Your browser does not support the video tag.
+        </video>
+      {/key}
     </div>
 
     <div class="slide-content">
