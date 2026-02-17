@@ -2,6 +2,12 @@
   import { createEventDispatcher } from "svelte";
   import { ChevronLeft, ChevronRight, Check } from "radix-icons-svelte";
   import Modal from "./Modal.svelte";
+  import tutorial1 from "../assets/tutorial-1-burrows-rabbitholes.gif";
+  import tutorial2 from "../assets/tutorial-2-overlay-popup.gif";
+  import tutorial3 from "../assets/tutorial-3-sync.gif";
+  import tutorial4 from "../assets/tutorial-4-pinned.gif";
+  import tutorial5 from "../assets/tutorial-5-search.gif";
+  import tutorial6 from "../assets/tutorial-6-semble.gif";
 
   export let isOpen: boolean = false;
 
@@ -11,32 +17,51 @@
 
   const slides = [
     {
-      title: "Welcome to Rabbithole",
+      title: "Organize with Rabbitholes",
+      image: tutorial1,
       content: `
-        <p><strong>Your companion for deep dives on the web.</strong></p>
-        <p>Rabbithole helps you organize your research trails, manage browser tabs, and keep track of where you've been without the clutter.</p>
+        <p><strong>Structure your research.</strong></p>
+        <p>Create <strong>Burrows</strong> for specific topics and group them into <strong>Rabbitholes</strong>. Keep your projects distinct and organized.</p>
       `,
     },
     {
-      title: "Rabbitholes & Burrows",
+      title: "Quick Access Overlay",
+      image: tutorial2,
       content: `
-        <p><strong>Organize your knowledge.</strong></p>
-        <p>Create <strong>Burrows</strong> for specific projects or topics you are researching.</p>
-        <p>Group related Burrows into <strong>Rabbitholes</strong> to keep your workspace organized and focused.</p>
+        <p><strong>Track without interruption.</strong></p>
+        <p>Use the <strong>Overlay</strong> or <strong>Popup</strong> to save pages to your active Burrow with one click, without leaving your current tab.</p>
       `,
     },
     {
-      title: "Sync Your Window",
+      title: "Save Context Instantly",
+      image: tutorial3,
       content: `
-        <p><strong>Never lose context.</strong></p>
-        <p>Working on a topic? Click the <strong>Sync</strong> button (reload icon) in the timeline header to save all your currently open tabs to the active Burrow instantly.</p>
+        <p><strong>Close all the tabs you want without batting an eye.</strong></p>
+        <p>Click the <strong>Sync</strong> button to save all open tabs in your window to the active Burrow. Perfect for switching contexts without losing open pages.</p>
       `,
     },
     {
-      title: "Pinned Websites",
+      title: "Pick Up Where You Left Off",
+      image: tutorial4,
       content: `
-        <p><strong>Quick access to essentials.</strong></p>
-        <p>Pin important websites to your Burrow to keep them at the top. You can open all pinned sites at once with the "Open All" button when you're ready to resume work.</p>
+        <p><strong>Get right back into where you last were.</strong></p>
+        <p>Click the <strong>Home</strong> button to save all open tabs in your window as pinned websites for your Burrow. Whether you're in the depths of research or coming back to your desk after the weekend, you can keep track of the most important websites in your Burrow.</p>
+      `,
+    },
+    {
+      title: "Search Everywhere",
+      image: tutorial5,
+      content: `
+        <p><strong>Find anything, fast.</strong></p>
+        <p>Press <strong>Cmd+K</strong> (or Ctrl+K) to open the command palette. Search across all your Rabbitholes, Burrows, and saved websites instantly.</p>
+      `,
+    },
+    {
+      title: "Publish to Semble",
+      image: tutorial6,
+      content: `
+        <p><strong>Share your knowledge.</strong></p>
+        <p>Publish your Burrows as curated collections to <strong>Semble</strong> on the AT Protocol. Share your research trails with the world.</p>
       `,
     },
   ];
@@ -70,6 +95,14 @@
 
 <Modal {isOpen} title={slides[currentSlide].title} on:close={close}>
   <div class="onboarding-container">
+    <div class="slide-image-container">
+      <img
+        src={slides[currentSlide].image}
+        alt={slides[currentSlide].title}
+        class="slide-image"
+      />
+    </div>
+
     <div class="slide-content">
       {@html slides[currentSlide].content}
     </div>
@@ -119,14 +152,32 @@
     min-height: 200px;
   }
 
+  .slide-image-container {
+    width: 100%;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .slide-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
   .slide-content {
     flex: 1;
     font-size: 16px;
     line-height: 1.6;
     color: #495057;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     text-align: center;
-    padding: 0 20px;
+    padding: 0 10px;
   }
 
   /* Deep selector for html content */
@@ -194,6 +245,10 @@
   }
 
   /* Dark mode */
+  :global(body.dark-mode) .slide-image-container {
+    background-color: #25262b;
+  }
+
   :global(body.dark-mode) .slide-content {
     color: #c1c2c5;
   }
