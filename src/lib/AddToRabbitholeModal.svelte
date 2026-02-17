@@ -9,7 +9,7 @@
   } from "@svelteuidev/core";
   import { Cross2, MagnifyingGlass, Trash } from "radix-icons-svelte";
   import Fuse from "fuse.js";
-  import { MessageRequest } from "../utils";
+  import { MessageRequest, logger } from "../utils";
   import type { Rabbithole } from "src/utils/types";
 
   export let isOpen: boolean = false;
@@ -64,7 +64,7 @@
       });
       allRabbitholes = Array.isArray(res) ? res : [];
     } catch (err) {
-      console.error("Failed to load rabbitholes:", err);
+      logger.error("Failed to load rabbitholes:", err);
       allRabbitholes = [];
     } finally {
       isLoading = false;
@@ -100,14 +100,14 @@
       });
 
       if (res && typeof res === "object" && "error" in res) {
-        console.error("Failed to add burrow to rabbithole:", res.error);
+        logger.error("Failed to add burrow to rabbithole:", res.error);
         return;
       }
 
       dispatch("updated");
       close();
     } catch (err) {
-      console.error("Failed to add burrow to rabbithole:", err);
+      logger.error("Failed to add burrow to rabbithole:", err);
     } finally {
       isAdding = false;
     }
@@ -125,14 +125,14 @@
       });
 
       if (res && typeof res === "object" && "error" in res) {
-        console.error("Failed to remove burrow from rabbithole:", res.error);
+        logger.error("Failed to remove burrow from rabbithole:", res.error);
         return;
       }
 
       dispatch("updated");
       close();
     } catch (err) {
-      console.error("Failed to remove burrow from rabbithole:", err);
+      logger.error("Failed to remove burrow from rabbithole:", err);
     } finally {
       isAdding = false;
     }

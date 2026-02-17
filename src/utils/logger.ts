@@ -27,15 +27,15 @@ function getContext(): string {
 }
 
 async function saveLog(level: LogLevel, message: string, data?: any) {
-  // Always log to console for development
-  const consoleMsg = `[${level}] ${message}`;
-  if (level === LogLevel.ERROR) {
-    console.error(consoleMsg, data || "");
-  } else if (level === LogLevel.WARN) {
-    console.warn(consoleMsg, data || "");
-  } else {
-    console.log(consoleMsg, data || "");
-  }
+  // Uncomment for dev
+  // const consoleMsg = `[${level}] ${message}`;
+  // if (level === LogLevel.ERROR) {
+  //   console.error(consoleMsg, data || "");
+  // } else if (level === LogLevel.WARN) {
+  //   console.warn(consoleMsg, data || "");
+  // } else {
+  //   console.log(consoleMsg, data || "");
+  // }
 
   try {
     const result = await chrome.storage.local.get(LOG_STORAGE_KEY);

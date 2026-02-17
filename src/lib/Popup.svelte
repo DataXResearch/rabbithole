@@ -2,7 +2,7 @@
   import Overlay from "src/lib/Overlay.svelte";
   import { Tooltip } from "@svelteuidev/core";
   import { onMount } from "svelte";
-  import { MessageRequest, NotificationDuration } from "../utils";
+  import { MessageRequest, NotificationDuration, logger } from "../utils";
   import type { Settings } from "../utils/types";
 
   let isSyncingWindow = false;
@@ -44,7 +44,7 @@
         syncWindowSuccess = false;
       }, NotificationDuration);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       isSyncingWindow = false;
     }

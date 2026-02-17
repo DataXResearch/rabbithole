@@ -79,7 +79,7 @@
         userHandle = response.data.handle;
       }
     } catch (e) {
-      console.error("Failed to load user profile", e);
+      logger.error("Failed to load user profile", e);
     }
   }
 
@@ -185,7 +185,7 @@
 
         onBurrowsClick();
       } catch (err) {
-        console.error("Failed to parse import file", err);
+        logger.error("Failed to parse import file", err);
       }
     };
     reader.readAsText(file);
