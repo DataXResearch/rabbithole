@@ -8,6 +8,7 @@
 
   export let website: Website;
   export let showDelete: boolean = true;
+  export let fixedHeight: boolean = false;
 
   let isHoveringTitle: boolean = false;
   let isHoveringDesc: boolean = false;
@@ -44,8 +45,14 @@
   }
 </script>
 
-<div class="card-container">
-  <Card shadow="sm" padding="lg" radius="md" class="timeline-card" withBorder>
+<div class="card-container" class:fixed-height-container={fixedHeight}>
+  <Card
+    shadow="sm"
+    padding="lg"
+    radius="md"
+    class="timeline-card {fixedHeight ? 'fixed-height' : ''}"
+    withBorder
+  >
     {#if showDelete}
       <button
         type="button"
@@ -127,9 +134,46 @@
     padding: 6px 0;
   }
 
+  .card-container.fixed-height-container {
+    padding: 0;
+    height: 100%;
+  }
+
   .description-container {
     min-height: 60px;
     width: 100%;
+  }
+
+  :global(.timeline-card.fixed-height) {
+    height: 240px;
+  }
+
+  :global(.timeline-card.fixed-height) .description-container {
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.timeline-card.fixed-height) .card-desc-input {
+    height: 100% !important;
+    overflow-y: auto;
+    resize: none;
+  }
+
+  :global(.timeline-card.fixed-height) .card-desc-input::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  :global(.timeline-card.fixed-height)
+    .card-desc-input::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
+
+  :global(body.dark-mode .timeline-card.fixed-height)
+    .card-desc-input::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 
   /* Ensure Tooltip wrapper takes full width */

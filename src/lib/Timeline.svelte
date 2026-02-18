@@ -26,6 +26,8 @@
     Home,
     Upload,
     Update,
+    ListBullet,
+    Grid,
   } from "radix-icons-svelte";
   import { getSession } from "../atproto/client";
   import {
@@ -70,6 +72,16 @@
   let isDeletingBurrow: boolean = false;
 
   let showSearchBar: boolean = false;
+  let viewMode: "timeline" | "grid" = "timeline";
+
+  $: gridWebsites =
+    searchQuery.length >= 3
+      ? websitesToDisplay
+      : [...websitesToDisplay].sort((a, b) => {
+          const tA = getWebsiteTimeMs(a) || 0;
+          const tB = getWebsiteTimeMs(b) || 0;
+          return tB - tA;
+        });
 
   onMount(async () => {
     if (autoFocusTitle) {
@@ -895,61 +907,102 @@
         />
       {/if}
 
-      <div class="timeline-feed">
-        <div class="timeline-gutter">
-          <div class="timeline-line"></div>
-        </div>
+      <div class="view-toggles">
+        <Group spacing={4}>
+          <ActionIcon
+            variant={viewMode === "timeline" ? "filled" : "default"}
+            color="blue"
+            size="lg"
+            on:click={() => (viewMode = "timeline")}
+            title="Timeline View"
+          >
+            <ListBullet size={20} />
+          </ActionIcon>
+          <ActionIcon
+            variant={viewMode === "grid" ? "filled" : "default"}
+            color="blue"
+            size="lg"
+            on:click={() => (viewMode = "grid")}
+            title="Grid View"
+          >
+            <Grid size={20} />
+          </ActionIcon>
+        </Group>
+      </div>
 
-        <div class="timeline-body">
-          {#each groupedWebsites as group (group.key)}
-            <div class="date-group">
-              <div class="date-header">{group.label}</div>
+      {#if viewMode === "timeline"}
+        <div class="timeline-feed">
+          <div class="timeline-gutter">
+            <div class="timeline-line"></div>
+          </div>
 
-              <div class="date-cards">
-                {#each group.items as site (site.url)}
-                  <div class="timeline-item">
-                    <div
-                      class="timeline-dot"
-                      on:mouseenter={(e) => {
-                        updateHoverPosition(e);
-                        showTimestamp(getWebsiteTimeMs(site));
-                      }}
-                      on:mousemove={updateHoverPosition}
-                      on:mouseleave={clearTimestamp}
-                    ></div>
-                    <div
-                      class="timeline-connector"
-                      on:mouseenter={(e) => {
-                        updateHoverPosition(e);
-                        showTimestamp(getWebsiteTimeMs(site));
-                      }}
-                      on:mousemove={updateHoverPosition}
-                      on:mouseleave={clearTimestamp}
-                    ></div>
+          <div class="timeline-body">
+            {#each groupedWebsites as group (group.key)}
+              <div class="date-group">
+                <div class="date-header">{group.label}</div>
 
-                    <div class="timeline-card-wrap">
-                      <TimelineCard
-                        website={site}
-                        on:websiteDelete={deleteWebsite}
-                        on:websiteUpdate={updateWebsite}
-                      />
+                <div class="date-cards">
+                  {#each group.items as site (site.url)}
+                    <div class="timeline-item">
+                      <div
+                        class="timeline-dot"
+                        on:mouseenter={(e) => {
+                          updateHoverPosition(e);
+                          showTimestamp(getWebsiteTimeMs(site));
+                        }}
+                        on:mousemove={updateHoverPosition}
+                        on:mouseleave={clearTimestamp}
+                      ></div>
+                      <div
+                        class="timeline-connector"
+                        on:mouseenter={(e) => {
+                          updateHoverPosition(e);
+                          showTimestamp(getWebsiteTimeMs(site));
+                        }}
+                        on:mousemove={updateHoverPosition}
+                        on:mouseleave={clearTimestamp}
+                      ></div>
+
+                      <div class="timeline-card-wrap">
+                        <TimelineCard
+                          website={site}
+                          on:websiteDelete={deleteWebsite}
+                          on:websiteUpdate={updateWebsite}
+                        />
+                      </div>
                     </div>
-                  </div>
-                {/each}
+                  {/each}
+                </div>
               </div>
+            {/each}
+          </div>
+
+          {#if isHoveringTimestamp && hoveredTimestamp}
+            <div
+              class="timeline-tooltip"
+              style="left: {hoverX}px; top: {hoverY}px;"
+            >
+              {formatDateTime(hoveredTimestamp)}
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <div class="grid-feed">
+          {#each gridWebsites as site (site.url)}
+            <div class="grid-item">
+              <TimelineCard
+                website={site}
+                fixedHeight={true}
+                on:websiteDelete={deleteWebsite}
+                on:websiteUpdate={updateWebsite}
+              />
             </div>
           {/each}
+          {#if gridWebsites.length === 0}
+            <div class="empty-grid">No websites found.</div>
+          {/if}
         </div>
-
-        {#if isHoveringTimestamp && hoveredTimestamp}
-          <div
-            class="timeline-tooltip"
-            style="left: {hoverX}px; top: {hoverY}px;"
-          >
-            {formatDateTime(hoveredTimestamp)}
-          </div>
-        {/if}
-      </div>
+      {/if}
 
       {#if websitesToDisplay.length === 0 && searchQuery.length > 0}
         <Text align="center" color="dimmed" size="sm" style="margin-top: 2rem;"
@@ -1267,5 +1320,35 @@
     .timeline-card-wrap {
       margin-left: 80px;
     }
+  }
+
+  .view-toggles {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+
+  .grid-feed {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    width: 100%;
+    padding-bottom: 40px;
+  }
+
+  .grid-item {
+    height: 100%;
+  }
+
+  .empty-grid {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #868e96;
+    padding: 40px;
+  }
+
+  :global(body.dark-mode) .empty-grid {
+    color: #909296;
   }
 </style>
