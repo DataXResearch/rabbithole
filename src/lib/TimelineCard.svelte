@@ -3,6 +3,9 @@
   import { Button, Card, Group, Tooltip } from "@svelteuidev/core";
   import { Trash } from "radix-icons-svelte";
   import type { Website } from "src/utils/types";
+  import default1 from "../assets/rabbit-default-1.jpg";
+  import default2 from "../assets/rabbit-default-2.jpg";
+  import default3 from "../assets/rabbit-default-3.jpg";
 
   const dispatch = createEventDispatcher();
 
@@ -12,6 +15,22 @@
 
   let isHoveringTitle: boolean = false;
   let isHoveringDesc: boolean = false;
+  let imageLoadError: boolean = false;
+
+  const defaultImages = [default1, default2, default3];
+
+  function getDefaultImage(url: string): string {
+    let hash = 0;
+    for (let i = 0; i < url.length; i++) {
+      hash = (hash << 5) - hash + url.charCodeAt(i);
+      hash |= 0;
+    }
+    return defaultImages[Math.abs(hash) % defaultImages.length];
+  }
+
+  function handleImageError() {
+    imageLoadError = true;
+  }
 
   async function deleteWebsite(): Promise<void> {
     dispatch("websiteDelete", {
@@ -53,6 +72,25 @@
     class="timeline-card {fixedHeight ? 'fixed-height' : ''}"
     withBorder
   >
+    <div class="card-image-wrapper">
+      {#if website.openGraphImageUrl && !imageLoadError}
+        <img
+          src={website.openGraphImageUrl}
+          alt={website.name}
+          class="card-image"
+          loading="lazy"
+          on:error={handleImageError}
+        />
+      {:else}
+        <img
+          src={getDefaultImage(website.url)}
+          alt={website.name}
+          class="card-image"
+          loading="lazy"
+        />
+      {/if}
+    </div>
+
     {#if showDelete}
       <button
         type="button"
@@ -120,7 +158,7 @@
     </div>
 
     <!-- Footer: Action Button -->
-    <div style="margin-top: 24px;">
+    <div class="card-footer">
       <Button variant="light" color="blue" href={website.url} target="_blank">
         Open
       </Button>
@@ -139,13 +177,39 @@
     height: 100%;
   }
 
+  .card-image-wrapper {
+    margin: -20px -20px 16px -20px;
+    height: 160px;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: #f8f9fa;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  :global(.timeline-card:hover) .card-image {
+    transform: scale(1.05);
+  }
+
   .description-container {
     min-height: 60px;
     width: 100%;
   }
 
   :global(.timeline-card.fixed-height) {
-    height: 240px;
+    height: 320px;
+  }
+
+  :global(.timeline-card.fixed-height) .card-image-wrapper {
+    height: 140px;
   }
 
   :global(.timeline-card.fixed-height) .description-container {
@@ -192,6 +256,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
   }
 
   :global(.timeline-card:hover) {
@@ -272,11 +337,24 @@
     color: #495057; /* Darker text on focus/hover for better readability */
   }
 
+  .card-footer {
+    margin-top: 24px;
+  }
+
+  :global(.timeline-card.fixed-height) .card-footer {
+    margin-bottom: 12px;
+  }
+
   /* Dark mode styles */
   :global(body.dark-mode .timeline-card) {
     background-color: #25262b !important;
     border-color: #373a40 !important;
     color: #c1c2c5 !important;
+  }
+
+  :global(body.dark-mode) .card-image-wrapper {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+    background-color: #2c2e33;
   }
 
   :global(body.dark-mode) .card-title-input {

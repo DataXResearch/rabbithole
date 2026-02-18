@@ -46,6 +46,7 @@
   },
   "permissions": ["tabs", "storage", "identity"],
   "host_permissions": [
+    "*://*/*",
     "https://*.bsky.social/*",
     "https://public.api.bsky.app/*",
     "https://plc.directory/*"
