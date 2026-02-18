@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { logger } from "../utils";
+import { Logger } from "../utils";
 import type {
   Settings,
   Website,
@@ -28,14 +28,14 @@ export class WebsiteStore {
       request.onsuccess = () => {
         const db = request.result;
         db.onerror = (event) => {
-          logger.error("Database error", (event.target as any).error);
+          Logger.error("Database error", (event.target as any).error);
         };
         this.db = db;
         resolve(db);
       };
       request.onerror = (event) => {
         const err = (event.target as any).error;
-        logger.error("Failed to open database", err);
+        Logger.error("Failed to open database", err);
         reject(new Error(err));
       };
     });
@@ -44,12 +44,12 @@ export class WebsiteStore {
   static async init(factory: IDBFactory): Promise<void> {
     await new Promise((resolve, reject) => {
       if (factory === undefined) {
-        logger.error("indexedDB not supported");
+        Logger.error("indexedDB not supported");
         reject(new Error("indexedDB not supported"));
       } else {
         let request = factory.open("rabbithole", version);
         request.onerror = (e) => {
-          logger.error("IndexedDB init error", (e.target as any).error);
+          Logger.error("IndexedDB init error", (e.target as any).error);
           reject(new Error("Insufficient permissions"));
         };
 
@@ -667,14 +667,14 @@ export class WebsiteStore {
 
         tx.onerror = (event) => {
           const err = (event.target as IDBRequest).error;
-          logger.error("saveWebsitesToBurrow transaction failed", err);
+          Logger.error("saveWebsitesToBurrow transaction failed", err);
           reject(new Error(err.message));
         };
       };
 
       burrowRequest.onerror = (event) => {
         const err = (event.target as IDBRequest).error;
-        logger.error("saveWebsitesToBurrow failed", err);
+        Logger.error("saveWebsitesToBurrow failed", err);
         reject(new Error(err.message));
       };
     });

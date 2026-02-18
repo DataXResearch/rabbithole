@@ -19,7 +19,7 @@
   import Auth from "src/lib/Auth.svelte";
   import OnboardingModal from "src/lib/OnboardingModal.svelte";
   import { getSession, clearSession } from "../atproto/client";
-  import { MessageRequest, logger } from "../utils";
+  import { MessageRequest, Logger } from "../utils";
   import type { Settings } from "src/utils/types";
 
   export let onRabbitholesClick = () => {};
@@ -79,7 +79,7 @@
         userHandle = response.data.handle;
       }
     } catch (e) {
-      logger.error("Failed to load user profile", e);
+      Logger.error("Failed to load user profile", e);
     }
   }
 
@@ -119,7 +119,7 @@
   }
 
   async function handleDownloadLogs(): Promise<void> {
-    await logger.downloadLogs();
+    await Logger.downloadLogs();
   }
 
   async function exportData(): Promise<void> {
@@ -185,7 +185,7 @@
 
         onBurrowsClick();
       } catch (err) {
-        logger.error("Failed to parse import file", err);
+        Logger.error("Failed to parse import file", err);
       }
     };
     reader.readAsText(file);

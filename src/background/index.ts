@@ -1,4 +1,4 @@
-import { MessageRequest, logger } from "../utils";
+import { MessageRequest, Logger } from "../utils";
 import { WebsiteStore } from "../storage/db";
 import type { Burrow } from "../utils/types";
 import { getSession } from "../atproto/client";
@@ -174,12 +174,12 @@ function storeWebsites(
         db.saveWebsitesToBurrow([website])
           .then((res) => sendResponse(res))
           .catch((err) => {
-            logger.error("Failed to save website (OG fetch)", err);
+            Logger.error("Failed to save website (OG fetch)", err);
             sendResponse({ error: err.message || "Failed to save website" });
           });
       })
       .catch((error) => {
-        logger.warn("OG fetch failed, using fallback", error);
+        Logger.warn("OG fetch failed, using fallback", error);
         // just use info at hand if OG information cannot be retrieved
         // TODO: are there cases when it's preferable to do this?
         db.saveWebsitesToBurrow([
@@ -194,7 +194,7 @@ function storeWebsites(
         ])
           .then((res) => sendResponse(res))
           .catch((err) => {
-            logger.error("Failed to save website (fallback)", err);
+            Logger.error("Failed to save website (fallback)", err);
             sendResponse({ error: err.message || "Failed to save website" });
           });
       }),
@@ -219,7 +219,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   const requestName = MessageRequest[request.type] || "UNKNOWN_REQUEST";
 
-  logger.info(`Background received: ${requestName}`, {
+  Logger.info(`Background received: ${requestName}`, {
     request,
     sender: sender.tab ? `Tab ${sender.tab.id}` : "Extension",
   });
@@ -227,7 +227,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   const db = new WebsiteStore(indexedDB);
 
   const handleError = (err: any) => {
-    logger.error(`${requestName} failed`, err);
+    Logger.error(`${requestName} failed`, err);
     sendResponse({ error: err.message || "Unknown error" });
   };
 
@@ -744,7 +744,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     default:
-      logger.warn(`Unknown message type: ${request.type}`);
+      Logger.warn(`Unknown message type: ${request.type}`);
   }
 
   // arcane incantation required for async `sendResponse`s to work
