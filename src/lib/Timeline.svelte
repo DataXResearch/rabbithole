@@ -674,23 +674,25 @@
 <div class="timeline">
   <div class="header-section">
     <div class="title-row">
-      <Tooltip
-        label={burrowNameError || "Click to rename burrow"}
-        withArrow
-        color={burrowNameError ? "red" : "gray"}
-        opened={!!burrowNameError || undefined}
-      >
-        <Input
-          id="project-name"
-          variant="unstyled"
-          size="xl"
-          class="project-name-input {burrowNameError ? 'input-error' : ''}"
-          bind:value={activeBurrow.name}
-          on:blur={renameBurrow}
-          on:input={() => (burrowNameError = null)}
-          on:keydown={(e) => e.key === "Enter" && renameBurrow()}
-        />
-      </Tooltip>
+      <div class="tooltip-wrapper">
+        <Tooltip
+          label={burrowNameError || "Click to rename burrow"}
+          withArrow
+          color={burrowNameError ? "red" : "gray"}
+          opened={!!burrowNameError || undefined}
+        >
+          <Input
+            id="project-name"
+            variant="unstyled"
+            size="xl"
+            class="project-name-input {burrowNameError ? 'input-error' : ''}"
+            bind:value={activeBurrow.name}
+            on:blur={renameBurrow}
+            on:input={() => (burrowNameError = null)}
+            on:keydown={(e) => e.key === "Enter" && renameBurrow()}
+          />
+        </Tooltip>
+      </div>
 
       {#if sembleUrl}
         <div class="sync-indicator">
@@ -973,10 +975,21 @@
   .title-row {
     width: 100%;
     display: flex;
+    text-align: center;
     justify-content: center;
     align-items: center;
     margin-bottom: 8px;
     position: relative;
+  }
+
+  .tooltip-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .tooltip-wrapper :global(> *) {
+    width: 100%;
   }
 
   .sync-indicator {
@@ -1005,17 +1018,14 @@
     margin: 0 8px;
   }
 
+  :global(.project-name-input),
   :global(.project-name-input input) {
     text-align: center !important;
     font-weight: 700;
     font-size: 2rem !important;
     height: auto !important;
     padding: 0 !important;
-  }
-
-  :global(.project-name-input) {
-    text-align: center;
-    width: 100%;
+    width: 100% !important;
   }
 
   :global(.input-error input) {
