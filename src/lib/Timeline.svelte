@@ -592,11 +592,17 @@
 
   $: rabbitholesForActiveBurrow = rabbitholes;
 
-  function toggleSearchBar(): void {
+  async function toggleSearchBar(): Promise<void> {
     showSearchBar = !showSearchBar;
     if (!showSearchBar) {
       searchQuery = "";
       searchResults = [];
+    } else {
+      await tick();
+      const input = document.querySelector(
+        ".search-bar input",
+      ) as HTMLInputElement;
+      input?.focus();
     }
   }
 </script>
