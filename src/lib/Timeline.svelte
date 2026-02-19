@@ -72,7 +72,7 @@
   let isDeletingBurrow: boolean = false;
 
   let showSearchBar: boolean = false;
-  let viewMode: "timeline" | "grid" = "timeline";
+  let viewMode: "timeline" | "grid" = "grid";
 
   $: gridWebsites =
     searchQuery.length >= 3
