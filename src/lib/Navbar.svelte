@@ -381,9 +381,17 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 32px;
-    background: transparent;
+    background-color: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    transition: background-color 0.3s ease;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     z-index: 1000;
     gap: 32px;
+    color: #1a1b1e;
+  }
+
+  .navbar:hover {
+    background-color: rgba(255, 255, 255, 0.95);
   }
 
   .navbar-left {
@@ -423,19 +431,19 @@
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background-color: rgba(248, 249, 250, 0.8);
+    background-color: rgba(0, 0, 0, 0.05);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(222, 226, 230, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 15px;
-    color: #868e96;
+    color: #1a1b1e;
   }
 
   .search-button:hover {
-    background-color: rgba(233, 236, 239, 0.9);
-    border-color: rgba(206, 212, 218, 0.8);
+    background-color: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.2);
   }
 
   .search-text {
@@ -446,10 +454,10 @@
   .search-shortcut {
     font-size: 13px;
     padding: 3px 8px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(222, 226, 230, 0.6);
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(0, 0, 0,  0.1);
     border-radius: 5px;
-    color: #495057;
+    color: #1a1b1e;
     font-family: monospace;
   }
 
@@ -467,10 +475,28 @@
   }
 
   /* Dark mode */
+  :global(body.dark-mode) .navbar {
+    background-color: rgba(37, 38, 43, 0.4);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  :global(body.dark-mode) .rabbitholes-btn {
+    color: white !important;
+  }
+
+  :global(body.dark-mode) .navbar .svelteui-ActionIcon {
+    color: white !important;
+  }
+
+  :global(body.dark-mode) .navbar:hover {
+    background-color: rgba(37, 38, 43, 0.95);
+  }
+
   :global(body.dark-mode) .search-button {
     background-color: rgba(37, 38, 43, 0.8);
     border-color: rgba(55, 58, 64, 0.6);
-    color: #909296;
+    color: white;
   }
 
   :global(body.dark-mode) .search-button:hover {
@@ -481,7 +507,7 @@
   :global(body.dark-mode) .search-shortcut {
     background-color: rgba(26, 27, 30, 0.9);
     border-color: rgba(55, 58, 64, 0.6);
-    color: #c1c2c5;
+    color: white;
   }
 
   /* Responsive */
