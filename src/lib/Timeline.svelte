@@ -199,7 +199,6 @@
         type: MessageRequest.UPDATE_ACTIVE_TABS,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
       await refreshAllBurrowState();
     } catch (e) {
       Logger.error("Failed to update burrow home:", e);
@@ -217,7 +216,6 @@
         type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
       await refreshAllBurrowState();
     } catch (e) {
       Logger.error("Failed to save window to burrow:", e);
@@ -745,7 +743,6 @@
           <ActionIcon
             size="xl"
             radius="md"
-            variant="subtle"
             color="blue"
             on:click={saveWindowToBurrow}
             loading={isSavingWindowToBurrow}
@@ -762,7 +759,6 @@
             size="xl"
             radius="md"
             variant="subtle"
-            color="blue"
             on:click={updateBurrowHome}
             loading={isUpdatingBurrowHome}
             disabled={!activeBurrow?.id}
@@ -778,7 +774,6 @@
           <ActionIcon
             size="xl"
             radius="md"
-            variant={showSearchBar ? "light" : "subtle"}
             color="blue"
             on:click={toggleSearchBar}
             disabled={!activeBurrow?.id}
@@ -795,7 +790,6 @@
             <ActionIcon
               size="xl"
               radius="md"
-              variant="subtle"
               color="cyan"
               on:click={openSemble}
             >
@@ -809,7 +803,6 @@
             <ActionIcon
               size="xl"
               radius="md"
-              variant="subtle"
               color="orange"
               on:click={openPublishModal}
               loading={isPublishing}
@@ -823,7 +816,6 @@
             <ActionIcon
               size="xl"
               radius="md"
-              variant="subtle"
               color="grape"
               on:click={openPublishModal}
               loading={isPublishing}
@@ -841,7 +833,6 @@
           <ActionIcon
             size="xl"
             radius="md"
-            variant="subtle"
             color="red"
             on:click={deleteBurrow}
             loading={isDeletingBurrow}

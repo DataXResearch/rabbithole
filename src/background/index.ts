@@ -141,66 +141,47 @@ function isNewtabPage(url: string): boolean {
   return false;
 }
 
-// this is meant to be called async
-function storeWebsites(
+async function storeWebsites(
   tabs: chrome.tabs.Tab[],
   db: WebsiteStore,
-  sendResponse: any,
-): Promise<void[]> {
-  // Filter out newtab pages
+): Promise<void> {
   const validTabs = tabs.filter((tab) => !isNewtabPage(tab.url));
 
   if (validTabs.length === 0) {
-    sendResponse({ error: "No valid tabs to save" });
-    return Promise.resolve([]);
+    return;
   }
 
-  const promiseArray = validTabs.map((tab) =>
-    fetch(tab.url)
-      .then((response) => response.text())
-      .then((html) => {
+  const websitesWithMetadata = await Promise.all(
+    validTabs.map(async (tab) => {
+      try {
+        const response = await fetch(tab.url);
+        const html = await response.text();
         const { title, image, description } = extractOpenGraphData(html);
+
         return {
           url: tab.url,
-          // FIXME: is it worth even having og title?
           name: tab.title ?? title,
           faviconUrl: tab.favIconUrl,
           savedAt: Date.now(),
           openGraphImageUrl: image,
           description: description ?? "",
         };
-      })
-      .then((website) => {
-        db.saveWebsitesToBurrow([website])
-          .then((res) => sendResponse(res))
-          .catch((err) => {
-            Logger.error("Failed to save website (OG fetch)", err);
-            sendResponse({ error: err.message || "Failed to save website" });
-          });
-      })
-      .catch((error) => {
-        Logger.warn("OG fetch failed, using fallback", error);
-        // just use info at hand if OG information cannot be retrieved
-        // TODO: are there cases when it's preferable to do this?
-        db.saveWebsitesToBurrow([
-          {
-            url: tab.url,
-            name: tab.title,
-            faviconUrl: tab.favIconUrl,
-            savedAt: Date.now(),
-            openGraphImageUrl: null,
-            description: "No description available",
-          },
-        ])
-          .then((res) => sendResponse(res))
-          .catch((err) => {
-            Logger.error("Failed to save website (fallback)", err);
-            sendResponse({ error: err.message || "Failed to save website" });
-          });
-      }),
+      } catch (error) {
+        Logger.warn(`OG fetch failed for ${tab.url}, using fallback`, error);
+        // Fallback to basic tab info
+        return {
+          url: tab.url,
+          name: tab.title,
+          savedAt: Date.now(),
+          faviconUrl: tab.favIconUrl,
+          openGraphImageUrl: null,
+          description: "No description available",
+        };
+      }
+    }),
   );
 
-  return Promise.all(promiseArray);
+  await db.saveWebsitesToBurrow(websitesWithMetadata);
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -235,8 +216,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // see https://stackoverflow.com/questions/70353944/chrome-runtime-onmessage-returns-undefined-even-when-value-is-known-for-asynch
   switch (request.type) {
     case MessageRequest.SAVE_TAB:
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) =>
-        storeWebsites(tabs, db, sendResponse),
+      chrome.tabs.query(
+        { active: true, lastFocusedWindow: true },
+        async (tabs) => {
+          try {
+            await storeWebsites(tabs, db);
+            sendResponse({ success: true });
+          } catch (e) {
+            handleError(e);
+          }
+        },
       );
       break;
 
@@ -319,32 +308,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.SAVE_WINDOW_TO_NEW_BURROW:
-      chrome.tabs.query({ windowId: sender.tab.windowId }).then((tabs) => {
-        let websites: string[] = tabs
-          .filter((tab) => !isNewtabPage(tab.url))
-          .map((tab) => tab.url);
-        // store websites async
-        storeWebsites(tabs, db, sendResponse);
+      chrome.tabs
+        .query({ windowId: sender.tab.windowId })
+        .then(async (tabs) => {
+          try {
+            let websites: string[] = tabs.map((tab) => tab.url);
 
-        if (!("newBurrowName" in request)) {
-          sendResponse({
-            error: "burrowName required",
-          });
-        }
-        db.createNewActiveBurrow(request.newBurrowName, websites)
-          .then(async (burrow) => {
+            if (!("newBurrowName" in request)) {
+              sendResponse({ error: "burrowName required" });
+              return;
+            }
+
+            // 1. Save websites metadata (fetch OG tags etc)
+            await storeWebsites(tabs, db);
+
+            // 2. Create burrow and link websites
+            const burrow = await db.createNewActiveBurrow(
+              request.newBurrowName,
+              websites,
+            );
             await db.updateBurrowActiveTabs(burrow.id, websites);
-            sendResponse(burrow);
-          })
-          .catch(handleError);
-      });
 
+            sendResponse(burrow);
+          } catch (e) {
+            handleError(e);
+          }
+        });
       break;
 
     case MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW:
       chrome.windows.getCurrent().then((window) => {
         chrome.tabs.query({ windowId: window.id }).then(async (tabs) => {
-          storeWebsites(tabs, db, sendResponse);
+          try {
+            await storeWebsites(tabs, db);
+            sendResponse({ success: true });
+          } catch (e) {
+            handleError(e);
+          }
         });
       });
       break;
@@ -353,16 +353,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tabs
         .query({ windowId: sender.tab.windowId })
         .then(async (tabs) => {
-          const websites = tabs
-            .filter((tab) => !isNewtabPage(tab.url))
-            .map((tab) => tab.url);
-          const activeBurrow = await db.getActiveBurrow();
-          await db.updateBurrowActiveTabs(activeBurrow.id, websites);
+          try {
+            const websites = tabs
+              .filter((tab) => !isNewtabPage(tab.url))
+              .map((tab) => tab.url);
 
-          // store websites async
-          storeWebsites(tabs, db, sendResponse);
+            const activeBurrow = await db.getActiveBurrow();
+            await db.updateBurrowActiveTabs(activeBurrow.id, websites);
+
+            // Store website metadata
+            await storeWebsites(tabs, db);
+
+            sendResponse({ success: true });
+          } catch (e) {
+            handleError(e);
+          }
         });
-
       break;
 
     case MessageRequest.RENAME_BURROW:
