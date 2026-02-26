@@ -41,7 +41,7 @@
   const dispatch = createEventDispatcher();
 
   export let activeBurrow: Burrow | null = null;
-  export let websites: any[] = [];
+  export let websites: Website[] = [];
   export let isLoading: boolean = false;
   export let selectRabbithole: (rabbithole: Rabbithole) => Promise<void>;
   export let autoFocusTitle: boolean = false;

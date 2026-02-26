@@ -18,14 +18,14 @@
     Logger,
   } from "../utils";
   import { Move, EyeNone, Update, Check, Cross2 } from "radix-icons-svelte";
-  import type { Settings } from "src/utils/types";
+  import type { Burrow, Settings } from "src/utils/types";
 
   export let isPopup: boolean = false;
 
   let settings: Settings | null = null;
   let alignment: "left" | "right" = "right";
   let show: boolean = false;
-  let burrows: any[] = [];
+  let burrows: Burrow[] = [];
   let isSyncingWindow: boolean = false;
   let syncWindowSuccess: boolean = false;
 
