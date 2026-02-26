@@ -1,12 +1,21 @@
 import { Agent } from "@atproto/api";
+import {
+  base64UrlEncode,
+  createDpopProof,
+  generateCodeChallenge,
+  generateDpopKeyPair,
+  generateRandomString,
+  getDpopKey,
+  saveDpopKey,
+} from "src/utils/crypto";
 import { Logger } from "../utils";
 
 export const ClientMetadataUrl =
   "https://rabbithole.to/oauth/client-metadata.json";
-const SessionStorageKey = "rabbithole_bsky_session";
+const SessionStorageKey = "rabbithole_atproto_session";
 const DpopKeyStorageKey = "rabbithole_dpop_key";
-
-/* Session Manager */
+const scopes =
+  "atproto repo:network.cosmik.collection repo:network.cosmik.card repo:network.cosmik.collectionLink";
 
 export interface ATProtoSession {
   did: string;
@@ -14,6 +23,7 @@ export interface ATProtoSession {
   pdsUrl: string;
   accessToken: string;
   tokenEndpoint: string;
+  refreshToken?: string;
 }
 
 export async function getSession() {
@@ -29,146 +39,13 @@ export async function clearSession() {
   await chrome.storage.local.remove([SessionStorageKey, DpopKeyStorageKey]);
 }
 
-/* DPoP utils */
-
-export async function saveDpopKey(keyPair: CryptoKeyPair) {
-  const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
-  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
-  await chrome.storage.local.set({
-    [DpopKeyStorageKey]: { private: privateJwk, public: publicJwk },
-  });
+export function getRedirectUri(): string {
+  return chrome.identity.getRedirectURL("callback");
 }
-
-export async function getDpopKey(): Promise<CryptoKeyPair | null> {
-  const stored = await chrome.storage.local.get(DpopKeyStorageKey);
-  const keys = stored[DpopKeyStorageKey];
-  if (!keys) return null;
-
-  try {
-    const privateKey = await crypto.subtle.importKey(
-      "jwk",
-      keys.private,
-      { name: "ECDSA", namedCurve: "P-256" },
-      true,
-      ["sign"],
-    );
-    const publicKey = await crypto.subtle.importKey(
-      "jwk",
-      keys.public,
-      { name: "ECDSA", namedCurve: "P-256" },
-      true,
-      ["verify"],
-    );
-
-    return { privateKey, publicKey };
-  } catch (e) {
-    Logger.error("Invalid DPoP keys in storage, clearing...", e);
-    await chrome.storage.local.remove(DpopKeyStorageKey);
-    return null;
-  }
-}
-
-export function base64UrlEncode(buffer: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < buffer.length; i++) {
-    binary += String.fromCharCode(buffer[i]);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-export function generateRandomString(length: number): string {
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return base64UrlEncode(array);
-}
-
-export async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return base64UrlEncode(new Uint8Array(digest));
-}
-
-export async function generateDpopKeyPair(): Promise<CryptoKeyPair> {
-  const keyPair = await crypto.subtle.generateKey(
-    {
-      name: "ECDSA",
-      namedCurve: "P-256",
-    },
-    true,
-    ["sign", "verify"],
-  );
-  return keyPair;
-}
-
-export async function exportPublicKeyJwk(
-  publicKey: CryptoKey,
-): Promise<JsonWebKey> {
-  const jwk = await crypto.subtle.exportKey("jwk", publicKey);
-  return {
-    kty: jwk.kty,
-    crv: jwk.crv,
-    x: jwk.x,
-    y: jwk.y,
-  };
-}
-
-export async function createDpopProof(
-  httpMethod: string,
-  httpUri: string,
-  keyPair: CryptoKeyPair,
-  nonce: string | null = null,
-  ath: string | null = null,
-): Promise<string> {
-  const publicJwk = await exportPublicKeyJwk(keyPair.publicKey);
-
-  const header = {
-    alg: "ES256",
-    typ: "dpop+jwt",
-    jwk: publicJwk,
-  };
-
-  const payload: any = {
-    jti: generateRandomString(16),
-    htm: httpMethod,
-    htu: httpUri,
-    iat: Math.floor(Date.now() / 1000),
-  };
-
-  if (nonce) {
-    payload.nonce = nonce;
-  }
-
-  if (ath) {
-    payload.ath = ath;
-  }
-
-  const encodedHeader = base64UrlEncode(
-    new TextEncoder().encode(JSON.stringify(header)),
-  );
-  const encodedPayload = base64UrlEncode(
-    new TextEncoder().encode(JSON.stringify(payload)),
-  );
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-  const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    keyPair.privateKey,
-    new TextEncoder().encode(signingInput),
-  );
-
-  // Convert signature from DER to raw format (r || s)
-  const signatureArray = new Uint8Array(signature);
-  const encodedSignature = base64UrlEncode(signatureArray);
-
-  return `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
-}
-
-/* ATProto auth */
 
 export async function resolveHandleAndPds(
   handle: string,
-): Promise<{ did: string; pdsUrl: string; handle: string }> {
+): Promise<{ did: string; pdsUrl: string }> {
   const agent = new Agent("https://bsky.social");
   const resolved = await agent.resolveHandle({ handle });
 
@@ -195,7 +72,7 @@ export async function resolveHandleAndPds(
     Logger.warn("Failed to resolve PDS, using default:", err);
   }
 
-  return { did, pdsUrl, handle };
+  return { did, pdsUrl };
 }
 
 export async function getAuthServerMetadata(pdsUrl: string): Promise<any> {
@@ -272,6 +149,87 @@ export async function exchangeCodeForTokens(
   }
 
   return await response.json();
+}
+
+export async function startAuthFlow(
+  handleInput: string,
+): Promise<ATProtoSession> {
+  let handle = handleInput.trim();
+  if (!handle) {
+    throw new Error("Please enter your handle");
+  }
+
+  if (!handle.includes(".")) {
+    handle = `${handle}.bsky.social`;
+  }
+
+  const { did, pdsUrl } = await resolveHandleAndPds(handle);
+  const authServer = await getAuthServerMetadata(pdsUrl);
+
+  const keyPair = await generateDpopKeyPair();
+  await saveDpopKey(keyPair);
+
+  const codeVerifier = generateRandomString(32);
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  const state = generateRandomString(16);
+
+  const redirectUri = getRedirectUri();
+
+  const authUrl = new URL(authServer.authorization_endpoint);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("client_id", ClientMetadataUrl);
+  authUrl.searchParams.set("redirect_uri", redirectUri);
+  authUrl.searchParams.set("scope", scopes);
+  authUrl.searchParams.set("prompt", "consent");
+  authUrl.searchParams.set("state", state);
+  authUrl.searchParams.set("code_challenge", codeChallenge);
+  authUrl.searchParams.set("code_challenge_method", "S256");
+  authUrl.searchParams.set("login_hint", handle);
+
+  const callbackUrl = await chrome.identity.launchWebAuthFlow({
+    url: authUrl.toString(),
+    interactive: true,
+  });
+
+  if (!callbackUrl) {
+    throw new Error("Authentication was cancelled");
+  }
+
+  const url = new URL(callbackUrl);
+  const code = url.searchParams.get("code");
+  const returnedState = url.searchParams.get("state");
+  const oauthError = url.searchParams.get("error");
+  const errorDescription = url.searchParams.get("error_description");
+
+  if (oauthError) {
+    throw new Error(errorDescription || oauthError);
+  }
+
+  if (returnedState !== state) {
+    throw new Error("OAuth state mismatch");
+  }
+
+  if (!code) {
+    throw new Error("No authorization code received");
+  }
+
+  const tokenResponse = await exchangeCodeForTokens(
+    code,
+    codeVerifier,
+    authServer.token_endpoint,
+    keyPair,
+    redirectUri,
+    ClientMetadataUrl,
+  );
+
+  return {
+    did,
+    handle,
+    pdsUrl,
+    tokenEndpoint: authServer.token_endpoint,
+    accessToken: tokenResponse.access_token,
+    refreshToken: tokenResponse.refresh_token,
+  };
 }
 
 /* Record operations */
