@@ -4,7 +4,7 @@
   import type { Burrow } from "src/utils/types";
 
   export let handleBurrowChange: (burrowId: string) => Promise<void>;
-  export let burrows: any[] = [];
+  export let burrows: Burrow[] = [];
   // "down" or "up"
   export let dropdownDirection: string = "down";
   // Allow creating new burrows when no results found

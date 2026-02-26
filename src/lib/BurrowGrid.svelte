@@ -3,7 +3,7 @@
   import { createEventDispatcher } from "svelte";
   import { Trash } from "radix-icons-svelte";
 
-  export let burrows: any[] = [];
+  export let burrows: Burrow[] = [];
   export let selectedBurrowId: string = null;
   export let onSelect: (burrow: Burrow) => Promise<void>;
   export let allowCreate: boolean = false;

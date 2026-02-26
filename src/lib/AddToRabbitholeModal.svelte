@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, afterUpdate, createEventDispatcher } from "svelte";
+  import { afterUpdate, createEventDispatcher } from "svelte";
   import {
     ActionIcon,
     TextInput,
@@ -10,27 +10,23 @@
   import { Cross2, MagnifyingGlass, Trash } from "radix-icons-svelte";
   import Fuse from "fuse.js";
   import { MessageRequest, Logger } from "../utils";
-  import type { Rabbithole } from "src/utils/types";
+  import type { Burrow, Rabbithole } from "src/utils/types";
 
   export let isOpen: boolean = false;
-  export let activeBurrow = null;
-  export let existingRabbitholes: any[] = []; // rabbitholes the burrow is already in
+  export let activeBurrow: Burrow | null = null;
+  export let existingRabbitholes: Rabbithole[] = [];
 
   const dispatch = createEventDispatcher();
 
   let searchQuery: string = "";
-  let allRabbitholes: any[] = [];
-  let filtered: any[] = [];
+  let allRabbitholes: Rabbithole[] = [];
+  let filtered: Rabbithole[] = [];
   let isLoading: boolean = false;
   let isAdding: boolean = false;
   let inputRef: HTMLElement;
 
   let wasOpen: boolean = false;
   let hoveredAddedId: string = null;
-
-  onMount(async () => {
-    // no-op; we lazy-load on open
-  });
 
   afterUpdate(() => {
     if (isOpen && inputRef) {
