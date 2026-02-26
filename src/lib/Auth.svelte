@@ -4,18 +4,11 @@
   import { InfoCircled } from "radix-icons-svelte";
   import CollapsibleContainer from "./CollapsibleContainer.svelte";
   import {
-    ClientMetadataUrl,
-    generateRandomString,
-    generateCodeChallenge,
-    generateDpopKeyPair,
-    resolveHandleAndPds,
-    getAuthServerMetadata,
-    exchangeCodeForTokens,
+    getDpopKey,
     getSession,
     saveSession,
     clearSession,
-    saveDpopKey,
-    getDpopKey,
+    startAuthFlow,
   } from "../atproto/client";
   import type { ATProtoSession } from "../atproto/client";
 
@@ -30,9 +23,6 @@
   let userHandle: string = null;
   let userAvatar: string = null;
   let handleInput: string = "";
-  let dpopKeyPair = null;
-
-  const RedirectUri: string = chrome.identity.getRedirectURL("callback");
 
   onMount(async () => {
     await restoreSession();
@@ -70,92 +60,19 @@
   }
 
   async function submitHandle(): Promise<void> {
-    if (!handleInput.trim()) {
-      error = "Please enter your handle";
-      return;
-    }
-
     error = null;
     isLoading = true;
 
     try {
-      let handle = handleInput.trim();
-      if (!handle.includes(".")) {
-        handle = `${handle}.bsky.social`;
-      }
-
-      const { did, pdsUrl } = await resolveHandleAndPds(handle);
-      const authServer = await getAuthServerMetadata(pdsUrl);
-
-      // Generate DPoP key pair
-      dpopKeyPair = await generateDpopKeyPair();
-      await saveDpopKey(dpopKeyPair);
-
-      const codeVerifier = generateRandomString(32);
-      const codeChallenge = await generateCodeChallenge(codeVerifier);
-      const state = generateRandomString(16);
-
-      const authUrl = new URL(authServer.authorization_endpoint);
-      authUrl.searchParams.set("response_type", "code");
-      authUrl.searchParams.set("client_id", ClientMetadataUrl);
-      authUrl.searchParams.set("redirect_uri", RedirectUri);
-      // Request specific scopes for the custom collections
-      authUrl.searchParams.set(
-        "scope",
-        "atproto repo:network.cosmik.collection repo:network.cosmik.card repo:network.cosmik.collectionLink",
-      );
-      // Force consent to ensure new scopes are granted
-      authUrl.searchParams.set("prompt", "consent");
-      authUrl.searchParams.set("state", state);
-      authUrl.searchParams.set("code_challenge", codeChallenge);
-      authUrl.searchParams.set("code_challenge_method", "S256");
-      authUrl.searchParams.set("login_hint", handle);
-
-      // FIXME: why does eslint get the types wrong here?
-      const callbackUrl = await chrome.identity.launchWebAuthFlow({
-        url: authUrl.toString(),
-        interactive: true,
-      });
-
-      if (!callbackUrl) {
-        throw new Error("Authentication was cancelled");
-      }
-
-      // Parse the callback URL
-      const url = new URL(callbackUrl);
-      const code = url.searchParams.get("code");
-      const returnedState = url.searchParams.get("state");
-      const oauthError = url.searchParams.get("error");
-      const errorDescription = url.searchParams.get("error_description");
-
-      if (oauthError) {
-        throw new Error(errorDescription || oauthError);
-      }
-
-      if (returnedState !== state) {
-        throw new Error("OAuth state mismatch");
-      }
-
-      if (!code) {
-        throw new Error("No authorization code received");
-      }
-
-      const tokenResponse = await exchangeCodeForTokens(
-        code,
-        codeVerifier,
-        authServer.token_endpoint,
-        dpopKeyPair,
-        RedirectUri,
-        ClientMetadataUrl,
-      );
+      const result = await startAuthFlow(handleInput);
 
       const session = {
-        did,
-        handle,
-        pdsUrl,
-        accessToken: tokenResponse.access_token,
-        refreshToken: tokenResponse.refresh_token,
-        tokenEndpoint: authServer.token_endpoint,
+        did: result.did,
+        handle: result.handle,
+        pdsUrl: result.pdsUrl,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        tokenEndpoint: result.tokenEndpoint,
       };
 
       await saveSession(session);
