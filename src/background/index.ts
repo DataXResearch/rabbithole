@@ -1,6 +1,6 @@
 import { MessageRequest, Logger } from "../utils";
 import { WebsiteStore } from "../storage/db";
-import type { Burrow } from "../utils/types";
+import type { Burrow, Website } from "../utils/types";
 import { getSession } from "../atproto/client";
 import { syncBurrowToCollection } from "../atproto/cosmik";
 
@@ -144,11 +144,11 @@ function isNewtabPage(url: string): boolean {
 async function storeWebsites(
   tabs: chrome.tabs.Tab[],
   db: WebsiteStore,
-): Promise<void> {
+): Promise<Website[]> {
   const validTabs = tabs.filter((tab) => !isNewtabPage(tab.url));
 
   if (validTabs.length === 0) {
-    return;
+    return [];
   }
 
   const websitesWithMetadata = await Promise.all(
@@ -181,7 +181,8 @@ async function storeWebsites(
     }),
   );
 
-  await db.saveWebsitesToBurrow(websitesWithMetadata);
+  await db.saveWebsites(websitesWithMetadata);
+  return websitesWithMetadata;
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -220,7 +221,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         { active: true, lastFocusedWindow: true },
         async (tabs) => {
           try {
-            await storeWebsites(tabs, db);
+            const sites = await storeWebsites(tabs, db);
+            if (sites.length > 0) {
+              const activeBurrow = await db.getActiveBurrow();
+              if (activeBurrow) {
+                await db.saveWebsitesToBurrow(sites);
+              }
+
+              // Also add to active rabbithole meta
+              const activeRabbithole = await db.getActiveRabbithole();
+              if (activeRabbithole) {
+                const urls = sites.map((s) => s.url);
+                await db.addWebsitesToRabbitholeMeta(activeRabbithole.id, urls);
+              }
+            }
             sendResponse({ success: true });
           } catch (e) {
             handleError(e);
@@ -271,6 +285,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(handleError);
       break;
 
+    case MessageRequest.GET_RABBITHOLE_WEBSITES:
+      if (!("rabbitholeId" in request)) {
+        sendResponse({ error: "rabbitholeId required" });
+        break;
+      }
+      db.getAllWebsitesForRabbithole(request.rabbitholeId)
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
     case MessageRequest.CREATE_NEW_BURROW:
       if (!("newBurrowName" in request)) {
         sendResponse({
@@ -312,22 +336,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .query({ windowId: sender.tab.windowId })
         .then(async (tabs) => {
           try {
-            let websites: string[] = tabs.map((tab) => tab.url);
-
             if (!("newBurrowName" in request)) {
               sendResponse({ error: "burrowName required" });
               return;
             }
 
-            // 1. Save websites metadata (fetch OG tags etc)
-            await storeWebsites(tabs, db);
+            const sites = await storeWebsites(tabs, db);
+            const urls = sites.map((s) => s.url);
 
-            // 2. Create burrow and link websites
             const burrow = await db.createNewActiveBurrow(
               request.newBurrowName,
-              websites,
+              urls,
             );
-            await db.updateBurrowActiveTabs(burrow.id, websites);
+
+            const activeRabbithole = await db.getActiveRabbithole();
+            if (activeRabbithole) {
+              await db.addWebsitesToRabbitholeMeta(activeRabbithole.id, urls);
+            }
 
             sendResponse(burrow);
           } catch (e) {
@@ -340,7 +365,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.windows.getCurrent().then((window) => {
         chrome.tabs.query({ windowId: window.id }).then(async (tabs) => {
           try {
-            await storeWebsites(tabs, db);
+            const sites = await storeWebsites(tabs, db);
+
+            if (sites.length > 0) {
+              await db.saveWebsitesToBurrow(sites);
+
+              // make sure to sync with rabbithole meta
+              const activeBurrow = await db.getActiveBurrow();
+              if (activeBurrow) {
+                const rabbitholes = await db.fetchRabbitholesForBurrow(
+                  activeBurrow.id,
+                );
+                const urls = sites.map((s) => s.url);
+
+                await Promise.all(
+                  rabbitholes.map((rh) =>
+                    db.addWebsitesToRabbitholeMeta(rh.id, urls),
+                  ),
+                );
+              }
+            }
+
             sendResponse({ success: true });
           } catch (e) {
             handleError(e);
@@ -349,20 +394,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       break;
 
-    case MessageRequest.UPDATE_ACTIVE_TABS:
+    case MessageRequest.SAVE_WINDOW_TO_RABBITHOLE:
+      if (!("rabbitholeId" in request)) {
+        sendResponse({ error: "rabbitholeId required" });
+        break;
+      }
+      chrome.windows.getCurrent().then((window) => {
+        chrome.tabs.query({ windowId: window.id }).then(async (tabs) => {
+          try {
+            const sites = await storeWebsites(tabs, db);
+            const urls = sites.map((s) => s.url);
+            await db.addWebsitesToRabbitholeMeta(request.rabbitholeId, urls);
+            sendResponse({ success: true });
+          } catch (e) {
+            handleError(e);
+          }
+        });
+      });
+      break;
+
+    case MessageRequest.UPDATE_RABBITHOLE_PINNED_WEBSITES:
       chrome.tabs
         .query({ windowId: sender.tab.windowId })
         .then(async (tabs) => {
           try {
-            const websites = tabs
-              .filter((tab) => !isNewtabPage(tab.url))
-              .map((tab) => tab.url);
+            const sites = await storeWebsites(tabs, db);
+            const urls = sites.map((s) => s.url);
 
-            const activeBurrow = await db.getActiveBurrow();
-            await db.updateBurrowActiveTabs(activeBurrow.id, websites);
-
-            // Store website metadata
-            await storeWebsites(tabs, db);
+            const activeRabbithole = await db.getActiveRabbithole();
+            if (activeRabbithole) {
+              await db.updateRabbitholeActiveTabs(activeRabbithole.id, urls);
+              await db.addWebsitesToRabbitholeMeta(activeRabbithole.id, urls);
+            }
 
             sendResponse({ success: true });
           } catch (e) {
@@ -384,15 +447,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.DELETE_BURROW:
-      if (!("burrowId" in request)) {
-        sendResponse({
-          error: "burrowId required",
-        });
+      if (!("rabbitholeId" in request) || !("burrowId" in request)) {
+        sendResponse({ error: "rabbitholeId and burrowId required" });
         break;
       }
-      db.deleteBurrow(request.burrowId)
+      db.deleteBurrowFromRabbithole(request.rabbitholeId, request.burrowId)
+        .then(() => db.deleteBurrow(request.burrowId))
         .then((res) => sendResponse(res))
         .catch(handleError);
+
       break;
 
     case MessageRequest.DELETE_WEBSITE:
@@ -445,16 +508,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
       db.fetchRabbitholesForBurrow(request.burrowId)
-        .then((res) => sendResponse(res))
-        .catch(handleError);
-      break;
-
-    case MessageRequest.DELETE_BURROW_FROM_RABBITHOLE:
-      if (!("rabbitholeId" in request) || !("burrowId" in request)) {
-        sendResponse({ error: "rabbitholeId and burrowId required" });
-        break;
-      }
-      db.deleteBurrowFromRabbithole(request.rabbitholeId, request.burrowId)
         .then((res) => sendResponse(res))
         .catch(handleError);
       break;
@@ -612,14 +665,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
       break;
 
-    case "REMOVE_FROM_ACTIVE_TABS":
-      if (!("burrowId" in request) || !("url" in request)) {
-        sendResponse({ error: "burrowId and url required" });
+    case MessageRequest.REMOVE_FROM_ACTIVE_TABS:
+      if (!("url" in request)) {
+        sendResponse({ error: "url required" });
         break;
       }
-      db.removeWebsiteFromActiveTabs(request.burrowId, request.url)
-        .then(() => sendResponse({ success: true }))
-        .catch(handleError);
+      (async () => {
+        try {
+          const activeRabbithole = await db.getActiveRabbithole();
+          if (activeRabbithole) {
+            await db.removeWebsiteFromRabbitholeActiveTabs(
+              activeRabbithole.id,
+              request.url,
+            );
+            sendResponse({ success: true });
+          } else {
+            sendResponse({ error: "No active rabbithole found" });
+          }
+        } catch (e) {
+          handleError(e);
+        }
+      })();
       break;
 
     case "IMPORT_DATA":
@@ -705,9 +771,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               burrowName,
               websites,
             );
-            if (burrow.activeTabs && burrow.activeTabs.length > 0) {
-              await db.updateBurrowActiveTabs(newBurrow.id, burrow.activeTabs);
-            }
             oldIdToNewId.set(burrow.id, newBurrow.id);
 
             existingBurrowMap.set(burrowName, {

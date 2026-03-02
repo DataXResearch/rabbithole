@@ -11,7 +11,7 @@ export enum MessageRequest {
   GET_BURROW,
   SAVE_WINDOW_TO_NEW_BURROW,
   SAVE_WINDOW_TO_ACTIVE_BURROW,
-  UPDATE_ACTIVE_TABS,
+  SAVE_WINDOW_TO_RABBITHOLE,
   RENAME_BURROW,
   DELETE_BURROW,
   DELETE_WEBSITE,
@@ -21,8 +21,8 @@ export enum MessageRequest {
   CREATE_NEW_RABBITHOLE,
   UPDATE_RABBITHOLE,
   DELETE_RABBITHOLE,
+  UPDATE_RABBITHOLE_PINNED_WEBSITES,
   ADD_BURROWS_TO_RABBITHOLE,
-  DELETE_BURROW_FROM_RABBITHOLE,
   CREATE_NEW_BURROW_IN_RABBITHOLE,
   ADD_WEBSITES_TO_RABBITHOLE_META,
   DELETE_WEBSITE_FROM_RABBITHOLE_META,
@@ -33,6 +33,7 @@ export enum MessageRequest {
   OPEN_TABS,
   REMOVE_FROM_ACTIVE_TABS,
   IMPORT_DATA,
+  GET_RABBITHOLE_WEBSITES,
 }
 
 export interface Settings {
@@ -59,7 +60,6 @@ export interface Burrow {
   name: string;
   sembleCollectionUri?: string;
   lastSembleSync?: number;
-  activeTabs?: string[];
 }
 
 export interface Rabbithole {
@@ -69,6 +69,7 @@ export interface Rabbithole {
   title: string;
   description?: string;
   meta: string[]; // urls
+  activeTabs?: string[];
 }
 
 export interface User {
