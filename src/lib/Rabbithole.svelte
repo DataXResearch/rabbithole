@@ -29,13 +29,24 @@
 
   let settings: Settings | null = null;
 
+  // Apply theme immediately from localStorage to prevent flash
+  const cachedDarkMode = localStorage.getItem("rabbithole-dark-mode");
+  if (cachedDarkMode !== null) {
+    isDark = cachedDarkMode === "true";
+    document.body.classList.toggle("dark-mode", isDark);
+  }
+
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
-    isDark = settings?.darkMode ?? false;
-    // FIXME: default dark mode?
-    document.body.classList.toggle("dark-mode", isDark);
+
+    const actualDarkMode = settings?.darkMode ?? false;
+    if (actualDarkMode !== isDark) {
+      isDark = actualDarkMode;
+      document.body.classList.toggle("dark-mode", isDark);
+      localStorage.setItem("rabbithole-dark-mode", String(isDark));
+    }
 
     await refreshHomeState();
     if (activeRabbithole) {
@@ -47,6 +58,9 @@
   async function toggleTheme(): Promise<void> {
     isDark = !isDark;
     document.body.classList.toggle("dark-mode", isDark);
+
+    localStorage.setItem("rabbithole-dark-mode", String(isDark));
+
     await chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
       settings: { ...settings, darkMode: isDark },
@@ -264,11 +278,11 @@
 </script>
 
 <SvelteUIProvider>
-  <Navbar 
-    onRabbitholesClick={goHome} 
+  <Navbar
+    onRabbitholesClick={goHome}
     {isDark}
     on:toggleTheme={toggleTheme}
-    on:navigate={handleNavigation} 
+    on:navigate={handleNavigation}
   />
 
   <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
