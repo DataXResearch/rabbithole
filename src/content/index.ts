@@ -18,10 +18,24 @@ function loadOverlay() {
 }
 
 loadOverlay();
+
+// Refresh overlay data when window regains focus
+window.addEventListener("focus", () => {
+  if (overlay && loaded) {
+    overlay.refreshData();
+  }
+});
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (!("type" in request)) {
     sendResponse({
       error: "request type required",
     });
+    return;
+  }
+
+  // Refresh overlay when settings change
+  if (request.type === "SETTINGS_UPDATED" && overlay && loaded) {
+    overlay.refreshData();
   }
 });
