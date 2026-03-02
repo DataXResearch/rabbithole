@@ -34,6 +34,7 @@
       type: MessageRequest.GET_SETTINGS,
     });
     isDark = settings?.darkMode ?? false;
+    // FIXME: default dark mode?
     document.body.classList.toggle("dark-mode", isDark);
 
     await refreshHomeState();
@@ -42,6 +43,15 @@
     }
     isLoadingHome = false;
   });
+
+  async function toggleTheme(): Promise<void> {
+    isDark = !isDark;
+    document.body.classList.toggle("dark-mode", isDark);
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_SETTINGS,
+      settings: { ...settings, darkMode: isDark },
+    });
+  }
 
   async function refreshHomeState(): Promise<void> {
     [activeRabbithole, rabbitholes, activeBurrow] = await Promise.all([
@@ -254,7 +264,12 @@
 </script>
 
 <SvelteUIProvider>
-  <Navbar onRabbitholesClick={goHome} on:navigate={handleNavigation} />
+  <Navbar 
+    onRabbitholesClick={goHome} 
+    {isDark}
+    on:toggleTheme={toggleTheme}
+    on:navigate={handleNavigation} 
+  />
 
   <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
     <div class="main-content" class:sidebar-closed={!opened}>
