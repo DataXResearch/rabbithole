@@ -1,28 +1,29 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { Trash } from "radix-icons-svelte";
-  import type { Burrow, Rabbithole } from "src/utils/types";
+  import type { Rabbithole, Burrow } from "src/utils/types";
 
   export let rabbitholes: Rabbithole[] = [];
   export let burrows: Burrow[] = [];
   export let onSelect: (rabbithole: Rabbithole) => Promise<void>;
 
   export let horizontal: boolean = false;
-  export let addTooltip: string = "add this burrow to another rabbithole";
-  export let showBurrows: boolean = true;
-  export let removeTooltip: string = "Remove this burrow from this rabbithole";
   export let allowCreate: boolean = false;
   export let showDelete: boolean = false;
 
-  // features for showing rabbithole grid within a burrow view
-  export let burrowShowAddRabbithole: boolean = false;
-  export let burrowShowRemoveRabbithole: boolean = false;
-
   const dispatch = createEventDispatcher();
 
-  function burrowsFor(rabbithole: Rabbithole | null): any[] {
-    if (!rabbithole?.burrows) return [];
-    return burrows.filter((b) => rabbithole.burrows.includes(b.id));
+  function getBurrowCount(rabbithole: Rabbithole): number {
+    return rabbithole.burrows?.length || 0;
+  }
+
+  function getWebsiteCount(rabbithole: Rabbithole): number {
+    const rabbitholeWebsites = rabbithole.meta?.length || 0;
+    const burrowWebsites = rabbithole.burrows?.reduce((total, burrowId) => {
+      const burrow = burrows.find(b => b.id === burrowId);
+      return total + (burrow?.websites?.length || 0);
+    }, 0) || 0;
+    return rabbitholeWebsites + burrowWebsites;
   }
 </script>
 
@@ -42,18 +43,6 @@
     </button>
   {/if}
 
-  {#if burrowShowAddRabbithole}
-    <button
-      type="button"
-      class="card add-card"
-      on:click={() => dispatch("addBurrowToRabbithole")}
-      title={addTooltip}
-      aria-label={addTooltip}
-    >
-      <div class="add-plus">+</div>
-    </button>
-  {/if}
-
   {#each rabbitholes as rabbithole (rabbithole.id)}
     <button type="button" class="card" on:click={() => onSelect(rabbithole)}>
       {#if showDelete}
@@ -69,34 +58,14 @@
         </button>
       {/if}
 
-      {#if burrowShowRemoveRabbithole}
-        <button
-          type="button"
-          class="remove-btn"
-          title={removeTooltip}
-          aria-label={removeTooltip}
-          on:click={(e) => {
-            e.stopPropagation();
-            dispatch("removeBurrowFromRabbithole", {
-              rabbitholeId: rabbithole.id,
-            });
-          }}
-        >
-          <Trash size={16} />
-        </button>
-      {/if}
-
-      <div class="card-title">{rabbithole.title || "Untitled"}</div>
-      {#if showBurrows}
-        <div class="burrow-preview">
-          {#each burrowsFor(rabbithole).slice(0, 3) as burrow (burrow.id)}
-            <div class="burrow-chip" title={burrow.name}>{burrow.name}</div>
-          {/each}
-          {#if burrowsFor(rabbithole).length === 0}
-            <div class="burrow-empty">No burrows yet</div>
-          {/if}
+      <div class="card-content">
+        <div class="card-title">{rabbithole.title || "Untitled"}</div>
+        <div class="card-stats">
+          <span class="stat">{getBurrowCount(rabbithole)} burrow{getBurrowCount(rabbithole) !== 1 ? 's' : ''}</span>
+          <span class="stat-divider">•</span>
+          <span class="stat">{getWebsiteCount(rabbithole)} site{getWebsiteCount(rabbithole) !== 1 ? 's' : ''}</span>
         </div>
-      {/if}
+      </div>
     </button>
   {/each}
 </div>
@@ -144,13 +113,17 @@
       transform 0.15s ease,
       box-shadow 0.15s ease,
       border-color 0.15s ease;
-    min-height: 170px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .grid.horizontal .card {
     flex: 0 0 280px;
     min-height: 150px;
     scroll-snap-align: start;
+    display: block;
   }
 
   .card:hover {
@@ -182,40 +155,34 @@
     background: rgba(255, 245, 245, 0.9);
   }
 
+  .card-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
   .card-title {
     font-weight: 900;
     font-size: 18px;
     color: #1a1b1e;
-    margin-bottom: 14px;
     line-height: 1.2;
+    text-align: center;
+    width: 100%;
   }
 
-  .burrow-preview {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .burrow-chip {
-    border-radius: 12px;
-    padding: 12px 14px;
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    color: #495057;
+  .card-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 13px;
-    font-weight: 700;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    color: rgba(0, 0, 0, 0.5);
+    font-weight: 500;
   }
 
-  .burrow-empty {
-    color: #868e96;
-    font-size: 13px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px dashed rgba(0, 0, 0, 0.12);
+  .stat-divider {
+    color: rgba(0, 0, 0, 0.25);
   }
 
   .add-card {
@@ -260,16 +227,12 @@
     color: #e7e7e7;
   }
 
-  :global(body.dark-mode) .burrow-chip {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #c1c2c5;
+  :global(body.dark-mode) .card-stats {
+    color: rgba(255, 255, 255, 0.5);
   }
 
-  :global(body.dark-mode) .burrow-empty {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.14);
-    color: #909296;
+  :global(body.dark-mode) .stat-divider {
+    color: rgba(255, 255, 255, 0.25);
   }
 
   :global(body.dark-mode) .add-plus {

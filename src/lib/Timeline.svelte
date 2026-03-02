@@ -5,7 +5,6 @@
     Group,
     Input,
     Text,
-    TextInput,
     Tooltip,
     Loader,
     ActionIcon,
@@ -14,21 +13,11 @@
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import Modal from "src/lib/Modal.svelte";
-  import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
-  import BurrowHome from "src/lib/BurrowHome.svelte";
-  import AddToRabbitholeModal from "src/lib/AddToRabbitholeModal.svelte";
-  import {
-    MagnifyingGlass,
-    Globe,
-    Rocket,
-    Reload,
-    Trash,
-    Home,
-    Upload,
-    Update,
-    ListBullet,
-    Grid,
-  } from "radix-icons-svelte";
+  import BurrowGrid from "src/lib/BurrowGrid.svelte";
+  import PinnedWebsites from "src/lib/PinnedWebsites.svelte";
+  import CopyWebsiteModal from "src/lib/CopyWebsiteModal.svelte";
+  import ActionBar from "src/lib/ActionBar.svelte";
+  import { ChevronLeft, ListBullet, Grid, Update } from "radix-icons-svelte";
   import { getSession } from "../atproto/client";
   import {
     createCollection,
@@ -41,9 +30,10 @@
   const dispatch = createEventDispatcher();
 
   export let activeBurrow: Burrow | null = null;
+  export let activeRabbithole: Rabbithole | null = null;
   export let websites: Website[] = [];
   export let isLoading: boolean = false;
-  export let selectRabbithole: (rabbithole: Rabbithole) => Promise<void>;
+  export let selectBurrow: (burrowId: string) => Promise<void>;
   export let autoFocusTitle: boolean = false;
   export let burrowsInActiveRabbithole: Burrow[] = [];
 
@@ -64,14 +54,15 @@
   let startDate: Date = null;
   let endDate: Date = null;
 
-  let rabbitholes: Rabbithole[] = [];
-  let showAddToRabbitholeModal: boolean = false;
+  let showCopyModal: boolean = false;
+  let copyModalMode: "burrow" | "rabbithole" = "burrow";
+  let websiteToCopy: string = "";
 
-  let isUpdatingBurrowHome: boolean = false;
-  let isSavingWindowToBurrow: boolean = false;
+  let isUpdatingPinnedWebsites: boolean = false;
+  let isSavingWindow: boolean = false;
   let isDeletingBurrow: boolean = false;
+  let burrowNameError: string | null = null;
 
-  let showSearchBar: boolean = false;
   let viewMode: "timeline" | "grid" = "grid";
 
   $: gridWebsites =
@@ -94,194 +85,105 @@
     }
   });
 
-  async function loadRabbitholesForActiveBurrow(): Promise<void> {
-    if (!activeBurrow?.id) {
-      rabbitholes = [];
-      return;
-    }
-
+  async function updatePinnedWebsites(): Promise<void> {
+    isUpdatingPinnedWebsites = true;
     try {
-      const res = await chrome.runtime.sendMessage({
-        type: MessageRequest.FETCH_RABBITHOLES_FOR_BURROW,
-        burrowId: activeBurrow.id,
-      });
-
-      if (res && typeof res === "object" && "error" in res) {
-        Logger.error("Failed to fetch rabbitholes for burrow:", res.error);
-        rabbitholes = [];
-      } else {
-        rabbitholes = Array.isArray(res) ? res : [];
+      if (activeRabbithole?.id) {
+        await chrome.runtime.sendMessage({
+          type: MessageRequest.UPDATE_RABBITHOLE_PINNED_WEBSITES,
+          rabbitholeId: activeRabbithole.id,
+        });
       }
-    } catch (e) {
-      Logger.error("Failed to fetch rabbitholes for burrow:", e);
-      rabbitholes = [];
-    }
-  }
-
-  async function loadWebsitesForActiveBurrow(): Promise<void> {
-    if (!activeBurrow?.id) {
-      websites = [];
-      return;
-    }
-
-    try {
-      const res = await chrome.runtime.sendMessage({
-        type: MessageRequest.GET_BURROW_WEBSITES,
-        burrowId: activeBurrow.id,
-      });
-
-      const list = Array.isArray(res) ? res : [];
-      websites = list.filter(
-        (value, index, self) =>
-          index === self.findIndex((t) => t.url === value.url),
-      );
-    } catch (e) {
-      Logger.error("Failed to fetch websites for burrow:", e);
-      websites = [];
-    }
-  }
-
-  async function refreshActiveBurrow(): Promise<void> {
-    try {
-      const b = await chrome.runtime.sendMessage({
-        type: MessageRequest.GET_ACTIVE_BURROW,
-      });
-      activeBurrow = b || {};
-    } catch (e) {
-      Logger.error("Failed to refresh active burrow:", e);
-    }
-  }
-
-  async function refreshAllBurrowState(): Promise<void> {
-    await refreshActiveBurrow();
-    await Promise.all([
-      loadWebsitesForActiveBurrow(),
-      loadRabbitholesForActiveBurrow(),
-    ]);
-  }
-
-  $: if (activeBurrow?.id) {
-    rabbitholes = [];
-    loadRabbitholesForActiveBurrow();
-  } else {
-    rabbitholes = [];
-  }
-
-  function openAddToRabbitholeModal(): void {
-    showAddToRabbitholeModal = true;
-  }
-
-  async function removeBurrowFromRabbithole(
-    rabbitholeId: string,
-  ): Promise<void> {
-    if (!activeBurrow?.id || !rabbitholeId) return;
-
-    const res = await chrome.runtime.sendMessage({
-      type: MessageRequest.DELETE_BURROW_FROM_RABBITHOLE,
-      rabbitholeId,
-      burrowId: activeBurrow.id,
-    });
-
-    if (res && typeof res === "object" && "error" in res) {
-      Logger.error("Failed to remove burrow from rabbithole:", res.error);
-      return;
-    }
-
-    await loadRabbitholesForActiveBurrow();
-  }
-
-  async function updateBurrowHome(): Promise<void> {
-    if (!activeBurrow?.id) return;
-
-    isUpdatingBurrowHome = true;
-    try {
-      await chrome.runtime.sendMessage({
-        type: MessageRequest.UPDATE_ACTIVE_TABS,
-      });
-
-      await refreshAllBurrowState();
+      dispatch("refresh");
     } catch (e) {
       Logger.error("Failed to update burrow home:", e);
     } finally {
-      isUpdatingBurrowHome = false;
+      isUpdatingPinnedWebsites = false;
     }
   }
 
-  async function saveWindowToBurrow(): Promise<void> {
-    if (!activeBurrow?.id) return;
-
-    isSavingWindowToBurrow = true;
+  async function saveWindow(): Promise<void> {
+    isSavingWindow = true;
     try {
-      await chrome.runtime.sendMessage({
-        type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
-      });
-
-      await refreshAllBurrowState();
+      if (activeBurrow?.id) {
+        await chrome.runtime.sendMessage({
+          type: MessageRequest.SAVE_WINDOW_TO_ACTIVE_BURROW,
+        });
+      } else if (activeRabbithole?.id) {
+        await chrome.runtime.sendMessage({
+          type: MessageRequest.SAVE_WINDOW_TO_RABBITHOLE,
+          rabbitholeId: activeRabbithole.id,
+        });
+      }
+      dispatch("refresh");
     } catch (e) {
       Logger.error("Failed to save window to burrow:", e);
     } finally {
-      isSavingWindowToBurrow = false;
+      isSavingWindow = false;
     }
   }
 
-  async function deleteBurrow(): Promise<void> {
-    if (!activeBurrow?.id) return;
+  async function deleteContainer(): Promise<void> {
+    dispatch("deleteContainer");
+  }
 
-    isDeletingBurrow = true;
-    try {
-      const res = await chrome.runtime.sendMessage({
-        type: MessageRequest.DELETE_BURROW,
-        burrowId: activeBurrow.id,
-      });
-
-      if (res && typeof res === "object" && "error" in res) {
-        Logger.error("Failed to delete burrow:", res.error);
+  async function renameContainer(): Promise<void> {
+    if (activeBurrow) {
+      const name = activeBurrow.name.trim();
+      if (name === "") {
+        burrowNameError = "Burrow name cannot be empty";
         return;
       }
 
-      // Navigate back to home/rabbithole view
-      await chrome.runtime.sendMessage({
-        type: MessageRequest.CHANGE_ACTIVE_BURROW,
-        burrowId: null,
+      if (
+        burrowsInActiveRabbithole.some(
+          (b) => b.id !== activeBurrow.id && b.name === name,
+        )
+      ) {
+        burrowNameError = "Burrow name must be unique in this rabbithole";
+        return;
+      }
+
+      burrowNameError = null;
+
+      dispatch("containerRename", {
+        type: "burrow",
+        id: activeBurrow.id,
+        name: name,
       });
+    } else if (activeRabbithole) {
+      const title = activeRabbithole.title.trim();
+      if (title === "") {
+        burrowNameError = "Rabbithole name cannot be empty";
+        return;
+      }
 
-      dispatch("burrowDeleted");
-    } catch (e) {
-      Logger.error("Failed to delete burrow:", e);
-    } finally {
-      isDeletingBurrow = false;
+      burrowNameError = null;
+
+      dispatch("containerRename", {
+        type: "rabbithole",
+        id: activeRabbithole.id,
+        name: title,
+      });
     }
-  }
-
-  let burrowNameError: string | null = null;
-
-  async function renameBurrow(): Promise<void> {
-    const name = activeBurrow.name.trim();
-    if (name === "") {
-      burrowNameError = "Burrow name cannot be empty";
-      return;
-    }
-
-    if (
-      burrowsInActiveRabbithole.some(
-        (b) => b.id !== activeBurrow.id && b.name === name,
-      )
-    ) {
-      burrowNameError = "Burrow name must be unique in this rabbithole";
-      return;
-    }
-
-    burrowNameError = null;
-
-    dispatch("burrowRename", {
-      newActiveBurrowName: name,
-    });
   }
 
   async function deleteWebsite(event: CustomEvent<any>): Promise<void> {
     dispatch("websiteDelete", {
       url: event.detail.url,
     });
+  }
+
+  function openAddToBurrowModal(event: CustomEvent<any>): void {
+    websiteToCopy = event.detail.url;
+    copyModalMode = "burrow";
+    showCopyModal = true;
+  }
+
+  function openAddToRabbitholeModal(event: CustomEvent<any>): void {
+    websiteToCopy = event.detail.url;
+    copyModalMode = "rabbithole";
+    showCopyModal = true;
   }
 
   async function updateWebsite(event: CustomEvent<any>): Promise<void> {
@@ -304,7 +206,12 @@
     }
   }
 
-  function applySearchQuery(): void {
+  function handleSearch(event: CustomEvent<any>): void {
+    searchQuery = event.detail.query;
+    if (!searchQuery) {
+      searchResults = [];
+      return;
+    }
     const fuse = new Fuse(websites, {
       keys: ["name", "description", "url"],
       includeScore: true,
@@ -325,6 +232,9 @@
   }
 
   async function publishRabbithole(): Promise<void> {
+    if (!activeBurrow) {
+      return;
+    }
     if (websites.length === 0) {
       alert("Rabbithole is empty!");
       return;
@@ -342,8 +252,9 @@
       }
 
       const did = session.did;
+      const title = activeBurrow.name;
 
-      const collectionData = await createCollection(did, activeBurrow.name);
+      const collectionData = await createCollection(did, title);
 
       let successCount = 0;
       for (const site of websites) {
@@ -367,6 +278,7 @@
         );
       } else {
         const timestamp = Date.now();
+
         const response = await chrome.runtime.sendMessage({
           type: MessageRequest.PUBLISH_BURROW,
           burrowId: activeBurrow.id,
@@ -375,19 +287,15 @@
         });
 
         if (response && response.error) {
-          Logger.error("Failed to save publish info:", response.error);
-          alert(
-            "Published to Cosmik, but failed to save sync status locally: " +
-              response.error,
-          );
-        } else {
-          activeBurrow.sembleCollectionUri = collectionData.uri;
-          activeBurrow.lastSembleSync = timestamp;
-
-          alert(
-            `Rabbithole published successfully! Created collection and ${successCount} cards.`,
-          );
+          throw new Error(response.error);
         }
+
+        activeBurrow.sembleCollectionUri = collectionData.uri;
+        activeBurrow.lastSembleSync = timestamp;
+
+        alert(
+          `Rabbithole published successfully! Created collection and ${successCount} cards.`,
+        );
       }
     } catch (e) {
       Logger.error(e);
@@ -404,7 +312,8 @@
   }
 
   async function syncBurrow(): Promise<void> {
-    if (!activeBurrow?.id || !activeBurrow?.sembleCollectionUri) return;
+    const uri = activeBurrow?.sembleCollectionUri;
+    if (!uri) return;
 
     isSyncing = true;
     try {
@@ -564,8 +473,8 @@
   $: groupedWebsites = groupByDate(websitesToDisplay);
 
   $: sembleUrl = (() => {
-    if (!activeBurrow?.sembleCollectionUri) return null;
-    const uri = activeBurrow.sembleCollectionUri;
+    const uri = activeBurrow?.sembleCollectionUri;
+    if (!uri) return null;
     if (!uri.startsWith("at://")) return null;
     const parts = uri.replace("at://", "").split("/");
     if (parts.length >= 3) {
@@ -597,33 +506,24 @@
     hoverY = e.clientY;
   }
 
-  $: shouldShowRabbitholes = !showSearchBar;
-  $: shouldShowBurrowHome = !showSearchBar;
+  $: shouldShowBurrows = !searchQuery && activeRabbithole && !activeBurrow;
+  $: shouldShowBurrowHome = !searchQuery && activeRabbithole && !activeBurrow;
 
-  $: rabbitholesForActiveBurrow = rabbitholes;
-
-  async function toggleSearchBar(): Promise<void> {
-    showSearchBar = !showSearchBar;
-    if (!showSearchBar) {
-      searchQuery = "";
-      searchResults = [];
-    } else {
-      await tick();
-      const input = document.querySelector(
-        ".search-bar input",
-      ) as HTMLInputElement;
-      input?.focus();
-    }
+  async function goBackToRabbithole(): Promise<void> {
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_BURROW,
+      burrowId: null,
+    });
+    dispatch("navigateUp");
   }
 </script>
 
-<AddToRabbitholeModal
-  bind:isOpen={showAddToRabbitholeModal}
-  {activeBurrow}
-  existingRabbitholes={rabbitholesForActiveBurrow}
-  on:updated={async () => {
-    await loadRabbitholesForActiveBurrow();
-  }}
+<CopyWebsiteModal
+  bind:isOpen={showCopyModal}
+  mode={copyModalMode}
+  websiteUrl={websiteToCopy}
+  currentRabbitholeId={activeRabbithole?.id}
+  on:added={() => dispatch("refresh")}
 />
 
 <Modal
@@ -689,32 +589,65 @@
 
 <div class="timeline">
   <div class="header-section">
-    <div class="title-row">
-      <div class="tooltip-wrapper">
-        <Tooltip
-          label={burrowNameError || "Click to rename burrow"}
-          withArrow
-          color={burrowNameError ? "red" : "gray"}
-          opened={!!burrowNameError || undefined}
-        >
-          <Input
-            id="project-name"
-            variant="unstyled"
-            size="xl"
-            class="project-name-input {burrowNameError ? 'input-error' : ''}"
-            bind:value={activeBurrow.name}
-            on:blur={renameBurrow}
-            on:input={() => (burrowNameError = null)}
-            on:keydown={(e) => e.key === "Enter" && renameBurrow()}
-          />
-        </Tooltip>
+    {#if activeBurrow && activeRabbithole}
+      <div class="breadcrumb-container">
+        <button class="breadcrumb-btn" on:click={goBackToRabbithole}>
+          <ChevronLeft />
+          <span>{activeRabbithole.title}</span>
+        </button>
       </div>
+    {/if}
+
+    <div class="title-row">
+      {#if activeBurrow}
+        <div class="tooltip-wrapper">
+          <Tooltip
+            label={burrowNameError || "Click to rename burrow"}
+            withArrow
+            color={burrowNameError ? "red" : "gray"}
+            opened={!!burrowNameError || undefined}
+          >
+            <Input
+              id="project-name"
+              variant="unstyled"
+              size="xl"
+              class="project-name-input {burrowNameError ? 'input-error' : ''}"
+              bind:value={activeBurrow.name}
+              on:blur={renameContainer}
+              on:input={() => (burrowNameError = null)}
+              on:keydown={(e) => e.key === "Enter" && renameContainer()}
+            />
+          </Tooltip>
+        </div>
+      {:else if activeRabbithole}
+        <div class="tooltip-wrapper">
+          <Tooltip
+            label={burrowNameError || "Click to rename rabbithole"}
+            withArrow
+            color={burrowNameError ? "red" : "gray"}
+            opened={!!burrowNameError || undefined}
+          >
+            <Input
+              id="project-name"
+              variant="unstyled"
+              size="xl"
+              class="project-name-input {burrowNameError ? 'input-error' : ''}"
+              bind:value={activeRabbithole.title}
+              on:blur={renameContainer}
+              on:input={() => (burrowNameError = null)}
+              on:keydown={(e) => e.key === "Enter" && renameContainer()}
+            />
+          </Tooltip>
+        </div>
+      {/if}
 
       {#if sembleUrl}
         <div class="sync-indicator">
           <Tooltip
-            label={activeBurrow.lastSembleSync
-              ? `Last synced: ${formatDateTime(activeBurrow.lastSembleSync)}. Click to sync.`
+            label={activeBurrow?.lastSembleSync
+              ? `Last synced: ${formatDateTime(
+                  activeBurrow.lastSembleSync,
+                )}. Click to sync.`
               : "Click to sync"}
             withArrow
           >
@@ -732,130 +665,21 @@
       {/if}
     </div>
 
-    <div class="action-bar">
-      <Group spacing="xs">
-        <!-- Sync Actions -->
-        <Tooltip
-          label="Sync open tabs with this burrow"
-          withArrow
-          transition="fade"
-        >
-          <ActionIcon
-            size="xl"
-            radius="md"
-            color="blue"
-            on:click={saveWindowToBurrow}
-            loading={isSavingWindowToBurrow}
-            disabled={!activeBurrow?.id}
-          >
-            <Reload size={22} />
-          </ActionIcon>
-        </Tooltip>
-
-        <div class="action-divider"></div>
-
-        <Tooltip label="Update pinned websites" withArrow transition="fade">
-          <ActionIcon
-            size="xl"
-            radius="md"
-            variant="subtle"
-            on:click={updateBurrowHome}
-            loading={isUpdatingBurrowHome}
-            disabled={!activeBurrow?.id}
-          >
-            <Home size={22} />
-          </ActionIcon>
-        </Tooltip>
-
-        <div class="action-divider"></div>
-
-        <!-- Search -->
-        <Tooltip label="Search within burrow" withArrow transition="fade">
-          <ActionIcon
-            size="xl"
-            radius="md"
-            color="blue"
-            on:click={toggleSearchBar}
-            disabled={!activeBurrow?.id}
-          >
-            <MagnifyingGlass size={22} />
-          </ActionIcon>
-        </Tooltip>
-
-        <div class="action-divider"></div>
-
-        <!-- Semble Actions -->
-        {#if sembleUrl}
-          <Tooltip label="View on Semble" withArrow transition="fade">
-            <ActionIcon
-              size="xl"
-              radius="md"
-              color="cyan"
-              on:click={openSemble}
-            >
-              <Globe size={22} />
-            </ActionIcon>
-          </Tooltip>
-
-          <div class="action-divider"></div>
-
-          <Tooltip label="Update on Semble" withArrow transition="fade">
-            <ActionIcon
-              size="xl"
-              radius="md"
-              color="orange"
-              on:click={openPublishModal}
-              loading={isPublishing}
-              disabled={!activeBurrow?.id}
-            >
-              <Upload size={22} />
-            </ActionIcon>
-          </Tooltip>
-        {:else}
-          <Tooltip label="Publish Rabbithole" withArrow transition="fade">
-            <ActionIcon
-              size="xl"
-              radius="md"
-              color="grape"
-              on:click={openPublishModal}
-              loading={isPublishing}
-              disabled={!activeBurrow?.id}
-            >
-              <Rocket size={22} />
-            </ActionIcon>
-          </Tooltip>
-        {/if}
-
-        <div class="action-divider"></div>
-
-        <!-- Delete -->
-        <Tooltip label="Delete burrow" withArrow color="red" transition="fade">
-          <ActionIcon
-            size="xl"
-            radius="md"
-            color="red"
-            on:click={deleteBurrow}
-            loading={isDeletingBurrow}
-            disabled={!activeBurrow?.id}
-          >
-            <Trash size={22} />
-          </ActionIcon>
-        </Tooltip>
-      </Group>
-    </div>
-
-    {#if showSearchBar}
-      <div class="search-bar">
-        <TextInput
-          placeholder="Search your burrow..."
-          icon={MagnifyingGlass}
-          size="md"
-          radius="md"
-          bind:value={searchQuery}
-          on:input={applySearchQuery}
-        />
-      </div>
-    {/if}
+    <ActionBar
+      {sembleUrl}
+      {isPublishing}
+      {isSavingWindow}
+      {isUpdatingPinnedWebsites}
+      activeBurrowId={activeBurrow?.id}
+      activeRabbitholeId={activeRabbithole?.id}
+      isDeleting={activeBurrow ? isDeletingBurrow : false}
+      on:saveWindow={saveWindow}
+      on:updatePinnedWebsites={updatePinnedWebsites}
+      on:search={handleSearch}
+      on:openSemble={openSemble}
+      on:publish={openPublishModal}
+      on:deleteContainer={deleteContainer}
+    />
   </div>
 
   <div class="feed">
@@ -867,34 +691,24 @@
         >
       </div>
     {:else}
-      {#if shouldShowRabbitholes}
+      {#if shouldShowBurrows}
         <div class="rabbitholes-collapsible">
-          <CollapsibleContainer title="Rabbitholes" defaultOpen={false}>
-            <RabbitholeGrid
-              rabbitholes={rabbitholesForActiveBurrow}
-              onSelect={selectRabbithole}
-              horizontal={true}
-              burrowShowAddRabbithole={true}
-              burrowShowRemoveRabbithole={true}
-              showBurrows={false}
-              addTooltip="Add this burrow to another rabbithole"
-              removeTooltip="Remove this burrow from this rabbithole"
-              on:addBurrowToRabbithole={() => {
-                openAddToRabbitholeModal();
-              }}
-              on:removeBurrowFromRabbithole={async (e) => {
-                await removeBurrowFromRabbithole(e.detail.rabbitholeId);
-              }}
-            />
-          </CollapsibleContainer>
+          <BurrowGrid
+            burrows={burrowsInActiveRabbithole}
+            selectedBurrowId={activeBurrow?.id}
+            onSelect={selectBurrow}
+            allowCreate={true}
+            on:createBurrow={() => dispatch("createBurrow")}
+            showDelete={false}
+          />
         </div>
       {/if}
 
       {#if shouldShowBurrowHome}
-        <BurrowHome
-          bind:activeBurrow
+        <PinnedWebsites
           {websites}
           on:websiteUpdate={updateWebsite}
+          bind:activeRabbithole
         />
       {/if}
 
@@ -958,6 +772,8 @@
                         <TimelineCard
                           website={site}
                           on:websiteDelete={deleteWebsite}
+                          on:websiteAddToBurrow={openAddToBurrowModal}
+                          on:websiteAddToRabbithole={openAddToRabbitholeModal}
                           on:websiteUpdate={updateWebsite}
                         />
                       </div>
@@ -985,6 +801,8 @@
                 website={site}
                 fixedHeight={true}
                 on:websiteDelete={deleteWebsite}
+                on:websiteAddToBurrow={openAddToBurrowModal}
+                on:websiteAddToRabbithole={openAddToRabbitholeModal}
                 on:websiteUpdate={updateWebsite}
               />
             </div>
@@ -1020,6 +838,43 @@
     align-items: center;
     margin-bottom: 40px;
     max-width: 800px;
+    position: relative;
+  }
+
+  .breadcrumb-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .breadcrumb-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: #868e96;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .breadcrumb-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1b1e;
+  }
+
+  :global(body.dark-mode) .breadcrumb-btn {
+    color: #909296;
+  }
+
+  :global(body.dark-mode) .breadcrumb-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e7e7e7;
   }
 
   .title-row {
@@ -1049,25 +904,6 @@
     transform: translateY(-50%);
   }
 
-  .action-bar {
-    display: flex;
-    justify-content: center;
-    margin-top: 12px;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: 12px;
-    width: fit-content;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .action-divider {
-    width: 1px;
-    height: 24px;
-    background-color: rgba(0, 0, 0, 0.1);
-    margin: 0 8px;
-  }
-
   :global(.project-name-input),
   :global(.project-name-input input) {
     text-align: center !important;
@@ -1086,12 +922,6 @@
     border: 1px solid #fa5252 !important;
     border-radius: 4px;
     background-color: rgba(250, 82, 82, 0.1) !important;
-  }
-
-  .search-bar {
-    margin: 18px 0 12px 0;
-    width: 100%;
-    max-width: 800px;
   }
 
   .timeline-feed {
@@ -1278,14 +1108,6 @@
 
   :global(body.dark-mode) .timeline-tooltip::after {
     border-right-color: rgba(231, 231, 231, 0.95);
-  }
-
-  :global(body.dark-mode) .action-bar {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  :global(body.dark-mode) .action-divider {
-    background-color: rgba(255, 255, 255, 0.1);
   }
 
   @media (max-width: 640px) {
