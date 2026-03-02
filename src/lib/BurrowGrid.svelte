@@ -5,16 +5,14 @@
 
   export let burrows: Burrow[] = [];
   export let selectedBurrowId: string = null;
-  export let onSelect: (burrow: Burrow) => Promise<void>;
+  export let onSelect: (burrowId: string) => Promise<void>;
   export let allowCreate: boolean = false;
   export let showDelete: boolean = false;
 
   const dispatch = createEventDispatcher();
 
   function handleSelect(burrow: Burrow): void {
-    if (onSelect) {
-      onSelect(burrow);
-    }
+    onSelect(burrow.id);
   }
 </script>
 
