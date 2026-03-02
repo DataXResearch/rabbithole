@@ -4,22 +4,28 @@
   import { OpenInNewWindow } from "radix-icons-svelte";
   import TimelineCard from "src/lib/TimelineCard.svelte";
   import CollapsibleContainer from "src/lib/CollapsibleContainer.svelte";
-  import type { Burrow, Website } from "src/utils/types";
-
-  export let activeBurrow: Burrow | null = null;
-  export let websites: Website[] = [];
+  import { MessageRequest } from "../utils";
+  import type { Rabbithole, Website } from "src/utils/types";
 
   const dispatch = createEventDispatcher();
 
+  export let activeRabbithole: Rabbithole | null = null;
+  export let websites: Website[] = [];
+
   let isOpen: boolean = true;
 
+  $: activeContainer = activeRabbithole;
+
   $: burrowHomeWebsites = (() => {
-    if (!activeBurrow?.activeTabs || activeBurrow.activeTabs.length === 0) {
+    if (
+      !activeContainer?.activeTabs ||
+      activeContainer.activeTabs.length === 0
+    ) {
       return [];
     }
     // Map URLs to website objects from the main list
     // Note: This assumes all active tabs are also in the main saved list, which they should be after sync
-    return activeBurrow.activeTabs
+    return activeContainer.activeTabs
       .map((url) => websites.find((w) => w.url === url))
       .filter(Boolean);
   })();
@@ -32,22 +38,28 @@
   }
 
   async function openAllBurrowHomeTabs(): Promise<void> {
-    if (activeBurrow.activeTabs && activeBurrow.activeTabs.length > 0) {
+    if (activeContainer?.activeTabs && activeContainer.activeTabs.length > 0) {
       await chrome.runtime.sendMessage({
         type: "OPEN_TABS",
-        urls: activeBurrow.activeTabs,
+        urls: activeContainer.activeTabs,
       });
     }
   }
 
   async function removeFromBurrowHome(url: string): Promise<void> {
-    await chrome.runtime.sendMessage({
-      type: "REMOVE_FROM_ACTIVE_TABS",
-      burrowId: activeBurrow.id,
-      url: url,
-    });
+    if (activeRabbithole) {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.REMOVE_FROM_ACTIVE_TABS,
+        rabbitholeId: activeRabbithole.id,
+        url: url,
+      });
+    }
 
-    activeBurrow.activeTabs = activeBurrow.activeTabs.filter((u) => u !== url);
+    if (activeContainer && activeContainer.activeTabs) {
+      activeContainer.activeTabs = activeContainer.activeTabs.filter(
+        (u) => u !== url,
+      );
+    }
   }
 
   function handleToggle(e: CustomEvent<any>): void {
