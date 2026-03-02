@@ -24,6 +24,7 @@
 
   export let onRabbitholesClick = () => {};
   export let onBurrowsClick = () => {};
+  export let isDark: boolean = false;
 
   const dispatch = createEventDispatcher();
 
@@ -35,7 +36,6 @@
   let isLoggedIn: boolean = false;
   let userHandle: string = "";
   let userAvatar: string = "";
-  let isDark: boolean = false;
   let fileInput: HTMLInputElement;
 
   let settings: Settings | null = null;
@@ -44,7 +44,6 @@
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
-    isDark = settings.darkMode;
 
     if (!settings.hasSeenOnboarding) {
       showOnboardingModal = true;
@@ -91,13 +90,8 @@
     showAuthModal = true;
   }
 
-  async function toggleTheme(): Promise<void> {
-    isDark = !isDark;
-    document.body.classList.toggle("dark-mode", isDark);
-    chrome.runtime.sendMessage({
-      type: MessageRequest.UPDATE_SETTINGS,
-      settings: { ...settings, darkMode: isDark },
-    });
+  function handleToggleTheme(): void {
+    dispatch("toggleTheme");
   }
 
   async function handleAuthSuccess(): Promise<void> {
@@ -256,15 +250,6 @@
     >
       Rabbitholes
     </Button>
-    <Button
-      variant="subtle"
-      color="gray"
-      size="lg"
-      on:click={onBurrowsClick}
-      class="rabbitholes-btn"
-    >
-      Burrows
-    </Button>
   </div>
 
   <div class="navbar-center">
@@ -295,7 +280,7 @@
       color="gray"
       size="xl"
       radius="xl"
-      on:click={toggleTheme}
+      on:click={handleToggleTheme}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {#if isDark}
@@ -455,7 +440,7 @@
     font-size: 13px;
     padding: 3px 8px;
     background-color: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(0, 0, 0,  0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     color: #1a1b1e;
     font-family: monospace;
@@ -479,14 +464,6 @@
     background-color: rgba(37, 38, 43, 0.4);
     border-bottom-color: rgba(255, 255, 255, 0.1);
     color: white;
-  }
-
-  :global(body.dark-mode) .rabbitholes-btn {
-    color: white !important;
-  }
-
-  :global(body.dark-mode) .navbar .svelteui-ActionIcon {
-    color: white !important;
   }
 
   :global(body.dark-mode) .navbar:hover {
