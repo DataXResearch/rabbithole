@@ -47,42 +47,6 @@
 <div class="action-bar-container">
   <div class="action-bar">
     <Group spacing="xs">
-      <!-- Sync Actions -->
-      {#if activeBurrowId || activeRabbitholeId}
-        <Tooltip
-          label={activeBurrowId
-            ? "Sync open tabs with this burrow"
-            : "Sync open tabs with this rabbithole"}
-          withArrow
-          transition="fade"
-        >
-          <ActionIcon
-            size="xl"
-            radius="md"
-            color="blue"
-            on:click={() => dispatch("saveWindow")}
-            loading={isSavingWindow}
-          >
-            <Reload size={22} />
-          </ActionIcon>
-        </Tooltip>
-
-        <div class="action-divider"></div>
-
-        <Tooltip label="Update pinned websites" withArrow transition="fade">
-          <ActionIcon
-            size="xl"
-            radius="md"
-            on:click={() => dispatch("updatePinnedWebsites")}
-            loading={isUpdatingPinnedWebsites}
-          >
-            <Home size={22} />
-          </ActionIcon>
-        </Tooltip>
-
-        <div class="action-divider"></div>
-      {/if}
-
       <!-- Search -->
       <Tooltip label="Search within list" withArrow transition="fade">
         <ActionIcon
@@ -95,10 +59,46 @@
         </ActionIcon>
       </Tooltip>
 
+      <div class="action-divider"></div>
+      <!-- Sync Actions -->
+      <Tooltip
+        label={activeBurrowId
+          ? "Sync open tabs with this burrow"
+          : "Sync open tabs with this rabbithole"}
+        withArrow
+        transition="fade"
+      >
+        <ActionIcon
+          size="xl"
+          radius="md"
+          color="blue"
+          on:click={() => dispatch("saveWindow")}
+          loading={isSavingWindow}
+        >
+          <Reload size={22} />
+        </ActionIcon>
+      </Tooltip>
+
+      <div class="action-divider"></div>
+
+      {#if !activeBurrowId && activeRabbitholeId}
+        <Tooltip label="Update pinned websites" withArrow transition="fade">
+          <ActionIcon
+            size="xl"
+            radius="md"
+            color="blue"
+            on:click={() => dispatch("updatePinnedWebsites")}
+            loading={isUpdatingPinnedWebsites}
+          >
+            <Home size={22} />
+          </ActionIcon>
+        </Tooltip>
+
+        <div class="action-divider"></div>
+      {/if}
+
       <!-- Semble Actions -->
       {#if activeBurrowId}
-        <div class="action-divider"></div>
-
         {#if sembleUrl}
           <Tooltip label="View on Semble" withArrow transition="fade">
             <ActionIcon
@@ -137,9 +137,8 @@
             </ActionIcon>
           </Tooltip>
         {/if}
+        <div class="action-divider"></div>
       {/if}
-
-      <div class="action-divider"></div>
 
       <!-- Delete -->
       <Tooltip
@@ -152,7 +151,7 @@
           size="xl"
           radius="md"
           color="red"
-          on:click={() => dispatch("delete")}
+          on:click={() => dispatch("deleteContainer")}
           loading={isDeleting}
         >
           <Trash size={22} />
