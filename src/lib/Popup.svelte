@@ -14,14 +14,20 @@
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
+    show = settings.show;
   });
 
   async function toggleOverlay() {
-    show = !settings?.show;
+    const newShowValue = !show;
+    show = newShowValue;
+
     await chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
-      settings: { ...settings, show },
+      settings: { ...settings, show: newShowValue },
     });
+
+    // Update local settings reference
+    settings = { ...settings, show: newShowValue };
 
     // Reload the active tab
     const [tab] = await chrome.tabs.query({
@@ -140,6 +146,13 @@
     cursor: not-allowed;
   }
 
+  .overlay-hidden-message {
+    padding: 20px;
+    text-align: center;
+    color: #868e96;
+    font-size: 13px;
+  }
+
   @media (prefers-color-scheme: dark) {
     .popup-container {
       background-color: #1a1b1e;
@@ -159,6 +172,10 @@
 
     .link-button:hover {
       color: #74c0fc;
+    }
+
+    .overlay-hidden-message {
+      color: #909296;
     }
   }
 </style>
