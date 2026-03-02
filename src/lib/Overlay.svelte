@@ -10,15 +10,10 @@
     Textarea,
   } from "@svelteuidev/core";
   import Options from "./Options.svelte";
-  import BurrowSelector from "src/lib/BurrowSelector.svelte";
-  import {
-    MessageRequest,
-    getOrderedBurrows,
-    NotificationDuration,
-    Logger,
-  } from "../utils";
+  import ContainerSelector from "src/lib/ContainerSelector.svelte";
+  import { MessageRequest, NotificationDuration, Logger } from "../utils";
   import { Move, EyeNone, Update, Check, Cross2 } from "radix-icons-svelte";
-  import type { Burrow, Settings } from "src/utils/types";
+  import type { Burrow, Rabbithole, Settings } from "src/utils/types";
 
   export let isPopup: boolean = false;
 
@@ -26,6 +21,9 @@
   let alignment: "left" | "right" = "right";
   let show: boolean = false;
   let burrows: Burrow[] = [];
+  let rabbitholes: Rabbithole[] = [];
+  let selectedBurrow: Burrow | null = null;
+  let selectedRabbithole: Rabbithole | null = null;
   let isSyncingWindow: boolean = false;
   let syncWindowSuccess: boolean = false;
 
@@ -37,13 +35,75 @@
   let isSaving: boolean = false;
   let saveSuccess: boolean = false;
 
+  function orderBurrows(activeBurrowId: string | null): void {
+    if (!activeBurrowId) return;
+    for (let i = 0; i < burrows.length; i++) {
+      if (burrows[i].id === activeBurrowId) {
+        const temp = burrows[0];
+        burrows[0] = burrows[i];
+        burrows[i] = temp;
+        break;
+      }
+    }
+  }
+
+  function orderRabbitholes(activeRabbitholeId: string | null): void {
+    if (!activeRabbitholeId) return;
+    for (let i = 0; i < rabbitholes.length; i++) {
+      if (rabbitholes[i].id === activeRabbitholeId) {
+        const [active] = rabbitholes.splice(i, 1);
+        rabbitholes.unshift(active);
+        break;
+      }
+    }
+  }
+
+  async function fetchAll(): Promise<void> {
+    burrows = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ALL_BURROWS,
+    });
+    rabbitholes = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ALL_RABBITHOLES,
+    });
+  }
+
+  async function refreshActiveContainers(): Promise<void> {
+    const activeBurrow: Burrow | null = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_ACTIVE_BURROW,
+    });
+    const activeRabbithole: Rabbithole | null =
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+      });
+    selectedBurrow = activeBurrow;
+    selectedRabbithole = activeRabbithole;
+
+    orderBurrows(selectedBurrow?.id || null);
+    orderRabbitholes(selectedRabbithole?.id || null);
+  }
+
+  async function refreshSettings(): Promise<void> {
+    settings = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_SETTINGS,
+    });
+    alignment = settings.alignment;
+    show = settings.show;
+  }
+
+  export async function refreshData(): Promise<void> {
+    await fetchAll();
+    await refreshActiveContainers();
+    await refreshSettings();
+  }
+
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
     alignment = settings.alignment;
     show = settings.show;
-    burrows = await getOrderedBurrows();
+    await fetchAll();
+    await refreshActiveContainers();
   });
 
   function changeAlignment(): void {
@@ -67,8 +127,38 @@
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
       burrowId: burrowId,
     });
-    // Refresh the burrows list to reflect the new active burrow
-    burrows = await getOrderedBurrows();
+    const parentRabbitholes = await chrome.runtime.sendMessage({
+      type: MessageRequest.FETCH_RABBITHOLES_FOR_BURROW,
+      burrowId: burrowId,
+    });
+    if (parentRabbitholes && parentRabbitholes.length > 0) {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
+        rabbitholeId: parentRabbitholes[0].id,
+      });
+    }
+    selectedBurrow = burrows.find((b) => b.id === burrowId) || null;
+    const rh =
+      parentRabbitholes && parentRabbitholes.length > 0
+        ? parentRabbitholes[0]
+        : null;
+    selectedRabbithole = rh;
+    orderBurrows(burrowId);
+    orderRabbitholes(rh?.id || null);
+  }
+
+  async function handleRabbitholeChange(rabbitholeId: string): Promise<void> {
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
+      rabbitholeId: rabbitholeId,
+    });
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_BURROW,
+      burrowId: null,
+    });
+    selectedRabbithole = rabbitholes.find((r) => r.id === rabbitholeId) || null;
+    selectedBurrow = null;
+    orderRabbitholes(rabbitholeId);
   }
 
   async function saveAllTabsToActiveBurrow(): Promise<void> {
@@ -131,7 +221,7 @@
   async function savePage(): Promise<void> {
     isSaving = true;
     try {
-      // 1. Save the tab (this creates the record if needed)
+      // 1. Save the tab (creates the website record)
       await chrome.runtime.sendMessage({
         type: MessageRequest.SAVE_TAB,
       });
@@ -143,6 +233,19 @@
         name: pageTitle,
         description: pageDescription,
       });
+
+      // 3. If we have an active rabbithole, add to its meta
+      const activeRabbithole: Rabbithole | null =
+        await chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+        });
+      if (activeRabbithole) {
+        await chrome.runtime.sendMessage({
+          type: MessageRequest.ADD_WEBSITES_TO_RABBITHOLE_META,
+          rabbitholeId: activeRabbithole.id,
+          urls: [pageUrl],
+        });
+      }
 
       saveSuccess = true;
       setTimeout(() => {
@@ -243,10 +346,14 @@
           </Button>
         </div>
       {:else}
-        <div class="rabbithole-selector-wrapper">
-          <BurrowSelector
+        <div class="container-selector-wrapper">
+          <ContainerSelector
             {burrows}
+            {rabbitholes}
             {handleBurrowChange}
+            {handleRabbitholeChange}
+            bind:selectedBurrow
+            bind:selectedRabbithole
             dropdownDirection={isPopup ? "down" : "up"}
             allowCreate={true}
           />
@@ -320,14 +427,14 @@
     left: 24px;
   }
 
-  .rabbithole-selector-wrapper {
+  .container-selector-wrapper {
     display: flex;
     flex-direction: column;
     gap: 12px;
     width: 100%;
   }
 
-  .rabbithole-overlay.rabbithole-popup .rabbithole-selector-wrapper {
+  .rabbithole-overlay.rabbithole-popup .container-selector-wrapper {
     margin-bottom: 0;
   }
 
