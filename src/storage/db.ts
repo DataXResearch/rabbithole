@@ -34,9 +34,9 @@ export class WebsiteStore {
         resolve(db);
       };
       request.onerror = (event) => {
-        const err = (event.target as any).error;
+        const err = (event.target as IDBRequest).error;
         Logger.error("Failed to open database", err);
-        reject(new Error(err));
+        reject(new Error(`Failed to open database: ${err?.message || err}`));
       };
     });
   }
@@ -335,7 +335,8 @@ export class WebsiteStore {
       };
 
       request.onerror = (event) => {
-        reject(new Error("Failed to retrieve rabbitholes"));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to retrieve rabbitholes: ${err?.message || err}`));
       };
     });
   }
@@ -363,12 +364,14 @@ export class WebsiteStore {
         };
 
         rabbitholeRequest.onerror = (event) => {
-          reject(new Error("Failed to retrieve rabbithole"));
+          const err = (event.target as IDBRequest).error;
+          reject(new Error(`Failed to retrieve rabbithole: ${err?.message || err}`));
         };
       };
 
       userRequest.onerror = (event) => {
-        reject(new Error("Failed to retrieve user"));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to retrieve user: ${err?.message || err}`));
       };
     });
   }
@@ -392,7 +395,8 @@ export class WebsiteStore {
         };
 
         userPutRequest.onerror = (event) => {
-          reject(new Error("Failed to update user"));
+          const err = (event.target as IDBRequest).error;
+          reject(new Error(`Failed to update user: ${err?.message || err}`));
         };
       };
 
@@ -444,7 +448,8 @@ export class WebsiteStore {
       };
 
       rabbitholeReq.onerror = (event) => {
-        reject(new Error("Failed to create rabbithole"));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to create rabbithole: ${err?.message || err}`));
       };
     });
   }
@@ -737,14 +742,14 @@ export class WebsiteStore {
         tx.onerror = (event) => {
           const err = (event.target as IDBRequest).error;
           Logger.error("saveWebsitesToBurrow transaction failed", err);
-          reject(new Error(err.message));
+          reject(new Error(`saveWebsitesToBurrow transaction failed: ${err?.message || err}`));
         };
       };
 
       burrowRequest.onerror = (event) => {
         const err = (event.target as IDBRequest).error;
         Logger.error("saveWebsitesToBurrow failed", err);
-        reject(new Error(err.message));
+        reject(new Error(`saveWebsitesToBurrow failed: ${err?.message || err}`));
       };
     });
   }
@@ -765,7 +770,8 @@ export class WebsiteStore {
       };
 
       tx.onerror = (event) => {
-        reject(new Error((event.target as IDBRequest).error.message));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to save websites: ${err?.message || err}`));
       };
     });
   }
@@ -822,8 +828,9 @@ export class WebsiteStore {
       };
 
       burrowRequest.onerror = (event) => {
-        if (!(event.target as IDBRequest).error.message.indexOf("exists")) {
-          reject(new Error((event.target as IDBRequest).error.message));
+        const err = (event.target as IDBRequest).error;
+        if (!err?.message?.includes("exists")) {
+          reject(new Error(`Failed to delete website from burrow: ${err?.message || err}`));
         }
       };
     });
@@ -842,7 +849,8 @@ export class WebsiteStore {
       };
 
       request.onerror = (event) => {
-        reject(new Error("Failed to retrieve items"));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to retrieve items: ${err?.message || err}`));
       };
     });
   }
@@ -882,7 +890,8 @@ export class WebsiteStore {
       };
 
       burrowRequest.onerror = (event) => {
-        reject(new Error((event.target as IDBRequest).error.message));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to delete burrow: ${err?.message || err}`));
       };
     });
   }
@@ -984,7 +993,8 @@ export class WebsiteStore {
         };
 
         burrowRequest.onerror = (event) => {
-          reject(new Error("Failed to retrieve settings"));
+          const err = (event.target as IDBRequest).error;
+          reject(new Error(`Failed to retrieve active burrow: ${err?.message || err}`));
         };
       };
 
@@ -1086,7 +1096,8 @@ export class WebsiteStore {
         };
 
         userPutRequest.onerror = (event) => {
-          reject(new Error("Failed to retrieve settings"));
+          const err = (event.target as IDBRequest).error;
+          reject(new Error(`Failed to change active burrow: ${err?.message || err}`));
         };
       };
 
@@ -1137,7 +1148,8 @@ export class WebsiteStore {
       };
 
       burrowReq.onerror = (event) => {
-        reject(new Error("Failed to retrieve items"));
+        const err = (event.target as IDBRequest).error;
+        reject(new Error(`Failed to create burrow: ${err?.message || err}`));
       };
     });
   }
