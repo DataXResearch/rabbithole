@@ -4,13 +4,13 @@
   import { InfoCircled } from "radix-icons-svelte";
   import CollapsibleContainer from "./CollapsibleContainer.svelte";
   import {
-    getDpopKey,
     getSession,
     saveSession,
     clearSession,
     startAuthFlow,
   } from "../atproto/client";
   import type { ATProtoSession } from "../atproto/client";
+  import { getDpopKey } from "src/utils/crypto";
 
   export let showWhyBluesky: boolean = false;
 
