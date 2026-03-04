@@ -127,24 +127,14 @@
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
       burrowId: burrowId,
     });
-    const parentRabbitholes = await chrome.runtime.sendMessage({
-      type: MessageRequest.FETCH_RABBITHOLES_FOR_BURROW,
+    selectedRabbithole = await chrome.runtime.sendMessage({
+      type: MessageRequest.FETCH_RABBITHOLE_FOR_BURROW,
       burrowId: burrowId,
     });
-    if (parentRabbitholes && parentRabbitholes.length > 0) {
-      await chrome.runtime.sendMessage({
-        type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
-        rabbitholeId: parentRabbitholes[0].id,
-      });
-    }
+
     selectedBurrow = burrows.find((b) => b.id === burrowId) || null;
-    const rh =
-      parentRabbitholes && parentRabbitholes.length > 0
-        ? parentRabbitholes[0]
-        : null;
-    selectedRabbithole = rh;
     orderBurrows(burrowId);
-    orderRabbitholes(rh?.id || null);
+    orderRabbitholes(selectedRabbithole.id || null);
   }
 
   async function handleRabbitholeChange(rabbitholeId: string): Promise<void> {
