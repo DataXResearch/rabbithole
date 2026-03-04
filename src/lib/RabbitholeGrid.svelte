@@ -5,7 +5,7 @@
 
   export let rabbitholes: Rabbithole[] = [];
   export let burrows: Burrow[] = [];
-  export let onSelect: (rabbithole: Rabbithole) => Promise<void>;
+  export let onSelect: (rabbitholeId: string) => Promise<void> | void;
 
   export let horizontal: boolean = false;
   export let allowCreate: boolean = false;
@@ -19,10 +19,11 @@
 
   function getWebsiteCount(rabbithole: Rabbithole): number {
     const rabbitholeWebsites = rabbithole.meta?.length || 0;
-    const burrowWebsites = rabbithole.burrows?.reduce((total, burrowId) => {
-      const burrow = burrows.find(b => b.id === burrowId);
-      return total + (burrow?.websites?.length || 0);
-    }, 0) || 0;
+    const burrowWebsites =
+      rabbithole.burrows?.reduce((total, burrowId) => {
+        const burrow = burrows.find((b) => b.id === burrowId);
+        return total + (burrow?.websites?.length || 0);
+      }, 0) || 0;
     return rabbitholeWebsites + burrowWebsites;
   }
 </script>
@@ -44,7 +45,7 @@
   {/if}
 
   {#each rabbitholes as rabbithole (rabbithole.id)}
-    <button type="button" class="card" on:click={() => onSelect(rabbithole)}>
+    <button type="button" class="card" on:click={() => onSelect(rabbithole.id)}>
       {#if showDelete}
         <button
           type="button"
@@ -61,9 +62,19 @@
       <div class="card-content">
         <div class="card-title">{rabbithole.title || "Untitled"}</div>
         <div class="card-stats">
-          <span class="stat">{getBurrowCount(rabbithole)} burrow{getBurrowCount(rabbithole) !== 1 ? 's' : ''}</span>
+          <span class="stat"
+            >{getBurrowCount(rabbithole)} burrow{getBurrowCount(rabbithole) !==
+            1
+              ? "s"
+              : ""}</span
+          >
           <span class="stat-divider">•</span>
-          <span class="stat">{getWebsiteCount(rabbithole)} site{getWebsiteCount(rabbithole) !== 1 ? 's' : ''}</span>
+          <span class="stat"
+            >{getWebsiteCount(rabbithole)} site{getWebsiteCount(rabbithole) !==
+            1
+              ? "s"
+              : ""}</span
+          >
         </div>
       </div>
     </button>
