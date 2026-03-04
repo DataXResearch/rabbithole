@@ -118,10 +118,6 @@
       type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
       rabbitholeId: null,
     });
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.CHANGE_ACTIVE_BURROW,
-      burrowId: null,
-    });
     await refreshHomeState();
   }
 
@@ -131,16 +127,6 @@
       type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
       rabbitholeId: rabbithole.id,
     });
-
-    // reset active burrow when switching rabbitholes
-    if (activeBurrow) {
-      await chrome.runtime.sendMessage({
-        type: MessageRequest.CHANGE_ACTIVE_BURROW,
-        burrowId: null,
-      });
-      activeBurrow = null;
-    }
-
     await refreshHomeState();
   }
 

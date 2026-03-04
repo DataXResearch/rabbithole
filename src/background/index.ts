@@ -308,9 +308,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.CHANGE_ACTIVE_BURROW:
-      db.changeActiveBurrow("burrowId" in request ? request.burrowId : null)
-        .then((res) => sendResponse(res))
-        .catch(handleError);
+      (async () => {
+        try {
+          const burrowId = "burrowId" in request ? request.burrowId : null;
+          await db.changeActiveBurrow(burrowId);
+
+          // If selecting a burrow, also set its parent rabbithole as active
+          if (burrowId) {
+            const parentRabbitholes = await db.fetchRabbitholesForBurrow(burrowId);
+            if (parentRabbitholes && parentRabbitholes.length > 0) {
+              await db.changeActiveRabbithole(parentRabbitholes[0].id);
+            }
+          }
+
+          sendResponse({ success: true });
+        } catch (err) {
+          handleError(err);
+        }
+      })();
       break;
 
     case MessageRequest.GET_ACTIVE_BURROW:
@@ -513,11 +528,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case MessageRequest.CHANGE_ACTIVE_RABBITHOLE:
-      db.changeActiveRabbithole(
-        "rabbitholeId" in request ? request.rabbitholeId : null,
-      )
-        .then((res) => sendResponse(res))
-        .catch(handleError);
+      (async () => {
+        try {
+          const rabbitholeId = "rabbitholeId" in request ? request.rabbitholeId : null;
+          await db.changeActiveRabbithole(rabbitholeId);
+          // Always unset active burrow when switching rabbitholes
+          await db.changeActiveBurrow(null);
+          sendResponse({ success: true });
+        } catch (err) {
+          handleError(err);
+        }
+      })();
       break;
 
     case MessageRequest.CREATE_NEW_RABBITHOLE:
