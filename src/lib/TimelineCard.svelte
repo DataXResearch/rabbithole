@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { Button, Card, Group, Tooltip } from "@svelteuidev/core";
-  import { Trash } from "radix-icons-svelte";
+  import { Button, Card, Group, Tooltip, Menu, ActionIcon } from "@svelteuidev/core";
+  import { Trash, DotsHorizontal, Plus, Copy } from "radix-icons-svelte";
   import type { Website } from "src/utils/types";
   import default1 from "../assets/rabbit-default-1.jpg";
   import default2 from "../assets/rabbit-default-2.jpg";
@@ -34,6 +34,18 @@
 
   async function deleteWebsite(): Promise<void> {
     dispatch("websiteDelete", {
+      url: website.url,
+    });
+  }
+
+  function addToBurrow(): void {
+    dispatch("websiteAddToBurrow", {
+      url: website.url,
+    });
+  }
+
+  function addToRabbithole(): void {
+    dispatch("websiteAddToRabbithole", {
       url: website.url,
     });
   }
@@ -92,15 +104,16 @@
     </div>
 
     {#if showDelete}
-      <button
-        type="button"
-        class="remove-btn"
-        title="Delete"
-        aria-label="Delete"
-        on:click={deleteWebsite}
-      >
-        <Trash size={16} />
-      </button>
+      <div class="card-actions">
+        <Menu position="bottom-end" withArrow>
+          <ActionIcon slot="control" variant="transparent" color="gray" size="md" radius="xl">
+            <DotsHorizontal />
+          </ActionIcon>
+          <Menu.Item icon={Plus} on:click={addToBurrow}>Add to Burrow</Menu.Item>
+          <Menu.Item icon={Copy} on:click={addToRabbithole}>Add to another Rabbithole</Menu.Item>
+          <Menu.Item icon={Trash} color="red" on:click={deleteWebsite}>Delete</Menu.Item>
+        </Menu>
+      </div>
     {/if}
 
     <!-- Header: Title -->
@@ -266,28 +279,19 @@
       0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
-  /* Match RabbitholeGrid delete button style */
-  .remove-btn {
+  .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
-    width: 30px;
-    height: 30px;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.9);
     border-radius: 999px;
     border: 1px solid rgba(0, 0, 0, 0.08);
-    background: rgba(255, 255, 255, 0.9);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: rgba(0, 0, 0, 0.55);
-    z-index: 2;
   }
 
-  .remove-btn:hover {
-    color: #e03131;
-    border-color: rgba(224, 49, 49, 0.35);
-    background: rgba(255, 245, 245, 0.9);
+  :global(body.dark-mode) .card-actions {
+    background: rgba(26, 27, 30, 0.9);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .title-wrapper {
@@ -376,15 +380,4 @@
     color: #c1c2c5;
   }
 
-  :global(body.dark-mode) .remove-btn {
-    background: rgba(26, 27, 30, 0.9);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.65);
-  }
-
-  :global(body.dark-mode) .remove-btn:hover {
-    color: #ff6b6b;
-    border-color: rgba(255, 107, 107, 0.35);
-    background: rgba(66, 0, 0, 0.25);
-  }
 </style>

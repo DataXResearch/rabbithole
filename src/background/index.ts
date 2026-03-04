@@ -315,10 +315,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           // If selecting a burrow, also set its parent rabbithole as active
           if (burrowId) {
-            const parentRabbitholes = await db.fetchRabbitholesForBurrow(burrowId);
-            if (parentRabbitholes && parentRabbitholes.length > 0) {
-              await db.changeActiveRabbithole(parentRabbitholes[0].id);
-            }
+            const parentRabbithole =
+              await db.fetchRabbitholeForBurrow(burrowId);
+            await db.changeActiveRabbithole(parentRabbithole.id);
           }
 
           sendResponse({ success: true });
@@ -388,16 +387,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               // make sure to sync with rabbithole meta
               const activeBurrow = await db.getActiveBurrow();
               if (activeBurrow) {
-                const rabbitholes = await db.fetchRabbitholesForBurrow(
+                const rabbithole = await db.fetchRabbitholeForBurrow(
                   activeBurrow.id,
                 );
                 const urls = sites.map((s) => s.url);
-
-                await Promise.all(
-                  rabbitholes.map((rh) =>
-                    db.addWebsitesToRabbitholeMeta(rh.id, urls),
-                  ),
-                );
+                await db.addWebsitesToRabbitholeMeta(rabbithole.id, urls);
               }
             }
 
@@ -517,12 +511,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(handleError);
       break;
 
-    case MessageRequest.FETCH_RABBITHOLES_FOR_BURROW:
+    case MessageRequest.FETCH_RABBITHOLE_FOR_BURROW:
       if (!("burrowId" in request)) {
         sendResponse({ error: "burrowId required" });
         break;
       }
-      db.fetchRabbitholesForBurrow(request.burrowId)
+      db.fetchRabbitholeForBurrow(request.burrowId)
         .then((res) => sendResponse(res))
         .catch(handleError);
       break;
@@ -530,7 +524,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case MessageRequest.CHANGE_ACTIVE_RABBITHOLE:
       (async () => {
         try {
-          const rabbitholeId = "rabbitholeId" in request ? request.rabbitholeId : null;
+          const rabbitholeId =
+            "rabbitholeId" in request ? request.rabbitholeId : null;
           await db.changeActiveRabbithole(rabbitholeId);
           // Always unset active burrow when switching rabbitholes
           await db.changeActiveBurrow(null);

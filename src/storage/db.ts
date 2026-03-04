@@ -269,7 +269,7 @@ export class WebsiteStore {
     });
   }
 
-  async fetchRabbitholesForBurrow(burrowId: string): Promise<Rabbithole[]> {
+  async fetchRabbitholeForBurrow(burrowId: string): Promise<Rabbithole> {
     const db = await this.getDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(["rabbitholes"], "readonly");
@@ -281,9 +281,9 @@ export class WebsiteStore {
       }
 
       const idx = store.index("burrows");
-      const req = idx.getAll(burrowId);
+      const req = idx.get(burrowId);
 
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => resolve(req.result);
       req.onerror = () =>
         reject(new Error("Failed to fetch rabbitholes for burrow"));
     });
@@ -336,7 +336,9 @@ export class WebsiteStore {
 
       request.onerror = (event) => {
         const err = (event.target as IDBRequest).error;
-        reject(new Error(`Failed to retrieve rabbitholes: ${err?.message || err}`));
+        reject(
+          new Error(`Failed to retrieve rabbitholes: ${err?.message || err}`),
+        );
       };
     });
   }
@@ -365,7 +367,9 @@ export class WebsiteStore {
 
         rabbitholeRequest.onerror = (event) => {
           const err = (event.target as IDBRequest).error;
-          reject(new Error(`Failed to retrieve rabbithole: ${err?.message || err}`));
+          reject(
+            new Error(`Failed to retrieve rabbithole: ${err?.message || err}`),
+          );
         };
       };
 
@@ -449,7 +453,9 @@ export class WebsiteStore {
 
       rabbitholeReq.onerror = (event) => {
         const err = (event.target as IDBRequest).error;
-        reject(new Error(`Failed to create rabbithole: ${err?.message || err}`));
+        reject(
+          new Error(`Failed to create rabbithole: ${err?.message || err}`),
+        );
       };
     });
   }
@@ -742,14 +748,20 @@ export class WebsiteStore {
         tx.onerror = (event) => {
           const err = (event.target as IDBRequest).error;
           Logger.error("saveWebsitesToBurrow transaction failed", err);
-          reject(new Error(`saveWebsitesToBurrow transaction failed: ${err?.message || err}`));
+          reject(
+            new Error(
+              `saveWebsitesToBurrow transaction failed: ${err?.message || err}`,
+            ),
+          );
         };
       };
 
       burrowRequest.onerror = (event) => {
         const err = (event.target as IDBRequest).error;
         Logger.error("saveWebsitesToBurrow failed", err);
-        reject(new Error(`saveWebsitesToBurrow failed: ${err?.message || err}`));
+        reject(
+          new Error(`saveWebsitesToBurrow failed: ${err?.message || err}`),
+        );
       };
     });
   }
@@ -830,7 +842,11 @@ export class WebsiteStore {
       burrowRequest.onerror = (event) => {
         const err = (event.target as IDBRequest).error;
         if (!err?.message?.includes("exists")) {
-          reject(new Error(`Failed to delete website from burrow: ${err?.message || err}`));
+          reject(
+            new Error(
+              `Failed to delete website from burrow: ${err?.message || err}`,
+            ),
+          );
         }
       };
     });
@@ -994,7 +1010,11 @@ export class WebsiteStore {
 
         burrowRequest.onerror = (event) => {
           const err = (event.target as IDBRequest).error;
-          reject(new Error(`Failed to retrieve active burrow: ${err?.message || err}`));
+          reject(
+            new Error(
+              `Failed to retrieve active burrow: ${err?.message || err}`,
+            ),
+          );
         };
       };
 
@@ -1097,7 +1117,9 @@ export class WebsiteStore {
 
         userPutRequest.onerror = (event) => {
           const err = (event.target as IDBRequest).error;
-          reject(new Error(`Failed to change active burrow: ${err?.message || err}`));
+          reject(
+            new Error(`Failed to change active burrow: ${err?.message || err}`),
+          );
         };
       };
 
