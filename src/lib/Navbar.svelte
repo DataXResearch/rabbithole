@@ -190,8 +190,12 @@
     fileInput.click();
   }
 
-  function handleSearchSelect(event: CustomEvent<any>): void {
-    dispatch("navigate", event.detail);
+  function handleSearchSelectRabbithole(event: CustomEvent<any>): void {
+    dispatch("selectRabbithole", event.detail);
+  }
+
+  function handleSearchSelectBurrow(event: CustomEvent<any>): void {
+    dispatch("selectBurrow", event.detail);
   }
 
   async function handleOnboardingClose(): Promise<void> {
@@ -211,7 +215,8 @@
 
 <SearchEverywhereModal
   bind:isOpen={showSearchModal}
-  on:select={handleSearchSelect}
+  on:selectRabbithole={handleSearchSelectRabbithole}
+  on:selectBurrow={handleSearchSelectBurrow}
 />
 
 <Modal
