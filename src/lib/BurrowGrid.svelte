@@ -5,7 +5,7 @@
 
   export let burrows: Burrow[] = [];
   export let selectedBurrowId: string = null;
-  export let onSelect: (burrowId: string) => Promise<void>;
+  export let onSelect: (burrowId: string) => Promise<void> | void;
   export let allowCreate: boolean = false;
   export let showDelete: boolean = false;
 

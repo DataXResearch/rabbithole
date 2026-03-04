@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, afterUpdate } from "svelte";
+  import { afterUpdate } from "svelte";
   import { createEventDispatcher } from "svelte";
   import {
     ActionIcon,
@@ -28,8 +28,57 @@
   let websiteResults: Website[] = [];
   let rabbitholeResults: Rabbithole[] = [];
   let burrowResults: Burrow[] = [];
-  let isLoading: boolean = true;
   let inputRef: HTMLDivElement;
+  let isLoading: boolean = false;
+  let dataLoaded: boolean = false;
+
+  let websiteFuse: Fuse<Website>;
+  let rabbitholeFuse: Fuse<Rabbithole>;
+  let burrowFuse: Fuse<Burrow>;
+
+  function buildIndexes(): void {
+    websiteFuse = new Fuse(allWebsites, {
+      keys: ["name", "description", "url"],
+      includeScore: true,
+      threshold: 0.3,
+    });
+    rabbitholeFuse = new Fuse(allRabbitholes, {
+      keys: ["title", "description"],
+      includeScore: true,
+      threshold: 0.3,
+    });
+    burrowFuse = new Fuse(allBurrows, {
+      keys: ["name"],
+      includeScore: true,
+      threshold: 0.3,
+    });
+  }
+
+  async function loadData(): Promise<void> {
+    isLoading = true;
+    try {
+      [allWebsites, allRabbitholes, allBurrows] = await Promise.all([
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_ITEMS }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_RABBITHOLES,
+        }),
+        chrome.runtime.sendMessage({ type: MessageRequest.GET_ALL_BURROWS }),
+      ]);
+      buildIndexes();
+      dataLoaded = true;
+      if (searchQuery.length >= 2) {
+        performSearch();
+      }
+    } catch (err) {
+      Logger.error("Failed to load search data", err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  $: if (isOpen && !dataLoaded) {
+    loadData();
+  }
 
   // Track collapse state for each section
   let sectionStates = {
@@ -37,10 +86,6 @@
     burrows: true,
     websites: true,
   };
-
-  onMount(async () => {
-    await loadAllData();
-  });
 
   afterUpdate(() => {
     if (isOpen && inputRef) {
@@ -51,36 +96,13 @@
     }
   });
 
-  async function loadAllData(): Promise<void> {
-    isLoading = true;
-    try {
-      const [websites, rabbitholes, burrows] = await Promise.all([
-        chrome.runtime.sendMessage({
-          type: MessageRequest.GET_ALL_ITEMS,
-        }),
-        chrome.runtime.sendMessage({
-          type: MessageRequest.GET_ALL_RABBITHOLES,
-        }),
-        chrome.runtime.sendMessage({
-          type: MessageRequest.GET_ALL_BURROWS,
-        }),
-      ]);
-
-      allWebsites = websites || [];
-      allRabbitholes = rabbitholes || [];
-      allBurrows = burrows || [];
-    } catch (err) {
-      Logger.error("Failed to load data:", err);
-    }
-    isLoading = false;
-  }
-
   function close(): void {
     isOpen = false;
     searchQuery = "";
     websiteResults = [];
     rabbitholeResults = [];
     burrowResults = [];
+    dataLoaded = false;
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -90,62 +112,35 @@
   }
 
   function performSearch(): void {
-    if (searchQuery.length < 2) {
+    if (searchQuery.length < 2 || !dataLoaded) {
       websiteResults = [];
       rabbitholeResults = [];
       burrowResults = [];
       return;
     }
 
-    // Search websites
-    const websiteFuse = new Fuse(allWebsites, {
-      keys: ["name", "description", "url"],
-      includeScore: true,
-      threshold: 0.3,
-    });
-    const websiteMatches = websiteFuse.search(searchQuery);
-    websiteResults = websiteMatches.map((res) => res.item);
-
-    // Search rabbitholes
-    const rabbitholeFuse = new Fuse(allRabbitholes, {
-      keys: ["title", "description"],
-      includeScore: true,
-      threshold: 0.3,
-    });
-    const rabbitholeMatches = rabbitholeFuse.search(searchQuery);
-    rabbitholeResults = rabbitholeMatches.map((res) => res.item);
-
-    // Search burrows
-    const burrowFuse = new Fuse(allBurrows, {
-      keys: ["name"],
-      includeScore: true,
-      threshold: 0.3,
-    });
-    const burrowMatches = burrowFuse.search(searchQuery);
-    burrowResults = burrowMatches.map((res) => res.item);
+    websiteResults = websiteFuse
+      .search(searchQuery, { limit: 10 })
+      .map((res) => res.item);
+    rabbitholeResults = rabbitholeFuse
+      .search(searchQuery)
+      .map((res) => res.item);
+    burrowResults = burrowFuse.search(searchQuery).map((res) => res.item);
   }
 
   function handleToggleSection(section: string, event: CustomEvent<any>): void {
     sectionStates[section] = event.detail.open;
   }
 
-  async function handleSelectRabbithole(rabbithole: Rabbithole): Promise<void> {
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
-      rabbitholeId: rabbithole.id,
-    });
-    dispatch("select", { type: "rabbithole", id: rabbithole.id });
+  function handleSelectRabbithole(rabbitholeId: string): void {
     close();
+    dispatch("selectRabbithole", rabbitholeId);
   }
 
-  async function handleSelectBurrow(burrow: Burrow): Promise<void> {
-    // Navigate to the burrow
-    await chrome.runtime.sendMessage({
-      type: MessageRequest.CHANGE_ACTIVE_BURROW,
-      burrowId: burrow.id,
-    });
-    dispatch("select", { type: "burrow", id: burrow.id });
+  function handleSelectBurrow(burrow: Burrow): void {
+    if (!burrow) return;
     close();
+    dispatch("selectBurrow", burrow);
   }
 
   $: if (searchQuery) {
@@ -182,9 +177,6 @@
         {#if isLoading}
           <div class="loading-container">
             <Loader size="md" variant="dots" />
-            <Text size="sm" color="dimmed" style="margin-top: 1rem;">
-              Searching...
-            </Text>
           </div>
         {:else if searchQuery.length < 2}
           <div class="empty-state">
@@ -211,7 +203,6 @@
                     rabbitholes={rabbitholeResults}
                     burrows={allBurrows}
                     onSelect={handleSelectRabbithole}
-                    showBurrows={true}
                   />
                 </CollapsibleContainer>
               {/if}
@@ -224,7 +215,12 @@
                 >
                   <BurrowGrid
                     burrows={burrowResults}
-                    onSelect={handleSelectBurrow}
+                    onSelect={(burrowId) => {
+                      const burrow = allBurrows.find((b) => b.id === burrowId);
+                      if (burrow) {
+                        handleSelectBurrow(burrow);
+                      }
+                    }}
                   />
                 </CollapsibleContainer>
               {/if}

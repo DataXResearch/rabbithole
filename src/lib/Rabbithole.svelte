@@ -4,13 +4,7 @@
   import Navbar from "src/lib/Navbar.svelte";
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
   import { MessageRequest } from "../utils";
-  import {
-    SvelteUIProvider,
-    Loader,
-    Text,
-    Tooltip,
-    AppShell,
-  } from "@svelteuidev/core";
+  import { SvelteUIProvider, Loader, Text, AppShell } from "@svelteuidev/core";
   import type { Burrow, Rabbithole, Settings, Website } from "src/utils/types";
 
   let activeBurrow: Burrow | null = null;
@@ -121,11 +115,11 @@
     await refreshHomeState();
   }
 
-  async function selectRabbithole(rabbithole: Rabbithole): Promise<void> {
+  async function selectRabbithole(rabbitholeId: string): Promise<void> {
     isLoadingWebsites = true;
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
-      rabbitholeId: rabbithole.id,
+      rabbitholeId,
     });
     await refreshHomeState();
   }
@@ -136,7 +130,6 @@
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
       burrowId,
     });
-
     await refreshHomeState();
   }
 
@@ -258,6 +251,12 @@
     await refreshHomeState();
   }
 
+  async function handleSearchSelectBurrow(
+    event: CustomEvent<Burrow>,
+  ): Promise<void> {
+    await selectBurrow(event.detail.id);
+  }
+
   async function handleNavigation(): Promise<void> {
     await refreshHomeState();
   }
@@ -268,6 +267,8 @@
     onRabbitholesClick={goHome}
     {isDark}
     on:toggleTheme={toggleTheme}
+    on:selectRabbithole={(event) => selectRabbithole(event.detail)}
+    on:selectBurrow={handleSearchSelectBurrow}
     on:navigate={handleNavigation}
   />
 
