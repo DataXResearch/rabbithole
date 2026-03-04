@@ -187,7 +187,6 @@
     }
   }
 
-
   function handleKeydown(e: CustomEvent<any>): void {
     const ke = e as unknown as KeyboardEvent;
     if (ke.key === "Escape") {
@@ -251,7 +250,9 @@
         <div class="create-header">
           Select rabbithole for "{searchValue.trim()}":
         </div>
-        {#each rabbitholes.slice().sort((a, b) => a.title.localeCompare(b.title)) as rh}
+        {#each rabbitholes
+          .slice()
+          .sort((a, b) => a.title.localeCompare(b.title)) as rh}
           <button
             type="button"
             class="container-option"
