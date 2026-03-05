@@ -190,7 +190,7 @@
 
     <!-- Footer: Action Button -->
     <div class="card-footer">
-      <Button variant="light" color="blue" href={website.url} target="_blank">
+      <Button variant="light" color="blue" size="xs" href={website.url} target="_blank">
         Open
       </Button>
     </div>
@@ -245,7 +245,8 @@
 
   :global(.timeline-card.fixed-height) .description-container {
     overflow: hidden;
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
   }
@@ -360,11 +361,12 @@
   }
 
   .card-footer {
-    margin-top: 18px;
+    margin-top: auto;
+    padding-top: 12px;
   }
 
   :global(.timeline-card.fixed-height) .card-footer {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   /* Dark mode styles */

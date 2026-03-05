@@ -8,7 +8,7 @@ import type {
   User,
 } from "../utils/types";
 
-const version = 9;
+const version = 10;
 
 export class WebsiteStore {
   factory: IDBFactory;
@@ -213,6 +213,59 @@ export class WebsiteStore {
             };
           }
 
+          if (event.oldVersion < 10) {
+            const rabbitholeStore = txn.objectStore("rabbitholes");
+            const burrowStore = txn.objectStore("burrows");
+            const userStore = txn.objectStore("user");
+
+            // Reset hasSeenOnboarding
+            const userReq = userStore.openCursor();
+            userReq.onsuccess = (e) => {
+              const cursor = (e.target as IDBRequest).result;
+              if (cursor) {
+                const user = cursor.value;
+                if (user.settings) {
+                  user.settings.hasSeenOnboarding = false;
+                  cursor.update(user);
+                }
+                cursor.continue();
+              }
+            };
+
+            // Delete empty "Home" or "Homebase" rabbitholes
+            const rhReq = rabbitholeStore.openCursor();
+            rhReq.onsuccess = (e) => {
+              const cursor = (e.target as IDBRequest).result;
+              if (cursor) {
+                const rh = cursor.value;
+                if (
+                  (rh.title === "Home" || rh.title === "Homebase") &&
+                  (!rh.burrows || rh.burrows.length === 0) &&
+                  (!rh.meta || rh.meta.length === 0)
+                ) {
+                  cursor.delete();
+                }
+                cursor.continue();
+              }
+            };
+
+            // Delete empty "Bookmarks" or "Reminders" burrows
+            const bReq = burrowStore.openCursor();
+            bReq.onsuccess = (e) => {
+              const cursor = (e.target as IDBRequest).result;
+              if (cursor) {
+                const b = cursor.value;
+                if (
+                  (b.name === "Bookmarks" || b.name === "Reminders") &&
+                  (!b.websites || b.websites.length === 0)
+                ) {
+                  cursor.delete();
+                }
+                cursor.continue();
+              }
+            };
+          }
+
           resolve(db);
         };
 
@@ -238,31 +291,7 @@ export class WebsiteStore {
               .transaction(["user"], "readwrite")
               .objectStore("user")
               .add(newUser);
-            userRequest.onsuccess = async () => {
-              const rabbithole = await store.createNewActiveRabbithole("Home");
-              const burrow =
-                await store.createNewBurrowInActiveRabbithole("Bookmarks");
-              await store.changeActiveRabbithole(rabbithole.id);
-              await store.changeActiveBurrow(burrow.id);
-            };
             return;
-          }
-
-          if (
-            !("currentRabbithole" in user) ||
-            user.currentRabbithole === null ||
-            user.currentRabbithole === undefined
-          ) {
-            const rabbithole = await store.createNewActiveRabbithole("Home");
-            await store.changeActiveRabbithole(rabbithole.id);
-          }
-
-          if (
-            !("currentBurrow" in user) ||
-            user.currentBurrow === null ||
-            user.currentBurrow === undefined
-          ) {
-            await store.createNewBurrowInActiveRabbithole("Bookmarks");
           }
         };
       }
