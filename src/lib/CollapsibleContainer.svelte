@@ -47,7 +47,7 @@
 
 <style>
   .container {
-    border-radius: 16px;
+    border-radius: 12px;
     border: 2px dashed rgba(0, 0, 0, 0.12);
     background: rgba(0, 0, 0, 0.02);
     overflow: hidden;
@@ -58,8 +58,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 14px 16px;
+    gap: 10px;
+    padding: 11px 13px;
     background: transparent;
     border: 0;
     cursor: pointer;
@@ -79,7 +79,7 @@
   /* Match BurrowHome title formatting (as requested) */
   .title {
     font-weight: 700;
-    font-size: 1.125rem;
+    font-size: 0.9rem;
     color: rgba(0, 0, 0, 0.55);
     letter-spacing: 0;
     transition: color 0.15s ease;
@@ -95,9 +95,9 @@
     align-items: center;
     justify-content: center;
     color: rgba(0, 0, 0, 0.55);
-    font-size: 14px;
+    font-size: 11px;
     line-height: 1;
-    min-width: 18px;
+    min-width: 14px;
   }
 
   .chevron-icon {
@@ -106,7 +106,7 @@
   }
 
   .content {
-    padding: 16px 16px 16px 16px;
+    padding: 13px;
   }
 
   :global(body.dark-mode) .container {

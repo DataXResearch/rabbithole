@@ -249,7 +249,7 @@
     <Button
       variant="subtle"
       color="gray"
-      size="lg"
+      size="md"
       on:click={onRabbitholesClick}
       class="rabbitholes-btn"
     >
@@ -259,7 +259,7 @@
 
   <div class="navbar-center">
     <button class="search-button" on:click={openSearchModal}>
-      <MagnifyingGlass size={18} />
+      <MagnifyingGlass size={14} />
       <span class="search-text">Search everywhere...</span>
       <span class="search-shortcut">{isMac ? "⌘K" : "Ctrl+K"}</span>
     </button>
@@ -273,25 +273,25 @@
     >
       <ActionIcon
         color="gray"
-        size="xl"
+        size="lg"
         radius="xl"
         on:click={() => (showOnboardingModal = true)}
       >
-        <QuestionMarkCircled size={22} />
+        <QuestionMarkCircled size={18} />
       </ActionIcon>
     </Tooltip>
 
     <ActionIcon
       color="gray"
-      size="xl"
+      size="lg"
       radius="xl"
       on:click={handleToggleTheme}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {#if isDark}
-        <Sun size={22} />
+        <Sun size={18} />
       {:else}
-        <Moon size={22} />
+        <Moon size={18} />
       {/if}
     </ActionIcon>
 
@@ -301,7 +301,7 @@
           slot="control"
           variant="light"
           color="blue"
-          size="xl"
+          size="lg"
           radius="xl"
           title={userHandle}
           style="overflow: hidden; padding: {userAvatar ? '0' : ''};"
@@ -313,7 +313,7 @@
               style="width: 100%; height: 100%; object-fit: cover;"
             />
           {:else}
-            <Person size={22} />
+            <Person size={18} />
           {/if}
         </ActionIcon>
 
@@ -330,7 +330,7 @@
       </Menu>
     {:else}
       <div class="connect-container">
-        <Button variant="light" color="blue" size="md" on:click={handleSignIn}>
+        <Button variant="light" color="blue" size="sm" on:click={handleSignIn}>
           Sign in
         </Button>
         <Menu placement="end" withArrow>
@@ -338,11 +338,11 @@
             slot="control"
             variant="filled"
             color="gray"
-            size="xl"
+            size="lg"
             radius="xl"
             title="Settings"
           >
-            <Gear size={22} />
+            <Gear size={18} />
           </ActionIcon>
 
           <Menu.Item icon={Upload} on:click={triggerImport}>
@@ -366,17 +366,17 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 72px;
+    height: 58px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 32px;
+    padding: 0 26px;
     background-color: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(10px);
     transition: background-color 0.3s ease;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     z-index: 1000;
-    gap: 32px;
+    gap: 26px;
     color: #1a1b1e;
   }
 
@@ -387,7 +387,7 @@
   .navbar-left {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     flex-shrink: 0;
   }
 
@@ -397,37 +397,37 @@
   }
 
   .logo {
-    width: 48px;
+    width: 38px;
     height: auto;
     opacity: 0.95;
   }
 
   :global(.rabbitholes-btn) {
     font-weight: 600;
-    font-size: 16px;
+    font-size: 13px;
   }
 
   .navbar-center {
     flex: 1;
-    max-width: 700px;
+    max-width: 560px;
     display: flex;
     justify-content: center;
   }
 
   .search-button {
     width: 100%;
-    max-width: 600px;
+    max-width: 480px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
+    gap: 8px;
+    padding: 10px 13px;
     background-color: rgba(0, 0, 0, 0.05);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 15px;
+    font-size: 12px;
     color: #1a1b1e;
   }
 
@@ -442,11 +442,11 @@
   }
 
   .search-shortcut {
-    font-size: 13px;
-    padding: 3px 8px;
+    font-size: 10px;
+    padding: 2px 6px;
     background-color: rgba(255, 255, 255, 0.5);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    border-radius: 4px;
     color: #1a1b1e;
     font-family: monospace;
   }
@@ -454,14 +454,14 @@
   .navbar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-shrink: 0;
   }
 
   .connect-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   /* Dark mode */
@@ -495,13 +495,13 @@
   /* Responsive */
   @media (max-width: 768px) {
     .navbar {
-      padding: 0 20px;
-      gap: 16px;
-      height: 64px;
+      padding: 0 16px;
+      gap: 13px;
+      height: 51px;
     }
 
     .navbar-center {
-      max-width: 400px;
+      max-width: 320px;
     }
 
     .search-text {
@@ -509,27 +509,27 @@
     }
 
     .search-button {
-      padding: 12px;
+      padding: 10px;
       justify-content: center;
     }
 
     .logo {
-      width: 40px;
+      width: 32px;
     }
   }
 
   @media (max-width: 480px) {
     .logo {
-      width: 36px;
+      width: 28px;
     }
 
     :global(.rabbitholes-btn) {
-      font-size: 15px;
-      padding: 10px 14px;
+      font-size: 12px;
+      padding: 8px 11px;
     }
 
     .navbar-center {
-      max-width: 200px;
+      max-width: 160px;
     }
   }
 </style>

@@ -50,12 +50,12 @@
       <!-- Search -->
       <Tooltip label="Search within list" withArrow transition="fade">
         <ActionIcon
-          size="xl"
+          size="lg"
           radius="md"
           color="blue"
           on:click={toggleSearchBar}
         >
-          <MagnifyingGlass size={22} />
+          <MagnifyingGlass size={18} />
         </ActionIcon>
       </Tooltip>
 
@@ -69,13 +69,13 @@
         transition="fade"
       >
         <ActionIcon
-          size="xl"
+          size="lg"
           radius="md"
           color="blue"
           on:click={() => dispatch("saveWindow")}
           loading={isSavingWindow}
         >
-          <Reload size={22} />
+          <Reload size={18} />
         </ActionIcon>
       </Tooltip>
 
@@ -84,13 +84,13 @@
       {#if !activeBurrowId && activeRabbitholeId}
         <Tooltip label="Update pinned websites" withArrow transition="fade">
           <ActionIcon
-            size="xl"
+            size="lg"
             radius="md"
             color="blue"
             on:click={() => dispatch("updatePinnedWebsites")}
             loading={isUpdatingPinnedWebsites}
           >
-            <Home size={22} />
+            <Home size={18} />
           </ActionIcon>
         </Tooltip>
 
@@ -102,12 +102,12 @@
         {#if sembleUrl}
           <Tooltip label="View on Semble" withArrow transition="fade">
             <ActionIcon
-              size="xl"
+              size="lg"
               radius="md"
               color="cyan"
               on:click={() => dispatch("openSemble")}
             >
-              <Globe size={22} />
+              <Globe size={18} />
             </ActionIcon>
           </Tooltip>
 
@@ -115,25 +115,25 @@
 
           <Tooltip label="Update on Semble" withArrow transition="fade">
             <ActionIcon
-              size="xl"
+              size="lg"
               radius="md"
               color="orange"
               on:click={() => dispatch("publish")}
               loading={isPublishing}
             >
-              <Upload size={22} />
+              <Upload size={18} />
             </ActionIcon>
           </Tooltip>
         {:else}
           <Tooltip label="Publish to Semble" withArrow transition="fade">
             <ActionIcon
-              size="xl"
+              size="lg"
               radius="md"
               color="grape"
               on:click={() => dispatch("publish")}
               loading={isPublishing}
             >
-              <Rocket size={22} />
+              <Rocket size={18} />
             </ActionIcon>
           </Tooltip>
         {/if}
@@ -148,13 +148,13 @@
         transition="fade"
       >
         <ActionIcon
-          size="xl"
+          size="lg"
           radius="md"
           color="red"
           on:click={() => dispatch("deleteContainer")}
           loading={isDeleting}
         >
-          <Trash size={22} />
+          <Trash size={18} />
         </ActionIcon>
       </Tooltip>
     </Group>
@@ -165,7 +165,7 @@
       <TextInput
         placeholder="Search..."
         icon={MagnifyingGlass}
-        size="md"
+        size="sm"
         radius="md"
         bind:value={searchQuery}
         on:input={handleSearchInput}
@@ -179,30 +179,30 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 12px;
+    margin-top: 10px;
     width: 100%;
   }
 
   .action-bar {
     display: flex;
     justify-content: center;
-    padding: 8px;
+    padding: 6px;
     background: rgba(0, 0, 0, 0.03);
-    border-radius: 12px;
+    border-radius: 10px;
     width: fit-content;
   }
 
   .action-divider {
     width: 1px;
-    height: 24px;
+    height: 19px;
     background-color: rgba(0, 0, 0, 0.1);
-    margin: 0 8px;
+    margin: 0 6px;
   }
 
   .action-search-bar {
-    margin: 18px 0 12px 0;
+    margin: 14px 0 10px 0;
     width: 100%;
-    max-width: 800px;
+    max-width: 640px;
   }
 
   :global(body.dark-mode) .action-bar {

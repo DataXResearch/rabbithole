@@ -38,7 +38,7 @@
       aria-label="Create new rabbithole"
     >
       <div class="add-plus">+</div>
-      <div class="card-title" style="margin-top: 10px; font-size: 16px;">
+      <div class="card-title" style="margin-top: 8px; font-size: 13px;">
         Create
       </div>
     </button>
@@ -55,7 +55,7 @@
           on:click|stopPropagation={() =>
             dispatch("deleteRabbithole", { rabbitholeId: rabbithole.id })}
         >
-          <Trash size={16} />
+          <Trash size={13} />
         </button>
       {/if}
 
@@ -85,22 +85,22 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
+    gap: 14px;
     width: 100%;
   }
 
   .grid.horizontal {
     display: flex;
-    gap: 14px;
+    gap: 11px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 6px 0;
+    padding: 5px 0;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
 
   .grid.horizontal::-webkit-scrollbar {
-    height: 10px;
+    height: 8px;
   }
 
   .grid.horizontal::-webkit-scrollbar-thumb {
@@ -117,22 +117,22 @@
     text-align: left;
     border: 1px solid rgba(0, 0, 0, 0.08);
     background: #ffffff;
-    border-radius: 16px;
-    padding: 22px;
+    border-radius: 12px;
+    padding: 18px;
     cursor: pointer;
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
       border-color 0.15s ease;
-    min-height: 120px;
+    min-height: 96px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .grid.horizontal .card {
-    flex: 0 0 280px;
-    min-height: 150px;
+    flex: 0 0 224px;
+    min-height: 120px;
     scroll-snap-align: start;
     display: block;
   }
@@ -145,10 +145,10 @@
 
   .remove-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
     border-radius: 999px;
     border: 1px solid rgba(0, 0, 0, 0.08);
     background: rgba(255, 255, 255, 0.9);
@@ -171,12 +171,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .card-title {
     font-weight: 900;
-    font-size: 18px;
+    font-size: 14px;
     color: #1a1b1e;
     line-height: 1.2;
     text-align: center;
@@ -186,8 +186,8 @@
   .card-stats {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 6px;
+    font-size: 10px;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 500;
   }
@@ -205,7 +205,7 @@
   }
 
   .add-plus {
-    font-size: 44px;
+    font-size: 35px;
     font-weight: 900;
     color: rgba(17, 133, 254, 0.9);
     line-height: 1;
