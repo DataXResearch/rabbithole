@@ -146,13 +146,6 @@
     cursor: not-allowed;
   }
 
-  .overlay-hidden-message {
-    padding: 20px;
-    text-align: center;
-    color: #868e96;
-    font-size: 13px;
-  }
-
   @media (prefers-color-scheme: dark) {
     .popup-container {
       background-color: #1a1b1e;
@@ -172,10 +165,6 @@
 
     .link-button:hover {
       color: #74c0fc;
-    }
-
-    .overlay-hidden-message {
-      color: #909296;
     }
   }
 </style>
