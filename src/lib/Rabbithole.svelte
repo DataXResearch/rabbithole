@@ -272,20 +272,51 @@
     on:navigate={handleNavigation}
   />
 
-  <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
-    <div class="main-content" class:sidebar-closed={!opened}>
-      <div class="timeline-wrapper">
-        {#if isLoadingHome}
-          <div class="home-loading">
-            <Loader size="lg" variant="dots" />
-            <Text size="md" color="dimmed" style="margin-top: 1rem;">
-              Loading...
-            </Text>
-          </div>
-        {:else}
-          <div class="home-header" role="button" tabindex="0">
-            {#if !activeRabbithole}
-              <h1 class="home-title">{"Rabbitholes"}</h1>
+    <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
+      <div class="main-content" class:sidebar-closed={!opened}>
+        <div class="timeline-wrapper">
+          {#if isLoadingHome}
+            <div class="home-loading">
+              <Loader size="md" variant="dots" />
+              <Text size="sm" color="dimmed" style="margin-top: 1rem;">
+                Loading...
+              </Text>
+            </div>
+          {:else}
+            <div class="home-header" role="button" tabindex="0">
+              {#if !activeRabbithole}
+                <h1 class="home-title">{"Rabbitholes"}</h1>
+              {/if}
+            </div>
+
+            {#if activeRabbithole}
+              <Timeline
+                {activeBurrow}
+                {activeRabbithole}
+                {websites}
+                {selectBurrow}
+                {burrowsInActiveRabbithole}
+                isLoading={isLoadingWebsites}
+                autoFocusTitle={autoFocusTimelineTitle}
+                on:websiteDelete={deleteWebsite}
+                on:containerRename={renameContainer}
+                on:deleteContainer={handleDelete}
+                on:createBurrow={handleCreateBurrow}
+                on:refresh={updateWebsites}
+                on:navigateUp={handleNavigation}
+              />
+            {:else}
+              <div class="timeline-placeholder timeline-placeholder-grid">
+                <RabbitholeGrid
+                  {rabbitholes}
+                  onSelect={selectRabbithole}
+                  allowCreate={true}
+                  on:createRabbithole={handleCreateRabbithole}
+                  showDelete={true}
+                  on:deleteRabbithole={(event) =>
+                    deleteRabbithole(event.detail.rabbitholeId)}
+                />
+              </div>
             {/if}
           </div>
 
@@ -349,7 +380,7 @@
     min-height: 100vh;
     background-color: #f8f9fa;
     transition: background-color 0.3s ease;
-    padding-top: 72px; /* Account for fixed navbar */
+    padding-top: 58px; /* Account for fixed navbar */
   }
 
   :global(body.dark-mode) .main-content {
@@ -359,8 +390,8 @@
   .timeline-wrapper {
     flex: 1;
     width: 100%;
-    padding: 40px 20px;
-    max-width: 1100px;
+    padding: 32px 16px;
+    max-width: 880px;
     margin: 0 auto;
   }
 
@@ -382,7 +413,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 26px;
+    margin-bottom: 20px;
     cursor: pointer;
     user-select: none;
   }
@@ -393,7 +424,7 @@
 
   .home-title {
     margin: 0;
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: #1a1b1e;
     text-align: center;
@@ -404,15 +435,15 @@
   }
 
   .timeline-placeholder {
-    margin-top: 28px;
-    min-height: 420px;
-    border-radius: 16px;
+    margin-top: 22px;
+    min-height: 336px;
+    border-radius: 12px;
     border: 2px dashed rgba(0, 0, 0, 0.12);
     background: rgba(0, 0, 0, 0.02);
   }
 
   .timeline-placeholder-grid {
-    padding: 18px;
+    padding: 14px;
     border-style: solid;
     border-width: 1px;
     border-color: rgba(0, 0, 0, 0.08);
@@ -434,7 +465,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 48px 16px;
   }
 
   :global(body.dark-mode .mantine-AppShell-root) {

@@ -610,7 +610,7 @@
             <Input
               id="project-name"
               variant="unstyled"
-              size="xl"
+              size="lg"
               class="project-name-input {burrowNameError ? 'input-error' : ''}"
               bind:value={activeBurrow.name}
               on:blur={renameContainer}
@@ -630,7 +630,7 @@
             <Input
               id="project-name"
               variant="unstyled"
-              size="xl"
+              size="lg"
               class="project-name-input {burrowNameError ? 'input-error' : ''}"
               bind:value={activeRabbithole.title}
               on:blur={renameContainer}
@@ -654,11 +654,11 @@
             <ActionIcon
               variant="transparent"
               color="orange"
-              size="lg"
+              size="md"
               on:click={syncBurrow}
               loading={isSyncing}
             >
-              <Update size={20} />
+              <Update size={16} />
             </ActionIcon>
           </Tooltip>
         </div>
@@ -685,8 +685,8 @@
   <div class="feed">
     {#if isLoading}
       <div class="loading-container">
-        <Loader size="lg" variant="dots" />
-        <Text size="md" color="dimmed" style="margin-top: 1rem;"
+        <Loader size="md" variant="dots" />
+        <Text size="sm" color="dimmed" style="margin-top: 1rem;"
           >Loading websites...</Text
         >
       </div>
@@ -717,20 +717,20 @@
           <ActionIcon
             variant={viewMode === "timeline" ? "filled" : "default"}
             color="blue"
-            size="lg"
+            size="md"
             on:click={() => (viewMode = "timeline")}
             title="Timeline View"
           >
-            <ListBullet size={20} />
+            <ListBullet size={16} />
           </ActionIcon>
           <ActionIcon
             variant={viewMode === "grid" ? "filled" : "default"}
             color="blue"
-            size="lg"
+            size="md"
             on:click={() => (viewMode = "grid")}
             title="Grid View"
           >
-            <Grid size={20} />
+            <Grid size={16} />
           </ActionIcon>
         </Group>
       </div>
@@ -825,7 +825,7 @@
 <style>
   .timeline {
     width: 100%;
-    padding: 40px 20px;
+    padding: 32px 16px;
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
@@ -836,8 +836,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 40px;
-    max-width: 800px;
+    margin-bottom: 32px;
+    max-width: 640px;
     position: relative;
   }
 
@@ -845,7 +845,7 @@
     width: 100%;
     display: flex;
     justify-content: flex-start;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .breadcrumb-btn {
@@ -855,11 +855,11 @@
     background: none;
     border: none;
     color: #868e96;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 3px 6px;
+    border-radius: 5px;
     transition: all 0.2s;
   }
 
@@ -883,7 +883,7 @@
     text-align: center;
     justify-content: center;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     position: relative;
   }
 
@@ -908,7 +908,7 @@
   :global(.project-name-input input) {
     text-align: center !important;
     font-weight: 700;
-    font-size: 2rem !important;
+    font-size: 1.6rem !important;
     height: auto !important;
     padding: 0 !important;
     width: 100% !important;
@@ -926,7 +926,7 @@
 
   .timeline-feed {
     display: grid;
-    grid-template-columns: 18px 1fr;
+    grid-template-columns: 14px 1fr;
     gap: 0;
     width: 100%;
     position: relative;
@@ -938,7 +938,7 @@
 
   .timeline-line {
     position: absolute;
-    left: 8px;
+    left: 6px;
     top: 0;
     bottom: 0;
     width: 1px;
@@ -951,38 +951,38 @@
   }
 
   .date-group {
-    margin-bottom: 22px;
+    margin-bottom: 18px;
   }
 
   .date-header {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 800;
     color: rgba(0, 0, 0, 0.55);
     letter-spacing: 0.02em;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
     padding-left: 0;
   }
 
   .date-cards {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 18px;
   }
 
   .timeline-item {
     position: relative;
     display: grid;
-    max-width: 800px;
+    max-width: 640px;
     align-items: start;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
   }
 
   .timeline-dot {
     position: absolute;
-    left: -18px;
-    top: 20px;
-    width: 14px;
-    height: 14px;
+    left: -14px;
+    top: 16px;
+    width: 11px;
+    height: 11px;
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.35);
     z-index: 20;
@@ -1000,9 +1000,9 @@
 
   .timeline-connector {
     position: absolute;
-    left: -10px;
-    top: 26px;
-    width: 76px;
+    left: -8px;
+    top: 21px;
+    width: 60px;
     height: 1px;
     background: rgba(0, 0, 0, 0.12);
     z-index: 2;
@@ -1010,9 +1010,9 @@
 
   .timeline-card-wrap {
     width: 100%;
-    max-width: 800px;
+    max-width: 640px;
     margin: 0 auto;
-    margin-left: 80px;
+    margin-left: 64px;
   }
 
   .timeline-tooltip {
@@ -1020,10 +1020,10 @@
     transform: translate(12px, -12px);
     background: rgba(20, 21, 23, 0.95);
     color: #f8f9fa;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 8px 10px;
-    border-radius: 10px;
+    padding: 6px 8px;
+    border-radius: 8px;
     white-space: nowrap;
     z-index: 9999;
     pointer-events: none;
@@ -1046,15 +1046,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 48px 16px;
   }
 
   .semble-link {
     color: #228be6;
     text-decoration: none;
     font-weight: 600;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 3px;
     background-color: rgba(34, 139, 230, 0.1);
     transition: background-color 0.2s;
   }
@@ -1064,7 +1064,7 @@
   }
 
   .rabbitholes-collapsible {
-    margin-bottom: 30px;
+    margin-bottom: 24px;
   }
 
   :global(body.dark-mode .feed) {
@@ -1112,42 +1112,42 @@
 
   @media (max-width: 640px) {
     .timeline-feed {
-      grid-template-columns: 14px 1fr;
+      grid-template-columns: 11px 1fr;
     }
 
     .timeline-line {
-      left: 6px;
+      left: 5px;
     }
 
     .timeline-dot {
-      left: -16px;
-      top: 16px;
+      left: -13px;
+      top: 13px;
     }
 
     .timeline-connector {
-      left: -8px;
-      top: 22px;
-      width: 76px;
+      left: -6px;
+      top: 18px;
+      width: 60px;
     }
 
     .timeline-card-wrap {
-      margin-left: 80px;
+      margin-left: 64px;
     }
   }
 
   .view-toggles {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 16px;
-    padding: 0 4px;
+    margin-bottom: 13px;
+    padding: 0 3px;
   }
 
   .grid-feed {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
+    gap: 16px;
     width: 100%;
-    padding-bottom: 40px;
+    padding-bottom: 32px;
   }
 
   .grid-item {
@@ -1158,7 +1158,7 @@
     grid-column: 1 / -1;
     text-align: center;
     color: #868e96;
-    padding: 40px;
+    padding: 32px;
   }
 
   :global(body.dark-mode) .empty-grid {

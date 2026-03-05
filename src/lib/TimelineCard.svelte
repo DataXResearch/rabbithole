@@ -1,6 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { Button, Card, Group, Tooltip, Menu, ActionIcon } from "@svelteuidev/core";
+  import {
+    Button,
+    Card,
+    Group,
+    Tooltip,
+    Menu,
+    ActionIcon,
+  } from "@svelteuidev/core";
   import { Trash, DotsHorizontal, Plus, Copy } from "radix-icons-svelte";
   import type { Website } from "src/utils/types";
   import default1 from "../assets/rabbit-default-1.jpg";
@@ -79,8 +86,8 @@
 <div class="card-container" class:fixed-height-container={fixedHeight}>
   <Card
     shadow="sm"
-    padding="lg"
-    radius="md"
+    padding="md"
+    radius="sm"
     class="timeline-card {fixedHeight ? 'fixed-height' : ''}"
     withBorder
   >
@@ -106,12 +113,23 @@
     {#if showDelete}
       <div class="card-actions">
         <Menu position="bottom-end" withArrow>
-          <ActionIcon slot="control" variant="transparent" color="gray" size="md" radius="xl">
+          <ActionIcon
+            slot="control"
+            variant="transparent"
+            color="gray"
+            size="sm"
+            radius="xl"
+          >
             <DotsHorizontal />
           </ActionIcon>
-          <Menu.Item icon={Plus} on:click={addToBurrow}>Add to Burrow</Menu.Item>
-          <Menu.Item icon={Copy} on:click={addToRabbithole}>Add to another Rabbithole</Menu.Item>
-          <Menu.Item icon={Trash} color="red" on:click={deleteWebsite}>Delete</Menu.Item>
+          <Menu.Item icon={Plus} on:click={addToBurrow}>Add to Burrow</Menu.Item
+          >
+          <Menu.Item icon={Copy} on:click={addToRabbithole}
+            >Add to another Rabbithole</Menu.Item
+          >
+          <Menu.Item icon={Trash} color="red" on:click={deleteWebsite}
+            >Delete</Menu.Item
+          >
         </Menu>
       </div>
     {/if}
@@ -182,7 +200,7 @@
 <style>
   .card-container {
     width: 100%;
-    padding: 6px 0;
+    padding: 5px 0;
   }
 
   .card-container.fixed-height-container {
@@ -191,8 +209,8 @@
   }
 
   .card-image-wrapper {
-    margin: -20px -20px 16px -20px;
-    height: 160px;
+    margin: -16px -16px 12px -16px;
+    height: 128px;
     overflow: hidden;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     background-color: #f8f9fa;
@@ -213,16 +231,16 @@
   }
 
   .description-container {
-    min-height: 60px;
+    min-height: 48px;
     width: 100%;
   }
 
   :global(.timeline-card.fixed-height) {
-    height: 320px;
+    height: 256px;
   }
 
   :global(.timeline-card.fixed-height) .card-image-wrapper {
-    height: 140px;
+    height: 112px;
   }
 
   :global(.timeline-card.fixed-height) .description-container {
@@ -281,8 +299,8 @@
 
   .card-actions {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     z-index: 2;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 999px;
@@ -305,9 +323,9 @@
     background: transparent;
     font-family: inherit;
     font-weight: 700;
-    font-size: 1.25rem; /* 20px */
+    font-size: 1rem; /* 16px */
     color: #1a1b1e;
-    padding: 4px 8px;
+    padding: 3px 6px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
     text-overflow: ellipsis;
@@ -324,9 +342,9 @@
     border: none;
     background: transparent;
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: 0.76rem;
     color: #868e96;
-    padding: 4px 8px;
+    padding: 3px 6px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
     resize: none;
@@ -342,11 +360,11 @@
   }
 
   .card-footer {
-    margin-top: 24px;
+    margin-top: 18px;
   }
 
   :global(.timeline-card.fixed-height) .card-footer {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   /* Dark mode styles */
@@ -379,5 +397,4 @@
     background-color: rgba(255, 255, 255, 0.1);
     color: #c1c2c5;
   }
-
 </style>

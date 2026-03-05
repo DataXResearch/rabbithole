@@ -90,10 +90,11 @@
           class="open-all-btn"
           variant="subtle"
           compact
+          size="xs"
           on:click={handleOpenAllClick}
         >
           <svelte:fragment slot="leftIcon">
-            <OpenInNewWindow size={16} />
+            <OpenInNewWindow size={13} />
           </svelte:fragment>
           Open All
         </Button>
@@ -116,7 +117,7 @@
 
 <style>
   .burrow-home-wrapper {
-    margin-bottom: 40px;
+    margin-bottom: 32px;
   }
 
   :global(body.dark-mode .burrow-home-title) {
@@ -126,27 +127,27 @@
   .header-actions {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .horizontal-list {
     display: flex;
-    gap: 14px;
+    gap: 11px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 6px;
+    padding-bottom: 5px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
 
   .card-wrap {
-    flex: 0 0 360px;
+    flex: 0 0 288px;
     scroll-snap-align: start;
   }
 
   /* Scrollbar styling */
   .horizontal-list::-webkit-scrollbar {
-    height: 10px;
+    height: 8px;
   }
 
   .horizontal-list::-webkit-scrollbar-thumb {
@@ -160,7 +161,7 @@
 
   @media (max-width: 640px) {
     .card-wrap {
-      flex-basis: 300px;
+      flex-basis: 240px;
     }
   }
 </style>

@@ -26,7 +26,7 @@
       aria-label="Create new burrow"
     >
       <div class="add-plus">+</div>
-      <div class="card-title" style="margin-top: 10px; font-size: 16px;">
+      <div class="card-title" style="margin-top: 8px; font-size: 13px;">
         Create
       </div>
     </button>
@@ -48,7 +48,7 @@
           on:click|stopPropagation={() =>
             dispatch("deleteBurrow", { burrowId: burrow.id })}
         >
-          <Trash size={16} />
+          <Trash size={13} />
         </button>
       {/if}
 
@@ -69,7 +69,7 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
+    gap: 14px;
     width: 100%;
   }
 
@@ -78,14 +78,14 @@
     text-align: left;
     border: 1px solid rgba(0, 0, 0, 0.08);
     background: #ffffff;
-    border-radius: 16px;
-    padding: 22px;
+    border-radius: 12px;
+    padding: 18px;
     cursor: pointer;
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
       border-color 0.15s ease;
-    min-height: 120px;
+    min-height: 96px;
   }
 
   .card:hover {
@@ -101,9 +101,9 @@
 
   .card-title {
     font-weight: 900;
-    font-size: 18px;
+    font-size: 14px;
     color: #1a1b1e;
-    margin-bottom: 14px;
+    margin-bottom: 11px;
     line-height: 1.2;
   }
 
@@ -114,7 +114,7 @@
   }
 
   .meta-item {
-    font-size: 13px;
+    font-size: 10px;
     color: #868e96;
     font-weight: 600;
   }
@@ -128,7 +128,7 @@
   }
 
   .add-plus {
-    font-size: 44px;
+    font-size: 35px;
     font-weight: 900;
     color: rgba(17, 133, 254, 0.9);
     line-height: 1;
@@ -137,10 +137,10 @@
 
   .remove-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
     border-radius: 999px;
     border: 1px solid rgba(0, 0, 0, 0.08);
     background: rgba(255, 255, 255, 0.9);
