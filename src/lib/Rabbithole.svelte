@@ -3,6 +3,7 @@
   import Timeline from "src/lib/Timeline.svelte";
   import Navbar from "src/lib/Navbar.svelte";
   import RabbitholeGrid from "src/lib/RabbitholeGrid.svelte";
+  import Onboarding from "src/lib/Onboarding.svelte";
   import { MessageRequest } from "../utils";
   import { SvelteUIProvider, Loader, Text, AppShell } from "@svelteuidev/core";
   import type { Burrow, Rabbithole, Settings, Website } from "src/utils/types";
@@ -22,6 +23,7 @@
   let autoFocusTimelineTitle: boolean = false;
 
   let settings: Settings | null = null;
+  let showOnboarding: boolean = false;
 
   // Apply theme immediately from localStorage to prevent flash
   const cachedDarkMode = localStorage.getItem("rabbithole-dark-mode");
@@ -34,6 +36,10 @@
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
+
+    if (!settings.hasSeenOnboarding) {
+      showOnboarding = true;
+    }
 
     const actualDarkMode = settings?.darkMode ?? false;
     if (actualDarkMode !== isDark) {
@@ -48,6 +54,30 @@
     }
     isLoadingHome = false;
   });
+
+  async function handleOnboardingComplete() {
+    showOnboarding = false;
+    
+    // Fetch latest settings because Onboarding might have changed darkMode
+    const currentSettings = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_SETTINGS,
+    });
+    
+    isDark = currentSettings.darkMode;
+    
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_SETTINGS,
+      settings: { ...currentSettings, hasSeenOnboarding: true },
+    });
+    
+    // Ensure we go to the home overview after onboarding/import
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
+      rabbitholeId: null,
+    });
+    
+    await refreshHomeState();
+  }
 
   async function toggleTheme(): Promise<void> {
     isDark = !isDark;
@@ -262,15 +292,18 @@
   }
 </script>
 
-<SvelteUIProvider>
-  <Navbar
-    onRabbitholesClick={goHome}
-    {isDark}
-    on:toggleTheme={toggleTheme}
-    on:selectRabbithole={(event) => selectRabbithole(event.detail)}
-    on:selectBurrow={handleSearchSelectBurrow}
-    on:navigate={handleNavigation}
-  />
+{#if showOnboarding}
+  <Onboarding on:complete={handleOnboardingComplete} />
+{:else}
+  <SvelteUIProvider>
+    <Navbar
+      onRabbitholesClick={goHome}
+      {isDark}
+      on:toggleTheme={toggleTheme}
+      on:selectRabbithole={(event) => selectRabbithole(event.detail)}
+      on:selectBurrow={handleSearchSelectBurrow}
+      on:navigate={handleNavigation}
+    />
 
     <AppShell class={!opened ? "sidebar-closed-shell" : ""}>
       <div class="main-content" class:sidebar-closed={!opened}>
@@ -318,42 +351,12 @@
                 />
               </div>
             {/if}
-          </div>
-
-          {#if activeRabbithole}
-            <Timeline
-              {activeBurrow}
-              {activeRabbithole}
-              {websites}
-              {selectBurrow}
-              {burrowsInActiveRabbithole}
-              isLoading={isLoadingWebsites}
-              autoFocusTitle={autoFocusTimelineTitle}
-              on:websiteDelete={deleteWebsite}
-              on:containerRename={renameContainer}
-              on:deleteContainer={handleDelete}
-              on:createBurrow={handleCreateBurrow}
-              on:refresh={updateWebsites}
-              on:navigateUp={handleNavigation}
-            />
-          {:else}
-            <div class="timeline-placeholder timeline-placeholder-grid">
-              <RabbitholeGrid
-                {rabbitholes}
-                onSelect={selectRabbithole}
-                allowCreate={true}
-                on:createRabbithole={handleCreateRabbithole}
-                showDelete={true}
-                on:deleteRabbithole={(event) =>
-                  deleteRabbithole(event.detail.rabbitholeId)}
-              />
-            </div>
           {/if}
-        {/if}
+        </div>
       </div>
-    </div>
-  </AppShell>
-</SvelteUIProvider>
+    </AppShell>
+  </SvelteUIProvider>
+{/if}
 
 <style>
   :global(body) {

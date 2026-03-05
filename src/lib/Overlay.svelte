@@ -26,6 +26,7 @@
   let selectedRabbithole: Rabbithole | null = null;
   let isSyncingWindow: boolean = false;
   let syncWindowSuccess: boolean = false;
+  let showOverlayHelp: boolean = false;
 
   // Save Page State
   let isSavingPage: boolean = false;
@@ -96,6 +97,17 @@
     await refreshSettings();
   }
 
+  function dismissOverlayHelp(): void {
+    if (showOverlayHelp) {
+      showOverlayHelp = false;
+      chrome.storage.local.set({ hasSeenOverlayHelpV2: true });
+    }
+  }
+
+  function handleWindowClick(): void {
+    dismissOverlayHelp();
+  }
+
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
@@ -104,6 +116,19 @@
     show = settings.show;
     await fetchAll();
     await refreshActiveContainers();
+
+    if (!isPopup) {
+      chrome.storage.local.get("hasSeenOverlayHelpV2", (result) => {
+        if (!result.hasSeenOverlayHelpV2) {
+          setTimeout(() => {
+            showOverlayHelp = true;
+            setTimeout(() => {
+              dismissOverlayHelp();
+            }, 3000);
+          }, 1000);
+        }
+      });
+    }
   });
 
   function changeAlignment(): void {
@@ -116,6 +141,7 @@
 
   async function hideOverlay(): Promise<void> {
     show = false;
+    dismissOverlayHelp();
     chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
       settings: { ...settings, show },
@@ -250,6 +276,8 @@
   }
 </script>
 
+<svelte:window on:click={handleWindowClick} />
+
 {#if show || isPopup}
   <div
     id="rabbithole-overlay-container"
@@ -286,9 +314,16 @@
               <Move />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Hide Overlay" withArrow>
+          <Tooltip 
+            label={showOverlayHelp ? "You can show/hide anytime using popup or settings" : "Hide Overlay"} 
+            opened={showOverlayHelp || undefined}
+            withArrow
+          >
             <ActionIcon
-              on:click={hideOverlay}
+              on:click={(e) => {
+                e.stopPropagation();
+                hideOverlay();
+              }}
               size="sm"
               class="rabbithole-icon header-icon"
             >

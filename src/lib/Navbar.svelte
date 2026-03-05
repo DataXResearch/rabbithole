@@ -13,6 +13,8 @@
     Upload,
     QuestionMarkCircled,
     FileText,
+    EyeNone,
+    EyeOpen,
   } from "radix-icons-svelte";
   import SearchEverywhereModal from "src/lib/SearchEverywhereModal.svelte";
   import Modal from "src/lib/Modal.svelte";
@@ -39,15 +41,24 @@
   let fileInput: HTMLInputElement;
 
   let settings: Settings | null = null;
+  let showOverlay: boolean = true;
+
+  function dismissHelpTooltip() {
+    if (showHelpTooltip) {
+      showHelpTooltip = false;
+      localStorage.setItem("rabbithole_has_seen_help_v2", "true");
+    }
+  }
+
+  function handleWindowClick() {
+    dismissHelpTooltip();
+  }
 
   onMount(async () => {
     settings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
-
-    if (!settings.hasSeenOnboarding) {
-      showOnboardingModal = true;
-    }
+    showOverlay = settings?.show ?? true;
 
     const session = await getSession();
     if (session) {
@@ -64,6 +75,17 @@
     }
 
     window.addEventListener("keydown", handleKeydown);
+
+    // Show help tooltip on first startup
+    if (!localStorage.getItem("rabbithole_has_seen_help_v2")) {
+      setTimeout(() => {
+        showHelpTooltip = true;
+        setTimeout(() => {
+          dismissHelpTooltip();
+        }, 3000);
+      }, 1000);
+    }
+
     return () => {
       window.removeEventListener("keydown", handleKeydown);
     };
@@ -92,6 +114,17 @@
 
   function handleToggleTheme(): void {
     dispatch("toggleTheme");
+  }
+
+  async function handleToggleOverlay(): Promise<void> {
+    showOverlay = !showOverlay;
+    if (settings) {
+      settings.show = showOverlay;
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.UPDATE_SETTINGS,
+        settings,
+      });
+    }
   }
 
   async function handleAuthSuccess(): Promise<void> {
@@ -200,18 +233,10 @@
 
   async function handleOnboardingClose(): Promise<void> {
     showOnboardingModal = false;
-    if (!settings.hasSeenOnboarding) {
-      await chrome.runtime.sendMessage({
-        type: MessageRequest.UPDATE_SETTINGS,
-        settings: { ...settings, hasSeenOnboarding: true },
-      });
-      showHelpTooltip = true;
-      setTimeout(() => {
-        showHelpTooltip = false;
-      }, 3000);
-    }
   }
 </script>
+
+<svelte:window on:click={handleWindowClick} />
 
 <SearchEverywhereModal
   bind:isOpen={showSearchModal}
@@ -275,7 +300,11 @@
         color="gray"
         size="lg"
         radius="xl"
-        on:click={() => (showOnboardingModal = true)}
+        on:click={(e) => {
+          e.stopPropagation();
+          showOnboardingModal = true;
+          dismissHelpTooltip();
+        }}
       >
         <QuestionMarkCircled size={18} />
       </ActionIcon>
@@ -317,6 +346,12 @@
           {/if}
         </ActionIcon>
 
+        <Menu.Item
+          icon={showOverlay ? EyeNone : EyeOpen}
+          on:click={handleToggleOverlay}
+        >
+          {showOverlay ? "Hide Overlay" : "Show Overlay"}
+        </Menu.Item>
         <Menu.Item icon={Upload} on:click={triggerImport}>
           Import Data
         </Menu.Item>
@@ -345,6 +380,12 @@
             <Gear size={18} />
           </ActionIcon>
 
+          <Menu.Item
+            icon={showOverlay ? EyeNone : EyeOpen}
+            on:click={handleToggleOverlay}
+          >
+            {showOverlay ? "Hide Overlay" : "Show Overlay"}
+          </Menu.Item>
           <Menu.Item icon={Upload} on:click={triggerImport}>
             Import Data
           </Menu.Item>
