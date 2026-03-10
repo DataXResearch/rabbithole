@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { crx } from "@crxjs/vite-plugin";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { resolve } from "path";
@@ -12,6 +13,23 @@ export default defineConfig({
   resolve: {
     alias: {
       src: srcDir,
+    },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        trail: resolve(__dirname, "src/trail/trail.html"),
+      },
+    },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./vitest.setup.ts"],
+    server: {
+      deps: {
+        inline: ["@svelteuidev/core", "@svelteuidev/composables"],
+      },
     },
   },
 });
