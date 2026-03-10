@@ -17,6 +17,9 @@
   import PinnedWebsites from "src/lib/PinnedWebsites.svelte";
   import CopyWebsiteModal from "src/lib/CopyWebsiteModal.svelte";
   import ActionBar from "src/lib/ActionBar.svelte";
+  import OrganizeModal from "src/lib/OrganizeModal.svelte";
+  import WebsiteSelectGrid from "src/lib/WebsiteSelectGrid.svelte";
+  import TrailView from "src/lib/TrailView.svelte";
   import { ChevronLeft, ListBullet, Grid, Update } from "radix-icons-svelte";
   import { getSession } from "../atproto/client";
   import {
@@ -25,17 +28,20 @@
     createCollectionLink,
   } from "../atproto/cosmik";
   import { MessageRequest, Logger } from "../utils";
-  import type { Burrow, Rabbithole, Website } from "src/utils/types";
+  import type { Burrow, Rabbithole, Website, Trail } from "src/utils/types";
 
   const dispatch = createEventDispatcher();
 
   export let activeBurrow: Burrow | null = null;
+  export let activeTrail: Trail | null = null;
   export let activeRabbithole: Rabbithole | null = null;
   export let websites: Website[] = [];
   export let isLoading: boolean = false;
   export let selectBurrow: (burrowId: string) => Promise<void>;
+  export let selectTrail: (trailId: string) => Promise<void>;
   export let autoFocusTitle: boolean = false;
   export let burrowsInActiveRabbithole: Burrow[] = [];
+  export let trailsInActiveRabbithole: Trail[] = [];
 
   let searchResults: Website[] = [];
   let searchQuery: string = "";
@@ -60,10 +66,13 @@
 
   let isUpdatingPinnedWebsites: boolean = false;
   let isSavingWindow: boolean = false;
-  let isDeletingBurrow: boolean = false;
+  let isDeletingContainer: boolean = false;
   let burrowNameError: string | null = null;
 
   let viewMode: "timeline" | "grid" = "grid";
+
+  let showOrganizeModal = false;
+  let selectionMode: "Burrow" | "Trail" | null = null;
 
   $: gridWebsites =
     searchQuery.length >= 3
@@ -149,6 +158,20 @@
       dispatch("containerRename", {
         type: "burrow",
         id: activeBurrow.id,
+        name: name,
+      });
+    } else if (activeTrail) {
+      const name = activeTrail.name.trim();
+      if (name === "") {
+        burrowNameError = "Trail name cannot be empty";
+        return;
+      }
+
+      burrowNameError = null;
+
+      dispatch("containerRename", {
+        type: "trail",
+        id: activeTrail.id,
         name: name,
       });
     } else if (activeRabbithole) {
@@ -506,17 +529,67 @@
     hoverY = e.clientY;
   }
 
-  $: shouldShowBurrows = !searchQuery && activeRabbithole && !activeBurrow;
-  $: shouldShowBurrowHome = !searchQuery && activeRabbithole && !activeBurrow;
+  $: shouldShowBurrows =
+    !searchQuery && activeRabbithole && !activeBurrow && !activeTrail;
+  $: shouldShowBurrowHome =
+    !searchQuery && activeRabbithole && !activeBurrow && !activeTrail;
 
   async function goBackToRabbithole(): Promise<void> {
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_BURROW,
       burrowId: null,
     });
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.CHANGE_ACTIVE_TRAIL,
+      trailId: null,
+    });
     dispatch("navigateUp");
   }
+
+  async function handleSelectionDone(e: CustomEvent<any>) {
+    const selectedUrls = e.detail.selectedUrls;
+    if (selectionMode === "Burrow") {
+      const name = prompt("Enter burrow name:") || "New Burrow";
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.CREATE_NEW_BURROW_IN_RABBITHOLE,
+        burrowName: name,
+        websites: selectedUrls,
+      });
+      dispatch("navigateUp");
+    } else if (selectionMode === "Trail") {
+      const name = prompt("Enter trail name:") || "New Trail";
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.CREATE_TRAIL,
+        rabbitholeId: activeRabbithole.id,
+        name,
+        websites: selectedUrls,
+      });
+      dispatch("navigateUp");
+    }
+    selectionMode = null;
+  }
+
+  async function handleSaveTrail(e: CustomEvent<any>) {
+    await chrome.runtime.sendMessage({
+      type: MessageRequest.UPDATE_TRAIL,
+      trailId: activeTrail.id,
+      updates: {
+        startNote: e.detail.trail.startNote,
+        stops: e.detail.trail.stops,
+      },
+    });
+    dispatch("refresh");
+  }
 </script>
+
+<OrganizeModal
+  isOpen={showOrganizeModal}
+  on:close={() => (showOrganizeModal = false)}
+  on:select={(e) => {
+    selectionMode = e.detail.type;
+    showOrganizeModal = false;
+  }}
+/>
 
 <CopyWebsiteModal
   bind:isOpen={showCopyModal}
@@ -589,7 +662,7 @@
 
 <div class="timeline">
   <div class="header-section">
-    {#if activeBurrow && activeRabbithole}
+    {#if (activeBurrow || activeTrail) && activeRabbithole}
       <div class="breadcrumb-container">
         <button class="breadcrumb-btn" on:click={goBackToRabbithole}>
           <ChevronLeft />
@@ -613,6 +686,26 @@
               size="lg"
               class="project-name-input {burrowNameError ? 'input-error' : ''}"
               bind:value={activeBurrow.name}
+              on:blur={renameContainer}
+              on:input={() => (burrowNameError = null)}
+              on:keydown={(e) => e.key === "Enter" && renameContainer()}
+            />
+          </Tooltip>
+        </div>
+      {:else if activeTrail}
+        <div class="tooltip-wrapper">
+          <Tooltip
+            label={burrowNameError || "Click to rename trail"}
+            withArrow
+            color={burrowNameError ? "red" : "gray"}
+            opened={!!burrowNameError || undefined}
+          >
+            <Input
+              id="project-name"
+              variant="unstyled"
+              size="lg"
+              class="project-name-input {burrowNameError ? 'input-error' : ''}"
+              bind:value={activeTrail.name}
               on:blur={renameContainer}
               on:input={() => (burrowNameError = null)}
               on:keydown={(e) => e.key === "Enter" && renameContainer()}
@@ -671,8 +764,9 @@
       {isSavingWindow}
       {isUpdatingPinnedWebsites}
       activeBurrowId={activeBurrow?.id}
+      activeTrailId={activeTrail?.id}
       activeRabbitholeId={activeRabbithole?.id}
-      isDeleting={activeBurrow ? isDeletingBurrow : false}
+      isDeleting={activeBurrow || activeTrail ? isDeletingContainer : false}
       on:saveWindow={saveWindow}
       on:updatePinnedWebsites={updatePinnedWebsites}
       on:search={handleSearch}
@@ -690,15 +784,27 @@
           >Loading websites...</Text
         >
       </div>
+    {:else if selectionMode}
+      <WebsiteSelectGrid
+        {websites}
+        mode={selectionMode}
+        on:done={handleSelectionDone}
+        on:cancel={() => (selectionMode = null)}
+      />
+    {:else if activeTrail}
+      <TrailView trail={activeTrail} {websites} on:save={handleSaveTrail} />
     {:else}
       {#if shouldShowBurrows}
         <div class="rabbitholes-collapsible">
           <BurrowGrid
             burrows={burrowsInActiveRabbithole}
+            trails={trailsInActiveRabbithole}
             selectedBurrowId={activeBurrow?.id}
-            onSelect={selectBurrow}
+            selectedTrailId={activeTrail?.id}
+            onSelectBurrow={selectBurrow}
+            onSelectTrail={selectTrail}
             allowCreate={true}
-            on:createBurrow={() => dispatch("createBurrow")}
+            on:organize={() => (showOrganizeModal = true)}
             showDelete={false}
           />
         </div>

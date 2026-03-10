@@ -18,8 +18,15 @@
 - **Save Context**: Save individual tabs or all open tabs in a window to the active burrow.
 - **Restore Context**: Open all pinned tabs for a burrow in one click.
 - **Search Everywhere**: Global fuzzy search (Cmd+K) across rabbitholes, burrows, and websites.
-- **Import/Export**: Backup and restore data via JSON files.
+- **Import/Export**: Backup and restore data via JSON files. Import existing browser bookmarks and tab groups/windows at any time via settings.
 - **Local Storage**: All data stored locally using IndexedDB.
+
+## First-Time Setup
+
+- **Onboarding Flow**: A guided tutorial introduces core concepts (Rabbitholes, Burrows, Overlay, Sync, Search, Semble) on first install.
+- **Bookmark Import**: Optionally import existing browser bookmarks during onboarding or via settings. Bookmark folders become Rabbitholes, subfolders become Burrows.
+- **Tab Group Import**: Optionally import open windows and tab groups during onboarding or via settings. Windows become Rabbitholes, tab groups become Burrows.
+- **Dark Mode Selection**: Choose light or dark theme during onboarding, changeable at any time.
 
 ## Social & Sync (Semble/AT Protocol)
 

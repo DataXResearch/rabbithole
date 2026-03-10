@@ -6,11 +6,19 @@
   import Onboarding from "src/lib/Onboarding.svelte";
   import { MessageRequest } from "../utils";
   import { SvelteUIProvider, Loader, Text, AppShell } from "@svelteuidev/core";
-  import type { Burrow, Rabbithole, Settings, Website } from "src/utils/types";
+  import type {
+    Burrow,
+    Rabbithole,
+    Settings,
+    Website,
+    Trail,
+  } from "src/utils/types";
 
   let activeBurrow: Burrow | null = null;
+  let activeTrail: Trail | null = null;
   let websites: Website[] = [];
   let burrowsInActiveRabbithole: Burrow[] = [];
+  let trailsInActiveRabbithole: Trail[] = [];
   let rabbitholes: Rabbithole[] = [];
   let activeRabbithole: Rabbithole | null = null;
 
@@ -57,25 +65,25 @@
 
   async function handleOnboardingComplete() {
     showOnboarding = false;
-    
+
     // Fetch latest settings because Onboarding might have changed darkMode
     const currentSettings = await chrome.runtime.sendMessage({
       type: MessageRequest.GET_SETTINGS,
     });
-    
+
     isDark = currentSettings.darkMode;
-    
+
     await chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
       settings: { ...currentSettings, hasSeenOnboarding: true },
     });
-    
+
     // Ensure we go to the home overview after onboarding/import
     await chrome.runtime.sendMessage({
       type: MessageRequest.CHANGE_ACTIVE_RABBITHOLE,
       rabbitholeId: null,
     });
-    
+
     await refreshHomeState();
   }
 
@@ -92,27 +100,41 @@
   }
 
   async function refreshHomeState(): Promise<void> {
-    [activeRabbithole, rabbitholes, activeBurrow] = await Promise.all([
-      chrome.runtime.sendMessage({
-        type: MessageRequest.GET_ACTIVE_RABBITHOLE,
-      }),
-      chrome.runtime.sendMessage({
-        type: MessageRequest.GET_ALL_RABBITHOLES,
-      }),
-      chrome.runtime.sendMessage({
-        type: MessageRequest.GET_ACTIVE_BURROW,
-      }),
-    ]);
+    [activeRabbithole, rabbitholes, activeBurrow, activeTrail] =
+      await Promise.all([
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ACTIVE_RABBITHOLE,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ALL_RABBITHOLES,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ACTIVE_BURROW,
+        }),
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_ACTIVE_TRAIL,
+        }),
+      ]);
     burrowsInActiveRabbithole = await Promise.all(
-      activeRabbithole?.burrows.map((burrowId) =>
+      activeRabbithole?.burrows?.map((burrowId) =>
         chrome.runtime.sendMessage({
           type: MessageRequest.GET_BURROW,
           burrowId,
         }),
       ) ?? [],
     );
-    // FIXME: clean up at db
     burrowsInActiveRabbithole = burrowsInActiveRabbithole.filter(Boolean);
+
+    trailsInActiveRabbithole = await Promise.all(
+      activeRabbithole?.trails?.map((trailId) =>
+        chrome.runtime.sendMessage({
+          type: MessageRequest.GET_TRAIL,
+          trailId,
+        }),
+      ) ?? [],
+    );
+    trailsInActiveRabbithole = trailsInActiveRabbithole.filter(Boolean);
+
     updateWebsites();
   }
 
@@ -163,26 +185,13 @@
     await refreshHomeState();
   }
 
-  async function handleCreateBurrow(): Promise<void> {
-    if (!activeRabbithole) {
-      return;
-    }
-
-    let baseName = "New Burrow";
-    let newName = baseName;
-    let counter = 1;
-    while (burrowsInActiveRabbithole.some((b) => b.name === newName)) {
-      counter++;
-      newName = `${baseName} ${counter}`;
-    }
-
+  async function selectTrail(trailId: string): Promise<void> {
+    isLoadingWebsites = true;
     await chrome.runtime.sendMessage({
-      type: MessageRequest.CREATE_NEW_BURROW_IN_RABBITHOLE,
-      burrowName: newName,
+      type: MessageRequest.CHANGE_ACTIVE_TRAIL,
+      trailId,
     });
-
     await refreshHomeState();
-    autoFocusTimelineTitle = true;
   }
 
   async function handleCreateRabbithole(): Promise<void> {
@@ -235,6 +244,17 @@
     }
   }
 
+  async function deleteTrail(trailId: string): Promise<void> {
+    if (confirm("Are you sure you want to delete this trail?")) {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.DELETE_TRAIL,
+        trailId,
+        rabbitholeId: activeRabbithole.id,
+      });
+      await refreshHomeState();
+    }
+  }
+
   async function renameContainer(event: CustomEvent): Promise<void> {
     const { type, id, name } = event.detail;
 
@@ -243,6 +263,12 @@
         type: MessageRequest.RENAME_BURROW,
         newName: name,
         burrowId: id,
+      });
+    } else if (type === "trail") {
+      await chrome.runtime.sendMessage({
+        type: MessageRequest.UPDATE_TRAIL,
+        trailId: id,
+        updates: { name },
       });
     } else if (type === "rabbithole") {
       await chrome.runtime.sendMessage({
@@ -275,6 +301,8 @@
   async function handleDelete(): Promise<void> {
     if (activeBurrow) {
       await deleteBurrow(activeBurrow.id);
+    } else if (activeTrail) {
+      await deleteTrail(activeTrail.id);
     } else if (activeRabbithole) {
       await deleteRabbithole(activeRabbithole.id);
     }
@@ -325,16 +353,18 @@
             {#if activeRabbithole}
               <Timeline
                 {activeBurrow}
+                {activeTrail}
                 {activeRabbithole}
                 {websites}
                 {selectBurrow}
+                {selectTrail}
                 {burrowsInActiveRabbithole}
+                {trailsInActiveRabbithole}
                 isLoading={isLoadingWebsites}
                 autoFocusTitle={autoFocusTimelineTitle}
                 on:websiteDelete={deleteWebsite}
                 on:containerRename={renameContainer}
                 on:deleteContainer={handleDelete}
-                on:createBurrow={handleCreateBurrow}
                 on:refresh={updateWebsites}
                 on:navigateUp={handleNavigation}
               />

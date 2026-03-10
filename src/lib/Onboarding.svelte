@@ -1,6 +1,12 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from "svelte";
-  import { ChevronLeft, ChevronRight, Cross2, Sun, Moon } from "radix-icons-svelte";
+  import {
+    ChevronLeft,
+    ChevronRight,
+    Cross2,
+    Sun,
+    Moon,
+  } from "radix-icons-svelte";
   import { Loader } from "@svelteuidev/core";
   import { MessageRequest } from "../utils";
   import tutorial1 from "../assets/tutorial-1-burrows-rabbitholes.mp4";
@@ -14,7 +20,7 @@
 
   let step: "tutorial" | "import" = "tutorial";
   let currentSlide = 0;
-  
+
   let isImporting = false;
   let importBookmarks = true;
   let importTabGroups = true;
@@ -25,7 +31,9 @@
     if (cachedDarkMode !== null) {
       isDark = cachedDarkMode === "true";
     } else {
-      const settings = await chrome.runtime.sendMessage({ type: MessageRequest.GET_SETTINGS });
+      const settings = await chrome.runtime.sendMessage({
+        type: MessageRequest.GET_SETTINGS,
+      });
       isDark = settings?.darkMode ?? false;
     }
     document.body.classList.toggle("dark-mode", isDark);
@@ -35,8 +43,10 @@
     isDark = !isDark;
     document.body.classList.toggle("dark-mode", isDark);
     localStorage.setItem("rabbithole-dark-mode", String(isDark));
-    
-    const settings = await chrome.runtime.sendMessage({ type: MessageRequest.GET_SETTINGS });
+
+    const settings = await chrome.runtime.sendMessage({
+      type: MessageRequest.GET_SETTINGS,
+    });
     if (settings) {
       await chrome.runtime.sendMessage({
         type: MessageRequest.UPDATE_SETTINGS,
@@ -93,7 +103,7 @@
         <p><strong>Share your knowledge.</strong></p>
         <p>Publish your Burrows as curated collections to <strong>Semble</strong> on the AT Protocol. Share your research trails with the world.</p>
       `,
-    }
+    },
   ];
 
   function next() {
@@ -128,7 +138,7 @@
         await chrome.runtime.sendMessage({
           type: "IMPORT_BROWSER_DATA",
           importBookmarks,
-          importTabGroups
+          importTabGroups,
         });
       } catch (e) {
         console.error(e);
@@ -145,7 +155,11 @@
 
 <div class="onboarding-fullscreen">
   <div class="top-right-actions">
-    <button class="theme-btn" on:click={toggleTheme} title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
+    <button
+      class="theme-btn"
+      on:click={toggleTheme}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
       {#if isDark}
         <Sun size={16} />
       {:else}
@@ -208,43 +222,54 @@
           {/each}
         </div>
 
-        <button
-          class="nav-btn"
-          on:click={next}
-          aria-label="Next slide"
-        >
+        <button class="nav-btn" on:click={next} aria-label="Next slide">
           <ChevronRight size={22} />
         </button>
       </div>
     </div>
-
   {:else if step === "import"}
     <div class="content-wrapper">
       <h1 class="slide-title">Import Existing Data</h1>
 
       <div class="import-container">
-        <p class="import-desc">Get started quickly by importing your existing browser data into Rabbithole.</p>
-        
+        <p class="import-desc">
+          Get started quickly by importing your existing browser data into
+          Rabbithole.
+        </p>
+
         <div class="import-options">
           <label class="import-option">
-            <input type="checkbox" bind:checked={importBookmarks} disabled={isImporting} />
+            <input
+              type="checkbox"
+              bind:checked={importBookmarks}
+              disabled={isImporting}
+            />
             <div class="option-text">
               <strong>Bookmarks</strong>
-              <span>Folders become Rabbitholes, subfolders become Burrows.</span>
+              <span>Folders become Rabbitholes, subfolders become Burrows.</span
+              >
             </div>
           </label>
 
           <label class="import-option">
-            <input type="checkbox" bind:checked={importTabGroups} disabled={isImporting} />
+            <input
+              type="checkbox"
+              bind:checked={importTabGroups}
+              disabled={isImporting}
+            />
             <div class="option-text">
               <strong>Workspaces & Tab Groups</strong>
-              <span>Windows become Rabbitholes, tab groups become Burrows.</span>
+              <span>Windows become Rabbitholes, tab groups become Burrows.</span
+              >
             </div>
           </label>
         </div>
 
         <div class="privacy-note">
-          <p>🛡️ <strong>Privacy First:</strong> Rabbithole does not collect any information about you and all your data is stored locally on your device.</p>
+          <p>
+            🛡️ <strong>Privacy First:</strong> Rabbithole does not collect any information
+            about you and all your data is stored locally on your device.
+          </p>
         </div>
       </div>
 
@@ -264,7 +289,9 @@
           {#if isImporting}
             <Loader size="sm" color="white" />
           {:else}
-            {importBookmarks || importTabGroups ? "Import & Continue" : "Continue"}
+            {importBookmarks || importTabGroups
+              ? "Import & Continue"
+              : "Continue"}
           {/if}
         </button>
       </div>

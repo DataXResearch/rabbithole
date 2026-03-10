@@ -131,7 +131,7 @@
     }
   });
 
-  function changeAlignment(): void {
+  export function changeAlignment(): void {
     alignment = alignment === "left" ? "right" : "left";
     chrome.runtime.sendMessage({
       type: MessageRequest.UPDATE_SETTINGS,
@@ -139,7 +139,7 @@
     });
   }
 
-  async function hideOverlay(): Promise<void> {
+  export async function hideOverlay(): Promise<void> {
     show = false;
     dismissOverlayHelp();
     chrome.runtime.sendMessage({
@@ -314,8 +314,10 @@
               <Move />
             </ActionIcon>
           </Tooltip>
-          <Tooltip 
-            label={showOverlayHelp ? "You can show/hide anytime using popup or settings" : "Hide Overlay"} 
+          <Tooltip
+            label={showOverlayHelp
+              ? "You can show/hide anytime using popup or settings"
+              : "Hide Overlay"}
             opened={showOverlayHelp || undefined}
             withArrow
           >

@@ -215,7 +215,7 @@
                 >
                   <BurrowGrid
                     burrows={burrowResults}
-                    onSelect={(burrowId) => {
+                    onSelectBurrow={(burrowId) => {
                       const burrow = allBurrows.find((b) => b.id === burrowId);
                       if (burrow) {
                         handleSelectBurrow(burrow);

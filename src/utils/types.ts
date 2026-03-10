@@ -34,6 +34,18 @@ export enum MessageRequest {
   REMOVE_FROM_ACTIVE_TABS,
   IMPORT_DATA,
   GET_RABBITHOLE_WEBSITES,
+  CREATE_TRAIL,
+  GET_TRAIL,
+  GET_ALL_TRAILS,
+  UPDATE_TRAIL,
+  DELETE_TRAIL,
+  CHANGE_ACTIVE_TRAIL,
+  GET_ACTIVE_TRAIL,
+  START_TRAIL_WALK,
+  ADVANCE_TRAIL_WALK,
+  COMPLETE_TRAIL_WALK,
+  ABANDON_TRAIL_WALK,
+  GET_TRAIL_WALK_STATE,
 }
 
 export interface Settings {
@@ -62,10 +74,34 @@ export interface Burrow {
   lastSembleSync?: number;
 }
 
+export interface TrailStop {
+  websiteUrl: string;
+  note: string;
+}
+
+export interface Trail {
+  id: string;
+  createdAt: number;
+  name: string;
+  rabbitholeId: string;
+  stops: TrailStop[];
+  startNote: string;
+}
+
+export interface TrailWalk {
+  id: string;
+  trailId: string;
+  visitedStops: string[];
+  createdAt: number;
+  updatedAt: number;
+  completed: boolean;
+}
+
 export interface Rabbithole {
   id: string;
   createdAt: number;
   burrows: string[]; // burrow IDs
+  trails?: string[]; // trail IDs
   title: string;
   description?: string;
   meta: string[]; // urls
@@ -76,5 +112,6 @@ export interface User {
   id: string;
   currentRabbithole: string;
   currentBurrow: string;
+  currentTrail?: string;
   settings: Settings;
 }

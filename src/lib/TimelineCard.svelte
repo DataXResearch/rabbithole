@@ -190,7 +190,13 @@
 
     <!-- Footer: Action Button -->
     <div class="card-footer">
-      <Button variant="light" color="blue" size="xs" href={website.url} target="_blank">
+      <Button
+        variant="light"
+        color="blue"
+        size="xs"
+        href={website.url}
+        target="_blank"
+      >
         Open
       </Button>
     </div>

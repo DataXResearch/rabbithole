@@ -1,19 +1,22 @@
 <script lang="ts">
-  import type { Burrow } from "src/utils/types";
+  import type { Burrow, Trail } from "src/utils/types";
   import { createEventDispatcher } from "svelte";
   import { Trash } from "radix-icons-svelte";
 
   export let burrows: Burrow[] = [];
+  export let trails: Trail[] = [];
   export let selectedBurrowId: string = null;
-  export let onSelect: (burrowId: string) => Promise<void> | void;
+  export let selectedTrailId: string = null;
+  export let onSelectBurrow: (
+    burrowId: string,
+  ) => Promise<void> | void = () => {};
+  export let onSelectTrail: (
+    trailId: string,
+  ) => Promise<void> | void = () => {};
   export let allowCreate: boolean = false;
   export let showDelete: boolean = false;
 
   const dispatch = createEventDispatcher();
-
-  function handleSelect(burrow: Burrow): void {
-    onSelect(burrow.id);
-  }
 </script>
 
 <div class="grid">
@@ -21,13 +24,13 @@
     <button
       type="button"
       class="card add-card"
-      on:click={() => dispatch("createBurrow")}
-      title="Create new burrow"
-      aria-label="Create new burrow"
+      on:click={() => dispatch("organize")}
+      title="Organize"
+      aria-label="Organize"
     >
       <div class="add-plus">+</div>
       <div class="card-title" style="margin-top: 8px; font-size: 13px;">
-        Create
+        Organize
       </div>
     </button>
   {/if}
@@ -37,7 +40,7 @@
       type="button"
       class="card"
       class:selected={burrow.id === selectedBurrowId}
-      on:click={() => handleSelect(burrow)}
+      on:click={() => onSelectBurrow(burrow.id)}
     >
       {#if showDelete}
         <button
@@ -55,8 +58,40 @@
       <div class="card-title">{burrow.name || "Untitled"}</div>
       <div class="card-meta">
         <div class="meta-item">
-          {burrow.websites?.length || 0} website{(burrow.websites?.length ||
-            0) === 1
+          Burrow • {burrow.websites?.length || 0} site{(burrow.websites
+            ?.length || 0) === 1
+            ? ""
+            : "s"}
+        </div>
+      </div>
+    </button>
+  {/each}
+
+  {#each trails as trail (trail.id)}
+    <button
+      type="button"
+      class="card"
+      class:selected={trail.id === selectedTrailId}
+      on:click={() => onSelectTrail(trail.id)}
+    >
+      {#if showDelete}
+        <button
+          type="button"
+          class="remove-btn"
+          title="Delete Trail"
+          aria-label="Delete Trail"
+          on:click|stopPropagation={() =>
+            dispatch("deleteTrail", { trailId: trail.id })}
+        >
+          <Trash size={13} />
+        </button>
+      {/if}
+
+      <div class="card-title">{trail.name || "Untitled"}</div>
+      <div class="card-meta">
+        <div class="meta-item">
+          Trail • {trail.stops?.length || 0} stop{(trail.stops?.length || 0) ===
+          1
             ? ""
             : "s"}
         </div>

@@ -1,6 +1,6 @@
 import { MessageRequest, Logger } from "../utils";
 import { WebsiteStore } from "../storage/db";
-import type { Burrow, Website } from "../utils/types";
+import type { Burrow, Website, Trail } from "../utils/types";
 import { getSession } from "../atproto/client";
 import { syncBurrowToCollection } from "../atproto/cosmik";
 import { storeWebsites } from "../utils/browser";
@@ -353,6 +353,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await db.changeActiveRabbithole(rabbitholeId);
           // Always unset active burrow when switching rabbitholes
           await db.changeActiveBurrow(null);
+          await db.changeActiveTrail(null);
           sendResponse({ success: true });
         } catch (err) {
           handleError(err);
@@ -419,7 +420,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
         break;
       }
-      db.createNewBurrowInActiveRabbithole(request.burrowName)
+      db.createNewBurrowInActiveRabbithole(
+        request.burrowName,
+        request.websites || [],
+      )
         .then((res) => sendResponse(res))
         .catch(handleError);
       break;
@@ -666,6 +670,81 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           sendResponse({ success: true });
+        } catch (err) {
+          handleError(err);
+        }
+      })();
+      break;
+
+    case MessageRequest.GET_TRAIL:
+      db.getTrail(request.trailId)
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.GET_ACTIVE_TRAIL:
+      db.getActiveTrail()
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.CHANGE_ACTIVE_TRAIL:
+      db.changeActiveTrail(request.trailId)
+        .then(() => sendResponse({ success: true }))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.CREATE_TRAIL:
+      db.createTrail(request.rabbitholeId, request.name, request.websites)
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.UPDATE_TRAIL:
+      db.updateTrail(request.trailId, request.updates)
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.DELETE_TRAIL:
+      db.deleteTrail(request.rabbitholeId, request.trailId)
+        .then(() => sendResponse({ success: true }))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.START_TRAIL_WALK:
+      db.startTrailWalk(request.trailId)
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.ADVANCE_TRAIL_WALK:
+      db.advanceTrailWalk(request.trailId, request.websiteUrl)
+        .then((res) => sendResponse(res))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.COMPLETE_TRAIL_WALK:
+      db.completeTrailWalk(request.trailId)
+        .then(() => sendResponse({ success: true }))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.ABANDON_TRAIL_WALK:
+      db.abandonTrailWalk(request.trailId)
+        .then(() => sendResponse({ success: true }))
+        .catch(handleError);
+      break;
+
+    case MessageRequest.GET_TRAIL_WALK_STATE:
+      (async () => {
+        try {
+          const trail = await db.getTrail(request.trailId);
+          const walk = await db.getTrailWalk(request.trailId);
+          const websites = trail
+            ? await db.getAllWebsitesForRabbithole(trail.rabbitholeId)
+            : [];
+          sendResponse({ trail, walk, websites });
         } catch (err) {
           handleError(err);
         }

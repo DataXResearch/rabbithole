@@ -6,9 +6,12 @@ import type {
   Burrow,
   Rabbithole,
   User,
+  Trail,
+  TrailStop,
+  TrailWalk,
 } from "../utils/types";
 
-const version = 10;
+const version = 12;
 
 export class WebsiteStore {
   factory: IDBFactory;
@@ -42,7 +45,7 @@ export class WebsiteStore {
   }
 
   static async init(factory: IDBFactory): Promise<void> {
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       if (factory === undefined) {
         Logger.error("indexedDB not supported");
         reject(new Error("indexedDB not supported"));
@@ -266,33 +269,73 @@ export class WebsiteStore {
             };
           }
 
-          resolve(db);
+          if (event.oldVersion < 11) {
+            db.createObjectStore("trails", { keyPath: "id" });
+            const rhStore = txn.objectStore("rabbitholes");
+            const rhReq = rhStore.openCursor();
+            rhReq.onsuccess = (e) => {
+              const cursor = (e.target as IDBRequest).result;
+              if (cursor) {
+                const rh = cursor.value;
+                if (!rh.trails) {
+                  rh.trails = [];
+                  cursor.update(rh);
+                }
+                cursor.continue();
+              }
+            };
+          }
+
+          if (event.oldVersion < 12) {
+            db.createObjectStore("trailWalks", { keyPath: "id" });
+          }
         };
 
-        request.onsuccess = async () => {
+        request.onsuccess = () => {
           const db = request.result;
 
-          const store = new WebsiteStore(factory);
-          let user = await store.getUser();
+          const userRequest = db
+            .transaction(["user"])
+            .objectStore("user")
+            .getAll();
+          userRequest.onsuccess = () => {
+            const [user] = userRequest.result;
+            if (user === undefined) {
+              const newUser: User = {
+                id: uuid(),
+                settings: {
+                  show: true,
+                  alignment: "right",
+                  darkMode: false,
+                  hasSeenOnboarding: false,
+                },
+                currentBurrow: null,
+                currentTrail: null,
+                currentRabbithole: null,
+              };
+              const addRequest = db
+                .transaction(["user"], "readwrite")
+                .objectStore("user")
+                .add(newUser);
 
-          if (user === undefined) {
-            const newUser: User = {
-              id: uuid(),
-              settings: {
-                show: true,
-                alignment: "right",
-                darkMode: false,
-                hasSeenOnboarding: false,
-              },
-              currentBurrow: null,
-              currentRabbithole: null,
-            };
-            const userRequest = db
-              .transaction(["user"], "readwrite")
-              .objectStore("user")
-              .add(newUser);
-            return;
-          }
+              addRequest.onsuccess = () => resolve();
+              addRequest.onerror = () => resolve();
+            } else {
+              // Ensure currentTrail exists on legacy user records
+              if (!("currentTrail" in user)) {
+                user.currentTrail = null;
+                const updateReq = db
+                  .transaction(["user"], "readwrite")
+                  .objectStore("user")
+                  .put(user);
+                updateReq.onsuccess = () => resolve();
+                updateReq.onerror = () => resolve();
+              } else {
+                resolve();
+              }
+            }
+          };
+          userRequest.onerror = () => resolve();
         };
       }
     });
@@ -417,6 +460,8 @@ export class WebsiteStore {
       userRequest.onsuccess = async () => {
         const [user] = userRequest.result;
         user.currentRabbithole = rabbitholeId;
+        user.currentBurrow = null;
+        user.currentTrail = null;
 
         const userPutRequest = db
           .transaction(["user"], "readwrite")
@@ -450,6 +495,7 @@ export class WebsiteStore {
       id: uuid(),
       createdAt: Date.now(),
       burrows: [],
+      trails: [],
       title,
       description,
       meta: [],
@@ -469,6 +515,8 @@ export class WebsiteStore {
           .put({
             ...user,
             currentRabbithole: rabbithole.id,
+            currentBurrow: null,
+            currentTrail: null,
           });
 
         userReq.onsuccess = () => {
@@ -556,6 +604,16 @@ export class WebsiteStore {
           ),
         );
 
+        if (rabbithole.trails) {
+          await Promise.all(
+            rabbithole.trails.map((id) =>
+              this.deleteTrail(rabbitholeId, id).catch((e) =>
+                Logger.error(`Failed to delete trail`, e),
+              ),
+            ),
+          );
+        }
+
         const deleteRabbitholeReq = db
           .transaction(["rabbitholes"], "readwrite")
           .objectStore("rabbitholes")
@@ -565,6 +623,7 @@ export class WebsiteStore {
           if (user.currentRabbithole === rabbitholeId) {
             user.currentRabbithole = null;
             user.currentBurrow = null;
+            user.currentTrail = null;
             await new Promise<void>((res, rej) => {
               const ureq = db
                 .transaction(["user"], "readwrite")
@@ -630,7 +689,10 @@ export class WebsiteStore {
     });
   }
 
-  async createNewBurrowInActiveRabbithole(burrowName: string): Promise<Burrow> {
+  async createNewBurrowInActiveRabbithole(
+    burrowName: string,
+    websites: string[] = [],
+  ): Promise<Burrow> {
     const db = await this.getDb();
     const user = await this.getUser();
 
@@ -638,7 +700,7 @@ export class WebsiteStore {
       id: uuid(),
       createdAt: Date.now(),
       name: burrowName,
-      websites: [],
+      websites: [...new Set(websites)],
     };
 
     return new Promise((resolve, reject) => {
@@ -657,6 +719,7 @@ export class WebsiteStore {
           .put({
             ...user,
             currentBurrow: burrow.id,
+            currentTrail: null,
           });
 
         userReq.onsuccess = () => resolve(burrow);
@@ -1134,6 +1197,7 @@ export class WebsiteStore {
       userRequest.onsuccess = async () => {
         const [user] = userRequest.result;
         user.currentBurrow = burrowId;
+        if (burrowId) user.currentTrail = null;
 
         const userPutRequest = db
           .transaction(["user"], "readwrite")
@@ -1187,6 +1251,7 @@ export class WebsiteStore {
           .put({
             ...user,
             currentBurrow: burrow.id,
+            currentTrail: null,
           });
 
         userReq.onsuccess = () => {
@@ -1301,6 +1366,239 @@ export class WebsiteStore {
         putRequest.onerror = (e) => reject((e.target as IDBRequest).error);
       };
       getRequest.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async createTrail(
+    rabbitholeId: string,
+    name: string,
+    websites: string[],
+  ): Promise<Trail> {
+    const db = await this.getDb();
+    const user = await this.getUser();
+
+    const trailStops: TrailStop[] = websites.map((url) => ({
+      websiteUrl: url,
+      note: "",
+    }));
+
+    const trail: Trail = {
+      id: uuid(),
+      createdAt: Date.now(),
+      name,
+      rabbitholeId,
+      stops: trailStops,
+      startNote: "",
+    };
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["trails", "rabbitholes", "user"], "readwrite");
+      const trailStore = tx.objectStore("trails");
+      const rhStore = tx.objectStore("rabbitholes");
+      const userStore = tx.objectStore("user");
+
+      trailStore.put(trail);
+
+      const rhReq = rhStore.get(rabbitholeId);
+      rhReq.onsuccess = () => {
+        const rh = rhReq.result;
+        if (rh) {
+          rh.trails = [...(rh.trails || []), trail.id];
+          rhStore.put(rh);
+        }
+
+        user.currentTrail = trail.id;
+        user.currentBurrow = null;
+        userStore.put(user);
+      };
+
+      tx.oncomplete = () => resolve(trail);
+      tx.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async getTrail(trailId: string): Promise<Trail> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(["trails"]).objectStore("trails").get(trailId);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async getActiveTrail(): Promise<Trail | null> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const userReq = db.transaction(["user"]).objectStore("user").getAll();
+      userReq.onsuccess = () => {
+        const [user] = userReq.result;
+        if (!user.currentTrail) return resolve(null);
+        const trailReq = db
+          .transaction(["trails"])
+          .objectStore("trails")
+          .get(user.currentTrail);
+        trailReq.onsuccess = () => resolve(trailReq.result);
+        trailReq.onerror = (e) => reject((e.target as IDBRequest).error);
+      };
+    });
+  }
+
+  async changeActiveTrail(trailId: string | null): Promise<void> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const userRequest = db
+        .transaction(["user"], "readwrite")
+        .objectStore("user")
+        .getAll();
+      userRequest.onsuccess = () => {
+        const [user] = userRequest.result;
+        user.currentTrail = trailId;
+        if (trailId) user.currentBurrow = null;
+        const putReq = db
+          .transaction(["user"], "readwrite")
+          .objectStore("user")
+          .put(user);
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = (e) => reject((e.target as IDBRequest).error);
+      };
+    });
+  }
+
+  async updateTrail(trailId: string, updates: Partial<Trail>): Promise<Trail> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["trails"], "readwrite");
+      const store = tx.objectStore("trails");
+      const req = store.get(trailId);
+      req.onsuccess = () => {
+        const trail = req.result;
+        if (!trail) return reject(new Error("Trail not found"));
+        Object.assign(trail, updates);
+        store.put(trail);
+        tx.oncomplete = () => resolve(trail);
+      };
+    });
+  }
+
+  async deleteTrail(rabbitholeId: string, trailId: string): Promise<void> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(["trails", "rabbitholes", "user"], "readwrite");
+      tx.objectStore("trails").delete(trailId);
+
+      const rhStore = tx.objectStore("rabbitholes");
+      const rhReq = rhStore.get(rabbitholeId);
+      rhReq.onsuccess = () => {
+        const rh = rhReq.result;
+        if (rh && rh.trails) {
+          rh.trails = rh.trails.filter((id) => id !== trailId);
+          rhStore.put(rh);
+        }
+      };
+
+      const userStore = tx.objectStore("user");
+      const userReq = userStore.getAll();
+      userReq.onsuccess = () => {
+        const [user] = userReq.result;
+        if (user.currentTrail === trailId) {
+          user.currentTrail = null;
+          userStore.put(user);
+        }
+      };
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async startTrailWalk(trailId: string): Promise<TrailWalk> {
+    await this.abandonTrailWalk(trailId).catch(() => {});
+    const db = await this.getDb();
+    const walk: TrailWalk = {
+      id: uuid(),
+      trailId,
+      visitedStops: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      completed: false,
+    };
+    return new Promise((resolve, reject) => {
+      const req = db
+        .transaction(["trailWalks"], "readwrite")
+        .objectStore("trailWalks")
+        .put(walk);
+      req.onsuccess = () => resolve(walk);
+      req.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async getTrailWalk(trailId: string): Promise<TrailWalk | null> {
+    const db = await this.getDb();
+    return new Promise((resolve, reject) => {
+      const req = db
+        .transaction(["trailWalks"])
+        .objectStore("trailWalks")
+        .getAll();
+      req.onsuccess = () => {
+        const walks: TrailWalk[] = req.result;
+        const active =
+          walks
+            .filter((w) => w.trailId === trailId && !w.completed)
+            .sort((a, b) => b.createdAt - a.createdAt)[0] || null;
+        resolve(active);
+      };
+      req.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async advanceTrailWalk(
+    trailId: string,
+    websiteUrl: string,
+  ): Promise<TrailWalk> {
+    const db = await this.getDb();
+    const walk = await this.getTrailWalk(trailId);
+    if (!walk) throw new Error("No active walk for this trail");
+    if (!walk.visitedStops.includes(websiteUrl)) {
+      walk.visitedStops.push(websiteUrl);
+    }
+    walk.updatedAt = Date.now();
+    return new Promise((resolve, reject) => {
+      const req = db
+        .transaction(["trailWalks"], "readwrite")
+        .objectStore("trailWalks")
+        .put(walk);
+      req.onsuccess = () => resolve(walk);
+      req.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async completeTrailWalk(trailId: string): Promise<void> {
+    const db = await this.getDb();
+    const walk = await this.getTrailWalk(trailId);
+    if (!walk) return;
+    walk.completed = true;
+    walk.updatedAt = Date.now();
+    return new Promise((resolve, reject) => {
+      const req = db
+        .transaction(["trailWalks"], "readwrite")
+        .objectStore("trailWalks")
+        .put(walk);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject((e.target as IDBRequest).error);
+    });
+  }
+
+  async abandonTrailWalk(trailId: string): Promise<void> {
+    const db = await this.getDb();
+    const walk = await this.getTrailWalk(trailId);
+    if (!walk) return;
+    return new Promise((resolve, reject) => {
+      const req = db
+        .transaction(["trailWalks"], "readwrite")
+        .objectStore("trailWalks")
+        .delete(walk.id);
+      req.onsuccess = () => resolve();
+      req.onerror = (e) => reject((e.target as IDBRequest).error);
     });
   }
 }

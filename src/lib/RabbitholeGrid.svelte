@@ -18,13 +18,9 @@
   }
 
   function getWebsiteCount(rabbithole: Rabbithole): number {
-    const rabbitholeWebsites = rabbithole.meta?.length || 0;
-    const burrowWebsites =
-      rabbithole.burrows?.reduce((total, burrowId) => {
-        const burrow = burrows.find((b) => b.id === burrowId);
-        return total + (burrow?.websites?.length || 0);
-      }, 0) || 0;
-    return rabbitholeWebsites + burrowWebsites;
+    // Only count websites from the rabbithole "meta" list.
+    // Burrow websites are subsets of the rabbithole websites and should not be double-counted.
+    return rabbithole.meta?.length || 0;
   }
 </script>
 
