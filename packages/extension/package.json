@@ -36,6 +36,7 @@
   "dependencies": {
     "@atproto/api": "^0.18.7",
     "@atproto/oauth-client-browser": "^0.3.37",
+    "@huggingface/transformers": "^4.2.0",
     "@rabbithole/shared": "workspace:*",
     "@svelteuidev/core": "^0.15.3",
     "d3-scale": "^4.0.2",

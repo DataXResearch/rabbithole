@@ -2,7 +2,7 @@
 import { crx } from "@crxjs/vite-plugin";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { resolve } from "path";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync, copyFileSync, mkdirSync, existsSync } from "fs";
 import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
@@ -23,8 +23,47 @@ const pkg = JSON.parse(
 );
 manifest.version = pkg.version;
 
+// Plugin to copy ONNX Runtime WASM files to the output directory
+function copyOrtWasm() {
+  return {
+    name: "copy-ort-wasm",
+    closeBundle() {
+      const root = resolve(__dirname, "../..");
+      const pnpmDir = resolve(root, "node_modules/.pnpm");
+      let ortDir = "";
+      if (existsSync(pnpmDir)) {
+        for (const dir of readdirSync(pnpmDir)) {
+          if (dir.startsWith("onnxruntime-web@")) {
+            ortDir = resolve(
+              pnpmDir,
+              dir,
+              "node_modules/onnxruntime-web/dist",
+            );
+            break;
+          }
+        }
+      }
+      if (!ortDir || !existsSync(ortDir)) {
+        console.warn("[copy-ort-wasm] onnxruntime-web dist not found, skipping");
+        return;
+      }
+      const outDir = resolve(__dirname, `dist-${browser}`, "ort");
+      mkdirSync(outDir, { recursive: true });
+      const files = readdirSync(ortDir).filter(
+        (f) => f.endsWith(".wasm") || f.endsWith(".mjs"),
+      );
+      for (const f of files) {
+        copyFileSync(resolve(ortDir, f), resolve(outDir, f));
+      }
+      console.log(
+        `[copy-ort-wasm] copied ${files.length} files to dist-${browser}/ort/`,
+      );
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [svelte(), crx({ manifest }), nodePolyfills()],
+  plugins: [svelte(), crx({ manifest }), nodePolyfills(), copyOrtWasm()],
   resolve: {
     alias: {
       src: srcDir,
